@@ -7,6 +7,9 @@ Bu proje, ustalar ve araç sahipleri için bir platformun backend tarafını olu
 ```bash
 sana-iyi-usta-backend/
 │── src/
+│   ├── app.controller.ts      # 🎮 Ana kontrolcü
+│   ├── app.module.ts          # 📦 Ana modül
+│   ├── app.service.ts         # 🔧 Ana servis
 │   ├── modules/               # 🔹 Uygulamanın ana modülleri (Her biri bağımsız çalışır)
 │   │   ├── auth/              # 🛡️ Kullanıcı kimlik doğrulama ve yetkilendirme işlemleri
 │   │   │   ├── auth.module.ts         
@@ -89,20 +92,27 @@ sana-iyi-usta-backend/
 │   │   │       ├── create-service-request.dto.ts
 │   │   │       └── update-service-request.dto.ts
 │   ├── common/                # 🔥 Ortak kullanılacak kodlar (Global bileşenler)
-│   │   ├── guards/            # 🛡️ Yetkilendirme korumaları (JWT vs.)
-│   │   │   ├── jwt.guard.ts            
-│   │   ├── filters/           # 🚨 Hata yönetimi (Global hata yakalayıcı)
-│   │   │   ├── http-exception.filter.ts 
+│   │   ├── decorators/        # 🏷️ Özel NestJS dekoratörleri
+│   │   │   └── user.decorator.ts
+│   │   ├── filters/           # 🚨 Hata yönetimi
+│   │   │   ├── database-exception.filter.ts
+│   │   │   ├── http-exception.filter.ts
+│   │   │   └── validation-exception.filter.ts
+│   │   ├── guards/            # 🛡️ Yetkilendirme korumaları
+│   │   │   └── jwt/
+│   │   │       └── jwt.guard.ts
 │   │   ├── interceptors/      # 🔄 Request & Response manipülasyonları
-│   │   │   ├── logging.interceptor.ts   
-│   │   ├── decorators/        # 🏷️ Özel NestJS dekoratörleri (User ID çekme vs.)
+│   │   │   └── logging/
+│   │   │       └── logging.interceptor.ts
+│   │   └── middlewares/       # 🔗 Ara katman yazılımları
+│   │       └── logger.middleware.ts
+│   ├── config/                # ⚙️ Konfigürasyon dosyaları
+│   │   ├── database.config.ts
+│   │   └── app.config.ts
 │   ├── utils/                 # 🔧 Yardımcı fonksiyonlar
-│   │   ├── helpers.ts
-│   ├── config/                # ⚙️ Konfigürasyon dosyaları (Env değişkenleri vs.)
-│   │   ├── database.config.ts 
-│   │   ├── app.config.ts      
-│   ├── main.ts                # 🚀 Uygulamanın başlangıç noktası (NestJS burada başlıyor)
-│── .env                       # 🌎 Ortam değişkenleri (Gizli API anahtarları buraya gelir)
-│── tsconfig.json              # 🛠️ TypeScript ayarları
-│── package.json               # 📦 Bağımlılık listesi
-│── README.md                  # 📖 Proje dökümantasyonu
+│   │   └── helpers.ts
+│   └── main.ts                # 🚀 Uygulamanın başlangıç noktası
+├── nest-cli.json             # 🛠️ NestJS CLI yapılandırması
+├── tsconfig.json             # 🛠️ TypeScript ayarları
+├── package.json              # 📦 Bağımlılık listesi
+└── README.md                 # 📖 Proje dökümantasyonu
