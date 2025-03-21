@@ -13,55 +13,81 @@ sana-iyi-usta-backend/
 │   │   │   ├── auth.controller.ts     
 │   │   │   ├── auth.service.ts        
 │   │   │   ├── auth.entity.ts         
-│   │   │   ├── auth.dto.ts            
+│   │   │   └── dto/
+│   │   │       ├── login.dto.ts
+│   │   │       └── register.dto.ts
 │   │   ├── users/             # 👥 Kullanıcı yönetimi (Usta & Araç sahibi hesapları)
 │   │   │   ├── users.module.ts        
 │   │   │   ├── users.controller.ts    
 │   │   │   ├── users.service.ts       
 │   │   │   ├── users.entity.ts        
-│   │   │   ├── users.dto.ts           
+│   │   │   └── dto/
+│   │   │       ├── create-user.dto.ts
+│   │   │       └── update-user.dto.ts
 │   │   ├── mechanics/         # 🔧 Usta profilleri ve hizmet bilgileri
 │   │   │   ├── mechanics.module.ts    
 │   │   │   ├── mechanics.controller.ts 
 │   │   │   ├── mechanics.service.ts   
 │   │   │   ├── mechanics.entity.ts    
-│   │   │   ├── mechanics.dto.ts       
+│   │   │   └── dto/
+│   │   │       ├── create-mechanic.dto.ts
+│   │   │       └── update-mechanic.dto.ts
 │   │   ├── appointments/      # 📅 Randevu yönetimi
 │   │   │   ├── appointments.module.ts 
 │   │   │   ├── appointments.controller.ts 
 │   │   │   ├── appointments.service.ts 
 │   │   │   ├── appointments.entity.ts  
-│   │   │   ├── appointments.dto.ts     
+│   │   │   └── dto/
+│   │   │       ├── create-appointment.dto.ts
+│   │   │       └── update-appointment.dto.ts
 │   │   ├── vehicles/          # 🚗 Araç yönetimi (Kullanıcıların araç bilgileri)
 │   │   │   ├── vehicles.module.ts      
 │   │   │   ├── vehicles.controller.ts  
 │   │   │   ├── vehicles.service.ts     
 │   │   │   ├── vehicles.entity.ts      
-│   │   │   ├── vehicles.dto.ts         
+│   │   │   └── dto/
+│   │   │       ├── create-vehicle.dto.ts
+│   │   │       └── update-vehicle.dto.ts
 │   │   ├── campaigns/         # 🎉 Kampanya yönetimi (Ustalar özel kampanyalar oluşturabilir)
 │   │   │   ├── campaigns.module.ts     
 │   │   │   ├── campaigns.controller.ts 
 │   │   │   ├── campaigns.service.ts    
 │   │   │   ├── campaigns.entity.ts     
-│   │   │   ├── campaigns.dto.ts        
+│   │   │   └── dto/
+│   │   │       ├── create-campaign.dto.ts
+│   │   │       └── update-campaign.dto.ts
 │   │   ├── notifications/     # 🔔 Bildirim yönetimi (Push, SMS, E-posta)
 │   │   │   ├── notifications.module.ts
 │   │   │   ├── notifications.controller.ts
 │   │   │   ├── notifications.service.ts
 │   │   │   ├── notifications.entity.ts
-│   │   │   ├── notifications.dto.ts
+│   │   │   └── dto/
+│   │   │       ├── create-notification.dto.ts
+│   │   │       └── update-notification.dto.ts
 │   │   ├── messages/          # 💬 Usta ve müşteri mesajlaşma
 │   │   │   ├── messages.module.ts
 │   │   │   ├── messages.controller.ts
 │   │   │   ├── messages.service.ts
 │   │   │   ├── messages.entity.ts
-│   │   │   ├── messages.dto.ts
+│   │   │   └── dto/
+│   │   │       ├── create-message.dto.ts
+│   │   │       └── update-message.dto.ts
 │   │   ├── reviews/           # ⭐ Usta değerlendirme ve yorumlar
 │   │   │   ├── reviews.module.ts
 │   │   │   ├── reviews.controller.ts
 │   │   │   ├── reviews.service.ts
 │   │   │   ├── reviews.entity.ts
-│   │   │   ├── reviews.dto.ts
+│   │   │   └── dto/
+│   │   │       ├── create-review.dto.ts
+│   │   │       └── update-review.dto.ts
+│   │   ├── service-requests/  # 🛠️ Servis talepleri
+│   │   │   ├── service-requests.module.ts
+│   │   │   ├── service-requests.controller.ts
+│   │   │   ├── service-requests.service.ts
+│   │   │   ├── service-requests.entity.ts
+│   │   │   └── dto/
+│   │   │       ├── create-service-request.dto.ts
+│   │   │       └── update-service-request.dto.ts
 │   ├── common/                # 🔥 Ortak kullanılacak kodlar (Global bileşenler)
 │   │   ├── guards/            # 🛡️ Yetkilendirme korumaları (JWT vs.)
 │   │   │   ├── jwt.guard.ts            

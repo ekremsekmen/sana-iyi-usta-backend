@@ -10,9 +10,10 @@ import { CampaignsModule } from './modules/campaigns/campaigns.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { MessagesModule } from './modules/messages/messages.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
+import { ServiceRequestsModule } from './modules/service-requests/service-requests.module';
 
 @Module({
-  imports: [AuthModule, UsersModule, MechanicsModule, AppointmentsModule, VehiclesModule, CampaignsModule, NotificationsModule, MessagesModule, ReviewsModule],
+  imports: [AuthModule, UsersModule, MechanicsModule, AppointmentsModule, VehiclesModule, CampaignsModule, NotificationsModule, MessagesModule, ReviewsModule, ServiceRequestsModule],
   controllers: [AppController],
   providers: [AppService],
 })
