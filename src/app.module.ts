@@ -11,9 +11,10 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { MessagesModule } from './modules/messages/messages.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { ServiceRequestsModule } from './modules/service-requests/service-requests.module';
+import { CustomersModule } from './modules/customers/customers.module';
 
 @Module({
-  imports: [AuthModule, UsersModule, MechanicsModule, AppointmentsModule, VehiclesModule, CampaignsModule, NotificationsModule, MessagesModule, ReviewsModule, ServiceRequestsModule],
+  imports: [AuthModule, UsersModule, MechanicsModule, AppointmentsModule, VehiclesModule, CampaignsModule, NotificationsModule, MessagesModule, ReviewsModule, ServiceRequestsModule, CustomersModule],
   controllers: [AppController],
   providers: [AppService],
 })

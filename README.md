@@ -91,6 +91,14 @@ sana-iyi-usta-backend/
 │   │   │   └── dto/
 │   │   │       ├── create-service-request.dto.ts
 │   │   │       └── update-service-request.dto.ts
+│   │   ├── customers/         # 👥 Müşteri yönetimi
+│   │   │   ├── customers.module.ts
+│   │   │   ├── customers.controller.ts
+│   │   │   ├── customers.service.ts
+│   │   │   ├── customers.entity.ts
+│   │   │   └── dto/
+│   │   │       ├── create-customer.dto.ts
+│   │   │       └── update-customer.dto.ts
 │   ├── common/                # 🔥 Ortak kullanılacak kodlar (Global bileşenler)
 │   │   ├── decorators/        # 🏷️ Özel NestJS dekoratörleri
 │   │   │   └── user.decorator.ts
