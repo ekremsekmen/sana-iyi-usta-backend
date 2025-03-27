@@ -14,7 +14,19 @@ import { ServiceRequestsModule } from './modules/service-requests/service-reques
 import { CustomersModule } from './modules/customers/customers.module';
 
 @Module({
-  imports: [AuthModule, UsersModule, MechanicsModule, AppointmentsModule, VehiclesModule, CampaignsModule, NotificationsModule, MessagesModule, ReviewsModule, ServiceRequestsModule, CustomersModule],
+  imports: [
+    AuthModule,
+    UsersModule,
+    MechanicsModule,
+    AppointmentsModule,
+    VehiclesModule,
+    CampaignsModule,
+    NotificationsModule,
+    MessagesModule,
+    ReviewsModule,
+    ServiceRequestsModule,
+    CustomersModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
