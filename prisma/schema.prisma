@@ -1,0 +1,336 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model advertisements {
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mechanic_id String?    @db.Uuid
+  image_url   String
+  click_count Int?       @default(0)
+  created_at  DateTime   @default(now()) @db.Timestamptz(6)
+  mechanics   mechanics? @relation(fields: [mechanic_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model appointments {
+  id                          String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customer_service_request_id String                    @db.Uuid
+  mechanic_id                 String                    @db.Uuid
+  customer_id                 String                    @db.Uuid
+  appointment_date            DateTime                  @db.Timestamptz(6)
+  created_at                  DateTime                  @default(now()) @db.Timestamptz(6)
+  status                      String
+  vehicle_id                  String                    @db.Uuid
+  customers                   customers                 @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  customer_service_requests   customer_service_requests @relation(fields: [customer_service_request_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  mechanics                   mechanics                 @relation(fields: [mechanic_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  customer_vehicles           customer_vehicles         @relation(fields: [vehicle_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_appointments_vehicle_id")
+  ratings_reviews             ratings_reviews?
+}
+
+model brands {
+  id                          String                        @id @db.Uuid
+  name                        String                        @unique
+  campaigns                   campaigns[]
+  customer_vehicles           customer_vehicles[]
+  mechanic_supported_vehicles mechanic_supported_vehicles[]
+  models                      models[]
+}
+
+model campaign_categories {
+  id                  String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  campaign_id         String              @db.Uuid
+  category_id         Int
+  campaigns           campaigns           @relation(fields: [campaign_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  services_categories services_categories @relation(fields: [category_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model campaigns {
+  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mechanic_id         String                @db.Uuid
+  title               String
+  description         String?
+  discount_rate       Decimal               @db.Decimal(5, 2)
+  valid_until         DateTime              @db.Timestamptz(6)
+  created_at          DateTime              @db.Timestamptz(6)
+  brand_id            String                @db.Uuid
+  model_year_id       String?               @db.Uuid
+  variant_id          String?               @db.Uuid
+  model_id            String?               @db.Uuid
+  campaign_categories campaign_categories[]
+  brands              brands                @relation(fields: [brand_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  mechanics           mechanics             @relation(fields: [mechanic_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  models              models?               @relation(fields: [model_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  model_years         model_years?          @relation(fields: [model_year_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  variants            variants?             @relation(fields: [variant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model customer_service_requests {
+  id                      String                    @id(map: "service_requests_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customer_id             String                    @db.Uuid
+  vehicle_id              String                    @db.Uuid
+  description             String
+  location                String
+  latitude                Decimal                   @db.Decimal
+  longitude               Decimal                   @db.Decimal
+  status                  String                    @default("pending")
+  created_at              DateTime                  @default(now()) @db.Timestamptz(6)
+  mechanic_id             String?                   @db.Uuid
+  appointments            appointments[]
+  mechanics               mechanics?                @relation(fields: [mechanic_id], references: [id], onUpdate: NoAction)
+  customers               customers                 @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "service_requests_customer_id_fkey")
+  customer_vehicles       customer_vehicles         @relation(fields: [vehicle_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "service_requests_vehicle_id_fkey")
+  ratings_reviews         ratings_reviews?
+  requested_services_list requested_services_list[]
+}
+
+model customer_vehicles {
+  id                          String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customer_id                 String                        @db.Uuid
+  brand_id                    String                        @db.Uuid
+  model_id                    String                        @db.Uuid
+  model_year_id               String                        @db.Uuid
+  variant_id                  String                        @db.Uuid
+  plate_number                String?                       @unique
+  created_at                  DateTime                      @default(now()) @db.Timestamptz(6)
+  appointments                appointments[]
+  customer_service_requests   customer_service_requests[]
+  brands                      brands                        @relation(fields: [brand_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  customers                   customers                     @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  models                      models                        @relation(fields: [model_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  model_years                 model_years                   @relation(fields: [model_year_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  variants                    variants                      @relation(fields: [variant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  vehicle_maintenance_records vehicle_maintenance_records[]
+}
+
+model customers {
+  id                          String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id                     String                        @db.Uuid
+  city                        String
+  location                    String?
+  latitude                    Decimal?                      @db.Decimal(9, 6)
+  longitude                   Decimal?                      @db.Decimal(9, 6)
+  created_at                  DateTime?                     @default(now()) @db.Timestamptz(6)
+  appointments                appointments[]
+  customer_service_requests   customer_service_requests[]
+  customer_vehicles           customer_vehicles[]
+  users                       users                         @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  ratings_reviews             ratings_reviews[]
+  vehicle_maintenance_records vehicle_maintenance_records[]
+}
+
+model mechanic_services {
+  mechanic_id         String              @db.Uuid
+  service_id          Int
+  id                  String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mechanics           mechanics           @relation(fields: [mechanic_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  services_categories services_categories @relation(fields: [service_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model mechanic_supported_vehicles {
+  mechanic_id   String       @db.Uuid
+  brand_id      String       @db.Uuid
+  model_id      String?      @db.Uuid
+  model_year_id String?      @db.Uuid
+  variant_id    String?      @db.Uuid
+  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  brands        brands       @relation(fields: [brand_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  mechanics     mechanics    @relation(fields: [mechanic_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  models        models?      @relation(fields: [model_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  model_years   model_years? @relation(fields: [model_year_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  variants      variants?    @relation(fields: [variant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model mechanics {
+  id                          String                        @id @db.Uuid
+  user_id                     String                        @db.Uuid
+  business_name               String
+  city                        String?
+  location                    String?
+  latitude                    Decimal?                      @db.Decimal(9, 6)
+  longitude                   Decimal?                      @db.Decimal(9, 6)
+  working_hours               Json?
+  on_site_service             Boolean?                      @default(false)
+  average_rating              Decimal?                      @db.Decimal(3, 2)
+  created_at                  DateTime                      @default(now()) @db.Timestamptz(6)
+  advertisements              advertisements[]
+  appointments                appointments[]
+  campaigns                   campaigns[]
+  customer_service_requests   customer_service_requests[]
+  mechanic_services           mechanic_services[]
+  mechanic_supported_vehicles mechanic_supported_vehicles[]
+  users                       users                         @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  ratings_reviews             ratings_reviews[]
+  vehicle_maintenance_records vehicle_maintenance_records[]
+}
+
+model messages {
+  id                                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sender_id                         String   @db.Uuid
+  receiver_id                       String   @db.Uuid
+  content                           String
+  sent_at                           DateTime @default(now()) @db.Timestamptz(6)
+  is_read                           Boolean? @default(false)
+  users_messages_receiver_idTousers users    @relation("messages_receiver_idTousers", fields: [receiver_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_messages_sender_idTousers   users    @relation("messages_sender_idTousers", fields: [sender_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model model_years {
+  id                          String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  model_id                    String                        @db.Uuid
+  year                        Int
+  campaigns                   campaigns[]
+  customer_vehicles           customer_vehicles[]
+  mechanic_supported_vehicles mechanic_supported_vehicles[]
+  models                      models                        @relation(fields: [model_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  variants                    variants[]
+}
+
+model models {
+  id                          String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  brand_id                    String                        @db.Uuid
+  name                        String
+  campaigns                   campaigns[]
+  customer_vehicles           customer_vehicles[]
+  mechanic_supported_vehicles mechanic_supported_vehicles[]
+  model_years                 model_years[]
+  brands                      brands                        @relation(fields: [brand_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model notifications {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String   @db.Uuid
+  message    String
+  type       String
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model payments {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String    @db.Uuid
+  amount     Decimal   @db.Decimal(10, 2)
+  status     String    @db.VarChar(20)
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model ratings_reviews {
+  id                        String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  appointment_id            String?                    @unique @db.Uuid
+  mechanic_id               String                     @db.Uuid
+  customer_id               String                     @db.Uuid
+  rating                    Decimal                    @db.Decimal
+  review                    String?
+  created_at                DateTime                   @default(now()) @db.Timestamptz(6)
+  service_request_id        String?                    @unique @db.Uuid
+  appointments              appointments?              @relation(fields: [appointment_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  customers                 customers                  @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  mechanics                 mechanics                  @relation(fields: [mechanic_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  customer_service_requests customer_service_requests? @relation(fields: [service_request_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model refresh_tokens {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id      String   @db.Uuid
+  hashed_token String
+  expires_at   DateTime @db.Timestamptz(6)
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  users        users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model requested_services_list {
+  service_request_id        String                    @db.Uuid
+  service_id                Int
+  id                        String                    @id(map: "service_request_services_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  services_categories       services_categories       @relation(fields: [service_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "service_request_services_service_id_fkey")
+  customer_service_requests customer_service_requests @relation(fields: [service_request_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "service_request_services_service_request_id_fkey")
+}
+
+model services_categories {
+  id                      Int                       @id(map: "services_pkey") @default(autoincrement())
+  name                    String?
+  category                String?
+  campaign_categories     campaign_categories[]
+  mechanic_services       mechanic_services[]
+  requested_services_list requested_services_list[]
+}
+
+model user_auth {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id           String   @db.Uuid
+  password_hash     String
+  kvkk_approved     Boolean  @default(false)
+  is_phone_verified Boolean  @default(false)
+  is_banned         Boolean? @default(false)
+  cookies           Boolean  @default(false)
+  terms_approved    Boolean  @default(false)
+  e_mail_verified   Boolean  @default(false)
+  users             users    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model user_sessions {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String    @db.Uuid
+  device_id  String?
+  ip_address String?
+  user_agent String?
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model users {
+  id                                   String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  full_name                            String
+  phone_number                         String           @unique
+  role                                 String
+  profile_image                        String?
+  created_at                           DateTime         @db.Timestamptz(6)
+  e_mail                               String?          @unique
+  customers                            customers[]
+  mechanics                            mechanics[]
+  messages_messages_receiver_idTousers messages[]       @relation("messages_receiver_idTousers")
+  messages_messages_sender_idTousers   messages[]       @relation("messages_sender_idTousers")
+  notifications                        notifications[]
+  payments                             payments[]
+  refresh_tokens                       refresh_tokens[]
+  user_auth                            user_auth[]
+  user_sessions                        user_sessions[]
+}
+
+model variants {
+  id                          String                        @id(map: "engines_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  model_year_id               String                        @db.Uuid
+  name                        String
+  campaigns                   campaigns[]
+  customer_vehicles           customer_vehicles[]
+  mechanic_supported_vehicles mechanic_supported_vehicles[]
+  model_years                 model_years                   @relation(fields: [model_year_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "engines_model_year_id_fkey")
+}
+
+model vehicle_maintenance_records {
+  id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  vehicle_id        String            @db.Uuid
+  mechanic_id       String            @db.Uuid
+  service_date      DateTime?         @default(now()) @db.Timestamp(6)
+  details           String
+  cost              Decimal           @db.Decimal(10, 2)
+  odometer          Int
+  created_at        DateTime?         @default(now()) @db.Timestamp(6)
+  next_due_date     DateTime?         @db.Timestamp(6)
+  customer_id       String?           @db.Uuid
+  customers         customers?        @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  mechanics         mechanics         @relation(fields: [mechanic_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  customer_vehicles customer_vehicles @relation(fields: [vehicle_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}

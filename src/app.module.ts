@@ -12,6 +12,8 @@ import { MessagesModule } from './modules/messages/messages.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { ServiceRequestsModule } from './modules/service-requests/service-requests.module';
 import { CustomersModule } from './modules/customers/customers.module';
+import { PrismaService } from './prisma/prisma.service';
+import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
   imports: [
@@ -26,8 +28,9 @@ import { CustomersModule } from './modules/customers/customers.module';
     ReviewsModule,
     ServiceRequestsModule,
     CustomersModule,
+    PrismaModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, PrismaService],
 })
 export class AppModule {}
