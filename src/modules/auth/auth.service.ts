@@ -20,7 +20,6 @@ export class AuthService {
   }
 
   async register(registerDto: RegisterDto) {
-    // Önce provider_id ile kontrol yap
     if (registerDto.provider_id) {
       const existingAuth = await this.findExistingAuth(
         registerDto.auth_provider,
@@ -51,10 +50,7 @@ export class AuthService {
       }
       hashedPassword = await bcrypt.hash(registerDto.password, 10);
     }
-
-    // Eğer kullanıcı varsa
     if (existingUser) {
-      // Aynı provider ile kayıt var mı kontrol et
       const existingAuth = existingUser.user_auth.find(
         (auth) => auth.auth_provider === registerDto.auth_provider,
       );
@@ -65,7 +61,6 @@ export class AuthService {
         );
       }
 
-      // Farklı provider ile kayıt - sadece auth kaydı ekle
       await this.prisma.user_auth.create({
         data: {
           user_id: existingUser.id,
@@ -80,7 +75,6 @@ export class AuthService {
       return { userId: existingUser.id };
     }
 
-    // Yeni kullanıcı kaydı
     const result = await this.prisma.$transaction(async (prisma) => {
       const user = await prisma.users.create({
         data: {
