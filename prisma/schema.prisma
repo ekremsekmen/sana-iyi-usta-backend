@@ -267,16 +267,18 @@ model services_categories {
 }
 
 model user_auth {
-  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id           String   @db.Uuid
-  password_hash     String
-  kvkk_approved     Boolean  @default(false)
-  is_phone_verified Boolean  @default(false)
-  is_banned         Boolean? @default(false)
-  cookies           Boolean  @default(false)
-  terms_approved    Boolean  @default(false)
-  e_mail_verified   Boolean  @default(false)
-  users             users    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id                String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id           String  @db.Uuid
+  password_hash     String?
+  kvkk_approved     Boolean @default(false)
+  is_phone_verified Boolean @default(false)
+  is_banned         Boolean @default(false)
+  cookies           Boolean @default(false)
+  terms_approved    Boolean @default(false)
+  e_mail_verified   Boolean @default(false)
+  auth_provider     String  @default("local") @db.VarChar(50)
+  provider_id       String?
+  users             users   @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model user_sessions {
@@ -296,7 +298,7 @@ model users {
   phone_number                         String?          @unique
   role                                 String
   profile_image                        String?
-  created_at                           DateTime         @db.Timestamptz(6)
+  created_at                           DateTime         @default(now()) @db.Timestamptz(6)
   e_mail                               String           @unique
   customers                            customers[]
   mechanics                            mechanics[]
