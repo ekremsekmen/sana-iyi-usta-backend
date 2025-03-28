@@ -293,11 +293,11 @@ model user_sessions {
 model users {
   id                                   String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   full_name                            String
-  phone_number                         String           @unique
+  phone_number                         String?          @unique
   role                                 String
   profile_image                        String?
   created_at                           DateTime         @db.Timestamptz(6)
-  e_mail                               String?          @unique
+  e_mail                               String           @unique
   customers                            customers[]
   mechanics                            mechanics[]
   messages_messages_receiver_idTousers messages[]       @relation("messages_receiver_idTousers")
