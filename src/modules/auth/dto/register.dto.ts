@@ -17,6 +17,7 @@ export enum AuthProvider {
   LOCAL = 'local',
   GOOGLE = 'google',
   FACEBOOK = 'facebook',
+  ICLOUD = 'icloud',
 }
 
 export class RegisterDto {
