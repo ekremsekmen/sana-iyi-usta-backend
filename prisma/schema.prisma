@@ -120,7 +120,7 @@ model customers {
   appointments                appointments[]
   customer_service_requests   customer_service_requests[]
   customer_vehicles           customer_vehicles[]
-  users                       users                         @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users                       users                         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   ratings_reviews             ratings_reviews[]
   vehicle_maintenance_records vehicle_maintenance_records[]
 }
@@ -166,7 +166,7 @@ model mechanics {
   customer_service_requests   customer_service_requests[]
   mechanic_services           mechanic_services[]
   mechanic_supported_vehicles mechanic_supported_vehicles[]
-  users                       users                         @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users                       users                         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   ratings_reviews             ratings_reviews[]
   vehicle_maintenance_records vehicle_maintenance_records[]
 }
@@ -278,7 +278,7 @@ model user_auth {
   e_mail_verified   Boolean @default(false)
   auth_provider     String  @default("local") @db.VarChar(50)
   provider_id       String?
-  users             users   @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users             users   @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
 model user_sessions {
@@ -293,17 +293,18 @@ model user_sessions {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model users {
-  id                                   String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                                   String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   full_name                            String
-  phone_number                         String?          @unique
+  phone_number                         String?               @unique
   role                                 String
   profile_image                        String?
-  created_at                           DateTime         @default(now()) @db.Timestamptz(6)
-  e_mail                               String           @unique
+  created_at                           DateTime              @default(now()) @db.Timestamptz(6)
+  e_mail                               String                @unique
   customers                            customers[]
+  email_verifications                  email_verifications[]
   mechanics                            mechanics[]
-  messages_messages_receiver_idTousers messages[]       @relation("messages_receiver_idTousers")
-  messages_messages_sender_idTousers   messages[]       @relation("messages_sender_idTousers")
+  messages_messages_receiver_idTousers messages[]            @relation("messages_receiver_idTousers")
+  messages_messages_sender_idTousers   messages[]            @relation("messages_sender_idTousers")
   notifications                        notifications[]
   payments                             payments[]
   refresh_tokens                       refresh_tokens[]
@@ -335,4 +336,13 @@ model vehicle_maintenance_records {
   customers         customers?        @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   mechanics         mechanics         @relation(fields: [mechanic_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   customer_vehicles customer_vehicles @relation(fields: [vehicle_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model email_verifications {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String    @db.Uuid
+  token      String    @unique
+  expires_at DateTime  @db.Timestamptz(6)
+  created_at DateTime? @db.Timestamptz(6)
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
