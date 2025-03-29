@@ -1,11 +1,21 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class AuthService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private emailService: EmailService,
+  ) {}
 
   async findExistingAuth(provider: string, providerId: string) {
     return this.prisma.user_auth.findFirst({
@@ -97,9 +107,64 @@ export class AuthService {
         },
       });
 
+      if (registerDto.auth_provider === 'local') {
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + 24);
+
+        await prisma.email_verifications.create({
+          data: {
+            user_id: user.id,
+            token: verificationToken,
+            expires_at: expiresAt,
+            created_at: new Date(),
+          },
+        });
+
+        try {
+          await this.emailService.sendVerificationEmail(
+            registerDto.e_mail,
+            verificationToken,
+          );
+          return { userId: user.id, verificationEmailSent: true };
+        } catch {
+          return { userId: user.id, verificationEmailSent: false };
+        }
+      }
+
       return { userId: user.id };
     });
 
     return result;
+  }
+
+  async verifyEmail(token: string) {
+    const verification = await this.prisma.email_verifications.findUnique({
+      where: { token },
+      include: { users: true },
+    });
+
+    if (!verification) {
+      throw new NotFoundException('Geçersiz doğrulama linki');
+    }
+
+    if (verification.expires_at < new Date()) {
+      throw new BadRequestException('Doğrulama linkinin süresi dolmuş');
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.user_auth.updateMany({
+        where: { user_id: verification.user_id },
+        data: { e_mail_verified: true },
+      }),
+      this.prisma.email_verifications.delete({
+        where: { id: verification.id },
+      }),
+    ]);
+
+    return {
+      message: 'Email başarıyla doğrulandı',
+      email: verification.users.e_mail,
+    };
   }
 }
