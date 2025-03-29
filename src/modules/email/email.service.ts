@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { Transporter } from 'nodemailer';
+import { getEmailVerificationTemplate } from '../../templates/email-verification.template';
 
 @Injectable()
 export class EmailService {
@@ -24,13 +25,8 @@ export class EmailService {
     const mailOptions = {
       from: process.env.SMTP_FROM,
       to: email,
-      subject: 'Email Adresinizi Doğrulayın',
-      html: `
-        <h1>Email Doğrulama</h1>
-        <p>Email adresinizi doğrulamak için aşağıdaki linke tıklayın:</p>
-        <a href="${verificationUrl}">Email Adresimi Doğrula</a>
-        <p>Bu link 24 saat içinde geçerliliğini yitirecektir.</p>
-      `,
+      subject: 'E-posta Doğrulama - Sana İyi Usta',
+      html: getEmailVerificationTemplate(verificationUrl),
     };
 
     return this.transporter.sendMail(mailOptions);

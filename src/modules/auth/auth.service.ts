@@ -9,6 +9,7 @@ import { RegisterDto, AuthProvider } from './dto/register.dto';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { EmailService } from '../email/email.service';
+import { getEmailVerificationSuccessTemplate } from '../../templates/email-verification-success.template';
 
 @Injectable()
 export class AuthService {
@@ -154,8 +155,7 @@ export class AuthService {
     ]);
 
     return {
-      message: 'Email successfully verified',
-      email: verification.users.e_mail,
+      html: getEmailVerificationSuccessTemplate(verification.users.e_mail),
     };
   }
 }

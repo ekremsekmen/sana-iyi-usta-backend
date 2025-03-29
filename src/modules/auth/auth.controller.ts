@@ -5,7 +5,9 @@ import {
   Get,
   Query,
   BadRequestException,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 
@@ -19,10 +21,15 @@ export class AuthController {
   }
 
   @Get('verify-email')
-  async verifyEmail(@Query('token') token: string) {
+  async verifyEmail(
+    @Query('token') token: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     if (!token) {
       throw new BadRequestException('Token gereklidir');
     }
-    return this.authService.verifyEmail(token);
+    const result = await this.authService.verifyEmail(token);
+    res.header('Content-Type', 'text/html');
+    return result.html;
   }
 }
