@@ -46,10 +46,11 @@ export class AuthService {
     let hashedPassword: string | null = null;
     if (registerDto.auth_provider === 'local') {
       if (!registerDto.password) {
-        throw new Error('Password is required for local authentication');
+        throw new ConflictException('Local kayıt için şifre zorunludur.');
       }
       hashedPassword = await bcrypt.hash(registerDto.password, 10);
     }
+
     if (existingUser) {
       const existingAuth = existingUser.user_auth.find(
         (auth) => auth.auth_provider === registerDto.auth_provider,
