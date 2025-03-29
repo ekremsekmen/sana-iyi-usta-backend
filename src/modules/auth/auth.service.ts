@@ -9,7 +9,6 @@ import { RegisterDto, AuthProvider } from './dto/register.dto';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { EmailService } from '../email/email.service';
-import { getEmailVerificationSuccessTemplate } from '../../templates/email-verification-success.template';
 
 @Injectable()
 export class AuthService {
@@ -130,18 +129,59 @@ export class AuthService {
     return result;
   }
 
+  private buildEmailVerificationUrl(email: string, status: string): string {
+    const params = new URLSearchParams({
+      email: email,
+      status: status,
+    });
+    return `sanaiyi-usta://email-verified?${params.toString()}`;
+  }
+
   async verifyEmail(token: string) {
     const verification = await this.prisma.email_verifications.findUnique({
       where: { token },
-      include: { users: true },
+      include: {
+        users: {
+          include: {
+            user_auth: true,
+          },
+        },
+      },
     });
 
     if (!verification) {
+      const verifiedUser = await this.prisma.user_auth.findFirst({
+        where: { e_mail_verified: true },
+        include: { users: true },
+      });
+
+      if (verifiedUser) {
+        return {
+          redirectUrl: this.buildEmailVerificationUrl(
+            verifiedUser.users.e_mail,
+            'already-verified',
+          ),
+        };
+      }
+
       throw new NotFoundException('Invalid verification link');
     }
 
     if (verification.expires_at < new Date()) {
       throw new BadRequestException('Verification link expired');
+    }
+
+    const existingVerification = verification.users.user_auth.some(
+      (auth) => auth.e_mail_verified,
+    );
+
+    if (existingVerification) {
+      return {
+        redirectUrl: this.buildEmailVerificationUrl(
+          verification.users.e_mail,
+          'already-verified',
+        ),
+      };
     }
 
     await this.prisma.$transaction([
@@ -155,7 +195,10 @@ export class AuthService {
     ]);
 
     return {
-      html: getEmailVerificationSuccessTemplate(verification.users.e_mail),
+      redirectUrl: this.buildEmailVerificationUrl(
+        verification.users.e_mail,
+        'success',
+      ),
     };
   }
 }

@@ -21,15 +21,11 @@ export class AuthController {
   }
 
   @Get('verify-email')
-  async verifyEmail(
-    @Query('token') token: string,
-    @Res({ passthrough: true }) res: Response,
-  ) {
+  async verifyEmail(@Query('token') token: string, @Res() res: Response) {
     if (!token) {
       throw new BadRequestException('Token gereklidir');
     }
     const result = await this.authService.verifyEmail(token);
-    res.header('Content-Type', 'text/html');
-    return result.html;
+    return res.redirect(result.redirectUrl);
   }
 }
