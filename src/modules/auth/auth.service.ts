@@ -5,7 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { RegisterDto } from './dto/register.dto';
+import { RegisterDto, AuthProvider } from './dto/register.dto';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { EmailService } from '../email/email.service';
@@ -37,9 +37,7 @@ export class AuthService {
       );
 
       if (existingAuth) {
-        throw new ConflictException(
-          'Bu hesap zaten kayıtlı. Lütfen giriş yapın.',
-        );
+        throw new ConflictException('Account already exists');
       }
     }
 
@@ -48,15 +46,10 @@ export class AuthService {
       include: { user_auth: true },
     });
 
-    const validProviders = ['local', 'google', 'facebook', 'icloud'];
-    if (!validProviders.includes(registerDto.auth_provider)) {
-      throw new Error('Invalid auth provider');
-    }
-
     let hashedPassword: string | null = null;
-    if (registerDto.auth_provider === 'local') {
+    if (registerDto.auth_provider === AuthProvider.LOCAL) {
       if (!registerDto.password) {
-        throw new ConflictException('Local kayıt için şifre zorunludur.');
+        throw new ConflictException('Password is required');
       }
       hashedPassword = await bcrypt.hash(registerDto.password, 10);
     }
@@ -67,9 +60,7 @@ export class AuthService {
       );
 
       if (existingAuth) {
-        throw new ConflictException(
-          `Bu email zaten ${registerDto.auth_provider} ile kayıtlı`,
-        );
+        throw new ConflictException('Authentication method already exists');
       }
 
       await this.prisma.user_auth.create({
@@ -107,7 +98,7 @@ export class AuthService {
         },
       });
 
-      if (registerDto.auth_provider === 'local') {
+      if (registerDto.auth_provider === AuthProvider.LOCAL) {
         const verificationToken = crypto.randomBytes(32).toString('hex');
         const expiresAt = new Date();
         expiresAt.setHours(expiresAt.getHours() + 24);
@@ -145,11 +136,11 @@ export class AuthService {
     });
 
     if (!verification) {
-      throw new NotFoundException('Geçersiz doğrulama linki');
+      throw new NotFoundException('Invalid verification link');
     }
 
     if (verification.expires_at < new Date()) {
-      throw new BadRequestException('Doğrulama linkinin süresi dolmuş');
+      throw new BadRequestException('Verification link expired');
     }
 
     await this.prisma.$transaction([
@@ -163,7 +154,7 @@ export class AuthService {
     ]);
 
     return {
-      message: 'Email başarıyla doğrulandı',
+      message: 'Email successfully verified',
       email: verification.users.e_mail,
     };
   }
