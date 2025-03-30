@@ -64,6 +64,13 @@ sana-iyi-usta-backend/
     │   │   └── dto/
     │   │       ├── create-customer.dto.ts
     │   │       └── update-customer.dto.ts
+    │   ├── email/
+    │   │   ├── email.controller.ts
+    │   │   ├── email.module.ts
+    │   │   ├── email.service.ts
+    │   │   └── dto/
+    │   │       ├── send-verification-email.dto.ts
+    │   │       └── verify-email.dto.ts
     │   ├── mechanics/
     │   │   ├── mechanics.controller.ts
     │   │   ├── mechanics.module.ts
@@ -134,6 +141,7 @@ sana-iyi-usta-backend/
 - **Messages**: Mesajlaşma sistemi
 - **Notifications**: Bildirim sistemi
 - **Customers**: Müşteri yönetimi
+- **Email**: E-posta yönetimi
 
 ## 🛠 Teknik Altyapı
 
