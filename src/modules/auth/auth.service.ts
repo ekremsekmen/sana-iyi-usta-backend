@@ -30,103 +30,113 @@ export class AuthService {
   }
 
   async register(registerDto: RegisterDto) {
-    if (registerDto.provider_id) {
-      const existingAuth = await this.findExistingAuth(
-        registerDto.auth_provider,
-        registerDto.provider_id,
-      );
+    try {
+      if (registerDto.provider_id) {
+        const existingAuth = await this.findExistingAuth(
+          registerDto.auth_provider,
+          registerDto.provider_id,
+        );
 
-      if (existingAuth) {
-        throw new ConflictException('Account already exists');
-      }
-    }
-
-    const existingUser = await this.prisma.users.findUnique({
-      where: { e_mail: registerDto.e_mail },
-      include: { user_auth: true },
-    });
-
-    let hashedPassword: string | null = null;
-    if (registerDto.auth_provider === AuthProvider.LOCAL) {
-      if (!registerDto.password) {
-        throw new ConflictException('Password is required');
-      }
-      hashedPassword = await bcrypt.hash(registerDto.password, 10);
-    }
-
-    if (existingUser) {
-      const existingAuth = existingUser.user_auth.find(
-        (auth) => auth.auth_provider === registerDto.auth_provider,
-      );
-
-      if (existingAuth) {
-        throw new ConflictException('Authentication method already exists');
+        if (existingAuth) {
+          throw new ConflictException('Account already exists');
+        }
       }
 
-      await this.prisma.user_auth.create({
-        data: {
-          user_id: existingUser.id,
-          password_hash: hashedPassword,
-          kvkk_approved: registerDto.kvkk_approved,
-          terms_approved: registerDto.terms_approved,
-          auth_provider: registerDto.auth_provider,
-          provider_id: registerDto.provider_id,
-        },
+      const existingUser = await this.prisma.users.findUnique({
+        where: { e_mail: registerDto.e_mail },
+        include: { user_auth: true },
       });
 
-      return { userId: existingUser.id };
-    }
-
-    const result = await this.prisma.$transaction(async (prisma) => {
-      const user = await prisma.users.create({
-        data: {
-          full_name: registerDto.full_name,
-          e_mail: registerDto.e_mail,
-          role: registerDto.role,
-          created_at: new Date(),
-        },
-      });
-
-      await prisma.user_auth.create({
-        data: {
-          user_id: user.id,
-          password_hash: hashedPassword,
-          kvkk_approved: registerDto.kvkk_approved,
-          terms_approved: registerDto.terms_approved,
-          auth_provider: registerDto.auth_provider,
-          provider_id: registerDto.provider_id,
-        },
-      });
-
+      let hashedPassword: string | null = null;
       if (registerDto.auth_provider === AuthProvider.LOCAL) {
-        const verificationToken = crypto.randomBytes(32).toString('hex');
-        const expiresAt = new Date();
-        expiresAt.setHours(expiresAt.getHours() + 24);
+        if (!registerDto.password) {
+          throw new ConflictException('Password is required');
+        }
+        hashedPassword = await bcrypt.hash(registerDto.password, 10);
+      }
 
-        await prisma.email_verifications.create({
+      if (existingUser) {
+        const existingAuth = existingUser.user_auth.find(
+          (auth) => auth.auth_provider === registerDto.auth_provider,
+        );
+
+        if (existingAuth) {
+          throw new ConflictException('Authentication method already exists');
+        }
+
+        await this.prisma.user_auth.create({
           data: {
-            user_id: user.id,
-            token: verificationToken,
-            expires_at: expiresAt,
+            user_id: existingUser.id,
+            password_hash: hashedPassword,
+            kvkk_approved: registerDto.kvkk_approved,
+            terms_approved: registerDto.terms_approved,
+            auth_provider: registerDto.auth_provider,
+            provider_id: registerDto.provider_id,
+          },
+        });
+
+        return { userId: existingUser.id };
+      }
+
+      const result = await this.prisma.$transaction(async (prisma) => {
+        const user = await prisma.users.create({
+          data: {
+            full_name: registerDto.full_name,
+            e_mail: registerDto.e_mail,
+            role: registerDto.role,
             created_at: new Date(),
           },
         });
 
-        try {
-          await this.emailService.sendVerificationEmail(
-            registerDto.e_mail,
-            verificationToken,
-          );
-          return { userId: user.id, verificationEmailSent: true };
-        } catch {
-          return { userId: user.id, verificationEmailSent: false };
+        await prisma.user_auth.create({
+          data: {
+            user_id: user.id,
+            password_hash: hashedPassword,
+            kvkk_approved: registerDto.kvkk_approved,
+            terms_approved: registerDto.terms_approved,
+            auth_provider: registerDto.auth_provider,
+            provider_id: registerDto.provider_id,
+            e_mail_verified: false,
+          },
+        });
+
+        if (registerDto.auth_provider === AuthProvider.LOCAL) {
+          const verificationToken = crypto.randomBytes(32).toString('hex');
+          const expiresAt = new Date();
+          expiresAt.setHours(expiresAt.getHours() + 24);
+
+          const emailVerification = await prisma.email_verifications.create({
+            data: {
+              user_id: user.id,
+              token: verificationToken,
+              expires_at: expiresAt,
+              created_at: new Date(),
+            },
+          });
+
+          if (!emailVerification) {
+            throw new Error('Failed to create email verification');
+          }
+
+          try {
+            await this.emailService.sendVerificationEmail(
+              registerDto.e_mail,
+              verificationToken,
+            );
+            return { userId: user.id, verificationEmailSent: true };
+          } catch (error) {
+            console.error('Email sending failed:', error);
+            return { userId: user.id, verificationEmailSent: false };
+          }
         }
-      }
 
-      return { userId: user.id };
-    });
+        return { userId: user.id };
+      });
 
-    return result;
+      return result;
+    } catch (error) {
+      throw error;
+    }
   }
 
   private buildEmailVerificationUrl(email: string, status: string): string {
