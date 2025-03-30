@@ -110,10 +110,10 @@ export class AuthService {
           });
 
           try {
-            await this.emailService.sendVerificationEmail(
-              registerDto.e_mail,
-              verificationToken,
-            );
+            await this.emailService.sendVerificationEmail({
+              email: registerDto.e_mail,
+              verificationToken: verificationToken,
+            });
             return { userId: user.id, verificationEmailSent: true };
           } catch (error) {
             console.error('Email sending failed:', error);

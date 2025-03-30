@@ -7,6 +7,7 @@ import * as nodemailer from 'nodemailer';
 import { Transporter } from 'nodemailer';
 import { getEmailVerificationTemplate } from '../../templates/email-verification.template';
 import { PrismaService } from '../../prisma/prisma.service';
+import { SendVerificationEmailDto } from './dto/send-verification-email.dto';
 
 @Injectable()
 export class EmailService {
@@ -24,7 +25,10 @@ export class EmailService {
     });
   }
 
-  async sendVerificationEmail(email: string, verificationToken: string) {
+  async sendVerificationEmail({
+    email,
+    verificationToken,
+  }: SendVerificationEmailDto) {
     const verificationUrl = `${process.env.API_URL}/email/verify?token=${verificationToken}`;
 
     const mailOptions = {

@@ -1,15 +1,13 @@
-import { Controller, Get, Query, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { EmailService } from './email.service';
+import { VerifyEmailDto } from './dto/verify-email.dto';
 
 @Controller('email')
 export class EmailController {
   constructor(private readonly emailService: EmailService) {}
 
   @Get('verify')
-  async verifyEmail(@Query('token') token: string) {
-    if (!token) {
-      throw new BadRequestException('Token gereklidir');
-    }
-    return await this.emailService.verifyEmail(token);
+  async verifyEmail(@Query() verifyEmailDto: VerifyEmailDto) {
+    return await this.emailService.verifyEmail(verifyEmailDto.token);
   }
 }
