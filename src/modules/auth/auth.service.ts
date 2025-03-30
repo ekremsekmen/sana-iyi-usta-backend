@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  ConflictException,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RegisterDto, AuthProvider } from './dto/register.dto';
 import * as bcrypt from 'bcrypt';
@@ -105,7 +100,7 @@ export class AuthService {
           const expiresAt = new Date();
           expiresAt.setHours(expiresAt.getHours() + 24);
 
-          const emailVerification = await prisma.email_verifications.create({
+          await prisma.email_verifications.create({
             data: {
               user_id: user.id,
               token: verificationToken,
@@ -113,10 +108,6 @@ export class AuthService {
               created_at: new Date(),
             },
           });
-
-          if (!emailVerification) {
-            throw new Error('Failed to create email verification');
-          }
 
           try {
             await this.emailService.sendVerificationEmail(
@@ -137,78 +128,5 @@ export class AuthService {
     } catch (error) {
       throw error;
     }
-  }
-
-  private buildEmailVerificationUrl(email: string, status: string): string {
-    const params = new URLSearchParams({
-      email: email,
-      status: status,
-    });
-    return `sanaiyi-usta://email-verified?${params.toString()}`;
-  }
-
-  async verifyEmail(token: string) {
-    const verification = await this.prisma.email_verifications.findUnique({
-      where: { token },
-      include: {
-        users: {
-          include: {
-            user_auth: true,
-          },
-        },
-      },
-    });
-
-    if (!verification) {
-      const verifiedUser = await this.prisma.user_auth.findFirst({
-        where: { e_mail_verified: true },
-        include: { users: true },
-      });
-
-      if (verifiedUser) {
-        return {
-          redirectUrl: this.buildEmailVerificationUrl(
-            verifiedUser.users.e_mail,
-            'already-verified',
-          ),
-        };
-      }
-
-      throw new NotFoundException('Invalid verification link');
-    }
-
-    if (verification.expires_at < new Date()) {
-      throw new BadRequestException('Verification link expired');
-    }
-
-    const existingVerification = verification.users.user_auth.some(
-      (auth) => auth.e_mail_verified,
-    );
-
-    if (existingVerification) {
-      return {
-        redirectUrl: this.buildEmailVerificationUrl(
-          verification.users.e_mail,
-          'already-verified',
-        ),
-      };
-    }
-
-    await this.prisma.$transaction([
-      this.prisma.user_auth.updateMany({
-        where: { user_id: verification.user_id },
-        data: { e_mail_verified: true },
-      }),
-      this.prisma.email_verifications.delete({
-        where: { id: verification.id },
-      }),
-    ]);
-
-    return {
-      redirectUrl: this.buildEmailVerificationUrl(
-        verification.users.e_mail,
-        'success',
-      ),
-    };
   }
 }
