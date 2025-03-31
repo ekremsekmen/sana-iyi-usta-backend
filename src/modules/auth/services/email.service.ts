@@ -5,9 +5,12 @@ import {
 } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { Transporter } from 'nodemailer';
-import { getEmailVerificationTemplate } from '../../templates/email-verification.template';
-import { PrismaService } from '../../prisma/prisma.service';
-import { SendVerificationEmailDto } from './dto/send-verification-email.dto';
+import { getEmailVerificationTemplate } from '../../../templates/email-verification.template';
+import { PrismaService } from '../../../prisma/prisma.service';
+import {
+  SendVerificationEmailDto,
+  EmailVerificationResponseDto,
+} from '../dto/email.dto';
 
 @Injectable()
 export class EmailService {
@@ -29,7 +32,7 @@ export class EmailService {
     email,
     verificationToken,
   }: SendVerificationEmailDto) {
-    const verificationUrl = `${process.env.API_URL}/email/verify?token=${verificationToken}`;
+    const verificationUrl = `${process.env.API_URL}/auth/verify-email?token=${verificationToken}`;
 
     const mailOptions = {
       from: process.env.SMTP_FROM,
@@ -49,7 +52,7 @@ export class EmailService {
     return `sanaiyi-usta://email-verified?${params.toString()}`;
   }
 
-  async verifyEmail(token: string) {
+  async verifyEmail(token: string): Promise<EmailVerificationResponseDto> {
     const verification = await this.prisma.email_verifications.findUnique({
       where: { token },
       include: {

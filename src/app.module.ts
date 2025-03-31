@@ -14,7 +14,6 @@ import { ServiceRequestsModule } from './modules/service-requests/service-reques
 import { CustomersModule } from './modules/customers/customers.module';
 import { PrismaService } from './prisma/prisma.service';
 import { PrismaModule } from './prisma/prisma.module';
-import { EmailModule } from './modules/email/email.module';
 
 @Module({
   imports: [
@@ -30,7 +29,6 @@ import { EmailModule } from './modules/email/email.module';
     ServiceRequestsModule,
     CustomersModule,
     PrismaModule,
-    EmailModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
