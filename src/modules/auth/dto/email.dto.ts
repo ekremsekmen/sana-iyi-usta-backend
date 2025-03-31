@@ -1,4 +1,4 @@
-import { IsEmail, IsString, IsNotEmpty, IsUrl } from 'class-validator';
+import { IsEmail, IsString, IsNotEmpty } from 'class-validator';
 
 export class SendVerificationEmailDto {
   @IsEmail()
@@ -10,9 +10,14 @@ export class SendVerificationEmailDto {
   verificationToken: string;
 }
 
+export class VerifyEmailDto {
+  @IsString()
+  @IsNotEmpty()
+  token: string;
+}
+
 export class EmailVerificationResponseDto {
   @IsString()
   @IsNotEmpty()
-  @IsUrl()
   redirectUrl: string;
 }

@@ -12,6 +12,7 @@ import { getEmailVerificationTemplate } from '../../../templates/email-verificat
 import {
   SendVerificationEmailDto,
   EmailVerificationResponseDto,
+  VerifyEmailDto,
 } from '../dto/email.dto';
 
 @Injectable()
@@ -84,7 +85,9 @@ export class EmailService {
     return `sanaiyi-usta://email-verified?${params.toString()}`;
   }
 
-  async verifyEmail(token: string): Promise<EmailVerificationResponseDto> {
+  async verifyEmail({
+    token,
+  }: VerifyEmailDto): Promise<EmailVerificationResponseDto> {
     const verification = await this.prisma.email_verifications.findUnique({
       where: { token },
       include: {

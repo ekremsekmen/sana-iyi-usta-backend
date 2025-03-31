@@ -2,7 +2,7 @@ import { Controller, Post, Body, Get, Query } from '@nestjs/common';
 import { AuthService } from './services/auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { EmailService } from './services/email.service';
-import { EmailVerificationResponseDto } from './dto/email.dto';
+import { EmailVerificationResponseDto, VerifyEmailDto } from './dto/email.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -18,8 +18,8 @@ export class AuthController {
 
   @Get('/verify-email')
   async verifyEmail(
-    @Query('token') token: string,
+    @Query() verifyEmailDto: VerifyEmailDto,
   ): Promise<EmailVerificationResponseDto> {
-    return await this.emailService.verifyEmail(token);
+    return await this.emailService.verifyEmail(verifyEmailDto);
   }
 }

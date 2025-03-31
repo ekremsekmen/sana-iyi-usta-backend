@@ -5,6 +5,7 @@ import {
   IsEnum,
   Length,
   IsOptional,
+  ValidateIf,
 } from 'class-validator';
 
 export enum UserRole {
@@ -43,10 +44,9 @@ export class RegisterDto {
   terms_approved: boolean;
 
   @IsEnum(AuthProvider)
-  @IsOptional()
-  auth_provider?: AuthProvider = AuthProvider.LOCAL;
+  auth_provider: AuthProvider;
 
   @IsString()
-  @IsOptional()
-  provider_id?: string;
+  @ValidateIf((o) => o.auth_provider !== AuthProvider.LOCAL)
+  provider_id: string;
 }
