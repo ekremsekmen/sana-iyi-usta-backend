@@ -5,8 +5,10 @@ import {
 } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { Transporter } from 'nodemailer';
-import { getEmailVerificationTemplate } from '../../../templates/email-verification.template';
+import * as crypto from 'crypto';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { getEmailVerificationTemplate } from '../../../templates/email-verification.template';
 import {
   SendVerificationEmailDto,
   EmailVerificationResponseDto,
@@ -26,6 +28,36 @@ export class EmailService {
         pass: process.env.SMTP_PASSWORD,
       },
     });
+  }
+
+  async createVerification(
+    prisma: Prisma.TransactionClient,
+    userId: string,
+    email: string,
+  ) {
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 24);
+
+    await prisma.email_verifications.create({
+      data: {
+        user_id: userId,
+        token: verificationToken,
+        expires_at: expiresAt,
+        created_at: new Date(),
+      },
+    });
+
+    try {
+      await this.sendVerificationEmail({
+        email: email,
+        verificationToken: verificationToken,
+      });
+      return true;
+    } catch (error) {
+      console.error('Email sending failed:', error);
+      return false;
+    }
   }
 
   async sendVerificationEmail({

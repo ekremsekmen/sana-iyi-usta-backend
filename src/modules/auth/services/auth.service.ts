@@ -2,7 +2,6 @@ import { Injectable, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { RegisterDto, AuthProvider } from '../dto/register.dto';
 import * as bcrypt from 'bcrypt';
-import * as crypto from 'crypto';
 import { EmailService } from './email.service';
 
 @Injectable()
@@ -96,29 +95,13 @@ export class AuthService {
         });
 
         if (registerDto.auth_provider === AuthProvider.LOCAL) {
-          const verificationToken = crypto.randomBytes(32).toString('hex');
-          const expiresAt = new Date();
-          expiresAt.setHours(expiresAt.getHours() + 24);
-
-          await prisma.email_verifications.create({
-            data: {
-              user_id: user.id,
-              token: verificationToken,
-              expires_at: expiresAt,
-              created_at: new Date(),
-            },
-          });
-
-          try {
-            await this.emailService.sendVerificationEmail({
-              email: registerDto.e_mail,
-              verificationToken: verificationToken,
-            });
-            return { userId: user.id, verificationEmailSent: true };
-          } catch (error) {
-            console.error('Email sending failed:', error);
-            return { userId: user.id, verificationEmailSent: false };
-          }
+          const verificationEmailSent =
+            await this.emailService.createVerification(
+              prisma,
+              user.id,
+              registerDto.e_mail,
+            );
+          return { userId: user.id, verificationEmailSent };
         }
 
         return { userId: user.id };
