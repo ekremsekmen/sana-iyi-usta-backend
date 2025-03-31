@@ -101,8 +101,16 @@ export class EmailService {
 
     if (!verification) {
       const verifiedUser = await this.prisma.user_auth.findFirst({
-        where: { e_mail_verified: true },
-        include: { users: true },
+        where: {
+          auth_provider: 'local',
+          e_mail_verified: true,
+          users: {
+            e_mail: verification?.users?.e_mail,
+          },
+        },
+        include: {
+          users: true,
+        },
       });
 
       if (verifiedUser) {
@@ -122,7 +130,7 @@ export class EmailService {
     }
 
     const existingVerification = verification.users.user_auth.some(
-      (auth) => auth.e_mail_verified,
+      (auth) => auth.auth_provider === 'local' && auth.e_mail_verified,
     );
 
     if (existingVerification) {
@@ -136,7 +144,10 @@ export class EmailService {
 
     await this.prisma.$transaction([
       this.prisma.user_auth.updateMany({
-        where: { user_id: verification.user_id },
+        where: {
+          user_id: verification.user_id,
+          auth_provider: 'local',
+        },
         data: { e_mail_verified: true },
       }),
       this.prisma.email_verifications.delete({

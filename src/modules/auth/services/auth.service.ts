@@ -1,4 +1,8 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { RegisterDto, AuthProvider } from '../dto/register.dto';
 import * as bcrypt from 'bcrypt';
@@ -42,18 +46,30 @@ export class AuthService {
     }
   }
 
+  private async validateUserRole(existingRole: string, newRole: string) {
+    if (existingRole !== newRole) {
+      throw new BadRequestException(
+        'Cannot register with a different role using the same email',
+      );
+    }
+  }
+
   private async handleExistingUser(
     existingUser: any,
     registerDto: RegisterDto,
     hashedPassword: string | null,
   ) {
+    await this.validateUserRole(existingUser.role, registerDto.role);
+
     const existingAuth = existingUser.user_auth.find(
       (auth: { auth_provider: AuthProvider }) =>
         auth.auth_provider === registerDto.auth_provider,
     );
 
     if (existingAuth) {
-      throw new ConflictException('Authentication method already exists');
+      throw new ConflictException(
+        'This authentication method is already linked to your account',
+      );
     }
 
     await this.prisma.user_auth.create({
@@ -64,7 +80,23 @@ export class AuthService {
       ),
     });
 
-    return { userId: existingUser.id };
+    if (registerDto.auth_provider === AuthProvider.LOCAL) {
+      const verificationEmailSent = await this.emailService.createVerification(
+        this.prisma,
+        existingUser.id,
+        registerDto.e_mail,
+      );
+      return {
+        userId: existingUser.id,
+        verificationEmailSent,
+        message: 'New authentication method added successfully',
+      };
+    }
+
+    return {
+      userId: existingUser.id,
+      message: 'New authentication method added successfully',
+    };
   }
 
   private createUserAuthData(
@@ -79,7 +111,7 @@ export class AuthService {
       terms_approved: registerDto.terms_approved,
       auth_provider: registerDto.auth_provider,
       provider_id: registerDto.provider_id,
-      e_mail_verified: false,
+      e_mail_verified: registerDto.auth_provider !== AuthProvider.LOCAL,
     };
   }
 
