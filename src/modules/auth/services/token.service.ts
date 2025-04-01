@@ -54,7 +54,7 @@ export class TokenService {
     return `${tokenId}:${refreshToken}`;
   }
 
-  async refreshAccessToken(combinedToken: string, userId: string) {
+  async refreshAccessToken(combinedToken: string) {
     try {
       const [tokenId, refreshToken] = combinedToken.split(':');
       
@@ -62,11 +62,9 @@ export class TokenService {
         throw new UnauthorizedException('Invalid refresh token format');
       }
 
-      // Token'ın istek yapan kullanıcıya ait olduğunu doğrula
       const token = await this.prisma.refresh_tokens.findFirst({
         where: {
           id: tokenId,
-          user_id: userId, // JwtAuthGuard'dan gelen userId ile eşleşmeli
           expires_at: {
             gt: new Date(),
           },

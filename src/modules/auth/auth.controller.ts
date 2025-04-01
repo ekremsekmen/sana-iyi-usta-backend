@@ -42,13 +42,11 @@ export class AuthController {
     return this.authService.login(loginDto, request);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Post('refresh')
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
-  async refreshToken(@Body() refreshTokenDto: RefreshTokenDto, @Req() request: Request) {
-    const user = request.user as { id: string, role: string };
-    return this.tokenService.refreshAccessToken(refreshTokenDto.refresh_token, user.id);
+  async refreshToken(@Body() refreshTokenDto: RefreshTokenDto) {
+    return this.tokenService.refreshAccessToken(refreshTokenDto.refresh_token);
   }
 
   @UseGuards(JwtAuthGuard)
