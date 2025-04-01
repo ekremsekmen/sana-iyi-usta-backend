@@ -1,18 +1,23 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { RegisterDto, AuthProvider } from '../dto/register.dto';
 import * as bcrypt from 'bcrypt';
-import { EmailService } from './email.service';
 import { AuthValidationService } from './auth-validation.service';
 import { UserRegistrationService } from './user-registration.service';
+import { LoginDto } from '../dto/login.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
-    private emailService: EmailService,
     private authValidationService: AuthValidationService,
     private userRegistrationService: UserRegistrationService,
+    private jwtService: JwtService,
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -52,15 +57,78 @@ export class AuthService {
         );
       }
 
-      return await this.prisma.$transaction((prisma) =>
-        this.userRegistrationService.createNewUser(
+      // Transaction içinde bir kez email gönderimi yapılacak
+      const result = await this.prisma.$transaction(async (prisma) => {
+        return await this.userRegistrationService.createNewUser(
           prisma,
           registerDto,
           hashedPassword,
-        ),
-      );
+        );
+      });
+
+      return result;
     } catch (error) {
       throw error;
     }
+  }
+
+  async validateUser(e_mail: string, password: string): Promise<any> {
+    const user = await this.prisma.users.findUnique({
+      where: { e_mail },
+      include: {
+        user_auth: true,
+      },
+    });
+
+    if (!user) {
+      return null;
+    }
+
+    const userAuth = user.user_auth.find(
+      (auth) => auth.auth_provider === 'local',
+    );
+
+    if (!userAuth || !userAuth.password_hash) {
+      return null;
+    }
+
+    const isPasswordValid = await bcrypt.compare(
+      password,
+      userAuth.password_hash,
+    );
+
+    if (!isPasswordValid) {
+      return null;
+    }
+
+    delete user.user_auth;
+    return user;
+  }
+
+  async login(loginDto: LoginDto) {
+    const user = await this.validateUser(loginDto.e_mail, loginDto.password);
+
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const userAuth = await this.prisma.user_auth.findFirst({
+      where: {
+        user_id: user.id,
+        auth_provider: 'local',
+      },
+    });
+
+    if (!userAuth.e_mail_verified) {
+      throw new UnauthorizedException('Email not verified');
+    }
+
+    const payload = {
+      sub: user.id,
+      role: user.role,
+    };
+    return {
+      access_token: this.jwtService.sign(payload),
+    };
   }
 }
