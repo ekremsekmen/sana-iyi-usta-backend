@@ -3,13 +3,14 @@ import {
   ConflictException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { RegisterDto, AuthProvider } from '../dto/register.dto';
 import * as bcrypt from 'bcrypt';
 import { AuthValidationService } from './auth-validation.service';
 import { UserRegistrationService } from './user-registration.service';
 import { LoginDto } from '../dto/login.dto';
+import { TokenService } from './token.service';
+import { Request } from 'express';
 
 @Injectable()
 export class AuthService {
@@ -17,7 +18,7 @@ export class AuthService {
     private prisma: PrismaService,
     private authValidationService: AuthValidationService,
     private userRegistrationService: UserRegistrationService,
-    private jwtService: JwtService,
+    private tokenService: TokenService,
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -93,14 +94,69 @@ export class AuthService {
     return userWithoutAuth;
   }
 
-  async login(loginDto: LoginDto) {
+  async login(loginDto: LoginDto, request: Request) {
     const user = await this.validateUser(loginDto.e_mail, loginDto.password);
 
+    const tokenData = await this.tokenService.generateTokens(user.id, user.role);
+
+    await this.prisma.user_sessions.create({
+      data: {
+        user_id: user.id,
+        device_id: request.headers['device-id'] as string || null,
+        ip_address: request.ip || null,
+        user_agent: request.headers['user-agent'] || null,
+        fcm_token: request.headers['fcm-token'] as string || null,
+      },
+    });
+
     return {
-      access_token: this.jwtService.sign({
-        sub: user.id,
+      ...tokenData,
+      user: {
+        id: user.id,
+        full_name: user.full_name,
+        e_mail: user.e_mail,
         role: user.role,
-      }),
+      },
     };
+  }
+
+  async logout(userId: string, refreshToken: string) {
+    try {
+      const tokenEntries = await this.prisma.refresh_tokens.findMany({
+        where: {
+          user_id: userId,
+        },
+      });
+
+      let tokenFound = false;
+      for (const entry of tokenEntries) {
+        const isMatch = await bcrypt.compare(refreshToken, entry.hashed_token);
+        if (isMatch) {
+          await this.prisma.refresh_tokens.delete({
+            where: { id: entry.id },
+          });
+          tokenFound = true;
+          break;
+        }
+      }
+
+      if (!tokenFound) {
+        return { 
+          message: 'already logged out',
+          status: 'warning'
+        };
+      }
+      
+      return { 
+        message: 'Logged out successfully',
+        status: 'success'
+      };
+    } catch (error) {
+      console.error('Logout error:', error);
+      return { 
+        message: 'Error during logout',
+        status: 'error'
+      };
+    }
   }
 }

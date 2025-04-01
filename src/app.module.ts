@@ -14,9 +14,29 @@ import { ServiceRequestsModule } from './modules/service-requests/service-reques
 import { CustomersModule } from './modules/customers/customers.module';
 import { PrismaService } from './prisma/prisma.service';
 import { PrismaModule } from './prisma/prisma.module';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          name: 'default',
+          ttl: 60000, 
+          limit: 10, 
+        },
+        {
+          name: 'login',
+          ttl: 60000, 
+          limit: 5, 
+        },
+        {
+          name: 'register',
+          ttl: 3600000, 
+          limit: 3, 
+        }
+      ],
+    }),
     AuthModule,
     UsersModule,
     MechanicsModule,

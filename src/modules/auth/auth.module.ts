@@ -7,8 +7,12 @@ import { PrismaModule } from '../../prisma/prisma.module';
 import { EmailService } from './services/email.service';
 import { AuthValidationService } from './services/auth-validation.service';
 import { UserRegistrationService } from './services/user-registration.service';
+import { TokenService } from './services/token.service';
 import { LocalStrategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+import { CustomThrottlerGuard } from '../../common/guards/throttler/throttler.guard';
 
 @Module({
   imports: [
@@ -16,7 +20,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: '1h' },
+      signOptions: { expiresIn: '15m' },
     }),
   ],
   controllers: [AuthController],
@@ -25,8 +29,13 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     EmailService,
     AuthValidationService,
     UserRegistrationService,
+    TokenService,
     LocalStrategy,
     JwtStrategy,
+    {
+      provide: APP_GUARD,
+      useClass: CustomThrottlerGuard,
+    },
   ],
 })
 export class AuthModule {}
