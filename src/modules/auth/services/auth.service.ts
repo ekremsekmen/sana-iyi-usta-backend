@@ -21,114 +21,86 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto) {
-    try {
-      await this.authValidationService.validateRegistration(registerDto);
+    await this.authValidationService.validateRegistration(registerDto);
 
-      const existingUser = await this.prisma.users.findUnique({
-        where: { e_mail: registerDto.e_mail },
-        include: { user_auth: true },
-      });
+    const existingUser = await this.prisma.users.findUnique({
+      where: { e_mail: registerDto.e_mail },
+      include: { user_auth: true },
+    });
 
-      let hashedPassword: string | null = null;
-      if (registerDto.auth_provider === AuthProvider.LOCAL) {
-        hashedPassword = await bcrypt.hash(registerDto.password, 10);
-      }
+    const hashedPassword = registerDto.auth_provider === AuthProvider.LOCAL
+      ? await bcrypt.hash(registerDto.password, 10)
+      : null;
 
-      if (existingUser) {
-        await this.authValidationService.validateUserRole(
-          existingUser.role,
-          registerDto.role,
-        );
+    if (existingUser) {
+      await this.authValidationService.validateUserRole(
+        existingUser.role,
+        registerDto.role,
+      );
 
-        const existingAuth = existingUser.user_auth.find(
-          (auth) => auth.auth_provider === registerDto.auth_provider,
-        );
+      const existingAuth = existingUser.user_auth.find(
+        (auth) => auth.auth_provider === registerDto.auth_provider,
+      );
 
-        if (existingAuth) {
-          throw new ConflictException(
-            'This authentication method is already linked to your account',
-          );
-        }
-
-        return this.userRegistrationService.handleExistingUser(
-          existingUser,
-          registerDto,
-          hashedPassword,
+      if (existingAuth) {
+        throw new ConflictException(
+          'This authentication method is already linked to your account',
         );
       }
 
-      // Transaction içinde bir kez email gönderimi yapılacak
-      const result = await this.prisma.$transaction(async (prisma) => {
-        return await this.userRegistrationService.createNewUser(
-          prisma,
-          registerDto,
-          hashedPassword,
-        );
-      });
-
-      return result;
-    } catch (error) {
-      throw error;
+      return this.userRegistrationService.handleExistingUser(
+        existingUser,
+        registerDto,
+        hashedPassword,
+      );
     }
+
+    return await this.prisma.$transaction((prisma) =>
+      this.userRegistrationService.createNewUser(
+        prisma,
+        registerDto,
+        hashedPassword,
+      ),
+    );
   }
 
-  async validateUser(e_mail: string, password: string): Promise<any> {
+  async validateUser(e_mail: string, password: string) {
     const user = await this.prisma.users.findUnique({
       where: { e_mail },
       include: {
-        user_auth: true,
+        user_auth: {
+          where: { auth_provider: 'local' },
+          select: { password_hash: true, e_mail_verified: true },
+        },
       },
     });
 
-    if (!user) {
-      return null;
-    }
-
-    const userAuth = user.user_auth.find(
-      (auth) => auth.auth_provider === 'local',
-    );
-
-    if (!userAuth || !userAuth.password_hash) {
-      return null;
-    }
-
-    const isPasswordValid = await bcrypt.compare(
-      password,
-      userAuth.password_hash,
-    );
-
-    if (!isPasswordValid) {
-      return null;
-    }
-
-    delete user.user_auth;
-    return user;
-  }
-
-  async login(loginDto: LoginDto) {
-    const user = await this.validateUser(loginDto.e_mail, loginDto.password);
-
-    if (!user) {
+    if (!user || !user.user_auth.length) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const userAuth = await this.prisma.user_auth.findFirst({
-      where: {
-        user_id: user.id,
-        auth_provider: 'local',
-      },
-    });
+    const userAuth = user.user_auth[0];
+
+    if (!userAuth.password_hash || !await bcrypt.compare(password, userAuth.password_hash)) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
 
     if (!userAuth.e_mail_verified) {
       throw new UnauthorizedException('Email not verified');
     }
 
-    const payload = {
-      sub: user.id,
-      role: user.role,
-    };
+    const { user_auth, ...userWithoutAuth } = user;
+    return userWithoutAuth;
+  }
+
+  async login(loginDto: LoginDto) {
+    const user = await this.validateUser(loginDto.e_mail, loginDto.password);
+
     return {
-      access_token: this.jwtService.sign(payload),
+      access_token: this.jwtService.sign({
+        sub: user.id,
+        role: user.role,
+      }),
     };
   }
 }
