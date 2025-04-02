@@ -31,28 +31,41 @@ export class EmailService {
     });
   }
 
+  private createVerificationToken() {
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 24);
+    return { token, expiresAt };
+  }
+
+  private async insertVerificationRecord(
+    prisma: Prisma.TransactionClient,
+    userId: string,
+    token: string,
+    expiresAt: Date,
+  ) {
+    await prisma.email_verifications.create({
+      data: {
+        user_id: userId,
+        token,
+        expires_at: expiresAt,
+        created_at: new Date(),
+      },
+    });
+  }
+
   async createVerification(
     prisma: Prisma.TransactionClient,
     userId: string,
     email: string,
   ) {
-    const verificationToken = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 24);
-
-    await prisma.email_verifications.create({
-      data: {
-        user_id: userId,
-        token: verificationToken,
-        expires_at: expiresAt,
-        created_at: new Date(),
-      },
-    });
+    const { token, expiresAt } = this.createVerificationToken();
+    await this.insertVerificationRecord(prisma, userId, token, expiresAt);
 
     try {
       await this.sendVerificationEmail({
-        email: email,
-        verificationToken: verificationToken,
+        email,
+        verificationToken: token,
       });
       return true;
     } catch (error) {
@@ -75,6 +88,21 @@ export class EmailService {
     };
 
     return this.transporter.sendMail(mailOptions);
+  }
+
+  private async processVerifiedUser(verification: any) {
+    await this.prisma.$transaction([
+      this.prisma.user_auth.updateMany({
+        where: {
+          user_id: verification.user_id,
+          auth_provider: 'local',
+        },
+        data: { e_mail_verified: true },
+      }),
+      this.prisma.email_verifications.delete({
+        where: { id: verification.id },
+      }),
+    ]);
   }
 
   private buildEmailVerificationUrl(email: string, status: string): string {
@@ -142,18 +170,7 @@ export class EmailService {
       };
     }
 
-    await this.prisma.$transaction([
-      this.prisma.user_auth.updateMany({
-        where: {
-          user_id: verification.user_id,
-          auth_provider: 'local',
-        },
-        data: { e_mail_verified: true },
-      }),
-      this.prisma.email_verifications.delete({
-        where: { id: verification.id },
-      }),
-    ]);
+    await this.processVerifiedUser(verification);
 
     return {
       redirectUrl: this.buildEmailVerificationUrl(
