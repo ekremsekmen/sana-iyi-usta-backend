@@ -4,7 +4,7 @@ import axios from 'axios';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { GoogleAuthDto, AppleAuthDto, FacebookAuthDto } from '../dto/social-auth.dto';
 
-// SocialUserInfo interface'ini SocialUserService'den taşıyoruz
+
 export interface SocialUserInfo {
   e_mail: string;
   full_name: string;
@@ -97,23 +97,6 @@ export class SocialAuthenticationService {
       }
       throw new BadRequestException('Failed to authenticate with Facebook');
     }
-  }
-
-  async processFacebookCallback(req: Request, profile: any) {
-    if (!profile?.e_mail) {
-      throw new BadRequestException('Facebook authentication did not provide required email');
-    }
-
-    const userInfo: SocialUserInfo = {
-      e_mail: profile.e_mail,
-      full_name: profile.full_name,
-      provider_id: profile.provider_id,
-      role: req.body.role || 'CUSTOMER',
-      kvkk_approved: req.body.kvkkApproved || true,
-      terms_approved: req.body.termsApproved || true,
-    };
-
-    return await this.findOrCreateSocialUser(userInfo, 'facebook');
   }
 
   /**

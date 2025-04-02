@@ -13,9 +13,6 @@ export class SessionManagerService {
     private prisma: PrismaService,
   ) {}
 
-  /**
-   * Kullanıcı için oturum kaydı oluşturur veya günceller
-   */
   async createUserSession(userId: string, request: Request) {
     try {
       const deviceId = this.getOrCreateDeviceId(request);
@@ -23,23 +20,20 @@ export class SessionManagerService {
       
       if (existingSession) {
         this.logger.debug(`Updating existing session for user ${userId} with device ${deviceId}`);
-        // Mevcut oturumu güncelle - şemada last_active alanı olmadığı için sadece fcm_token güncellenecek
-        // veya başka bir güncelleme yapmadan mevcut oturumu döndür
         return existingSession;
       }
       
-      // Aktif oturum sayısını yönet
+
       await this.manageUserSessions(userId, deviceId);
       
-      // Oturum bilgileri - şemadaki uygun alanları kullan
       const newSession = await this.prisma.user_sessions.create({
         data: {
           user_id: userId,
           device_id: deviceId,
           ip_address: request.ip || null,
           user_agent: request.headers['user-agent'] || null,
-          fcm_token: null, // FCM token ayrı bir metodla güncellenecek
-          created_at: new Date(), // şema created_at alanına sahip
+          fcm_token: null, 
+          created_at: new Date(), 
         },
       });
       
@@ -51,9 +45,7 @@ export class SessionManagerService {
     }
   }
 
-  /**
-   * Kullanıcının mevcut oturumunu bulur
-   */
+
   private async findExistingSession(userId: string, deviceId: string) {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -72,9 +64,7 @@ export class SessionManagerService {
     });
   }
   
-  /**
-   * Kullanıcının aktif oturum sayısını yönetir
-   */
+
   private async manageUserSessions(userId: string, currentDeviceId: string) {
     try {
       const activeSessions = await this.prisma.user_sessions.findMany({
@@ -99,9 +89,7 @@ export class SessionManagerService {
     }
   }
   
-  /**
-   * Request içinden cihaz ID'si oluşturur veya mevcut olanı kullanır
-   */
+
   private getOrCreateDeviceId(request: Request): string {
     const providedDeviceId = request.headers['device-id'] as string;
     if (providedDeviceId) {
@@ -114,9 +102,7 @@ export class SessionManagerService {
     return crypto.createHash('md5').update(`${userAgent}:${ip}`).digest('hex');
   }
 
-  /**
-   * FCM token güncelleme - sadece oturum bilgilerini günceller
-   */
+
   async updateFcmToken(userId: string, deviceId: string, fcmToken: string) {
     if (!fcmToken) return;
     
@@ -136,9 +122,6 @@ export class SessionManagerService {
     }
   }
 
-  /**
-   * Kullanıcı çıkışı - sadece oturum kayıtlarını temizler
-   */
   async logoutUser(userId: string, refreshToken: string) {
     try {
       if (!userId || !refreshToken) {
@@ -150,9 +133,6 @@ export class SessionManagerService {
         return { message: 'Invalid token format', status: 'error' };
       }
       
-      // Burada token doğrulamasını kaldırdık çünkü TokenManagerService bu işi yapıyor
-      
-      // Oturum kayıtlarını temizle
       await this.prisma.user_sessions.deleteMany({
         where: { user_id: userId }
       });

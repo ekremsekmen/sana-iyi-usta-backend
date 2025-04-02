@@ -3,8 +3,6 @@ import { RegisterDto } from '../dto/register.dto';
 import { LoginDto } from '../dto/login.dto';
 import { Request } from 'express';
 import { GoogleAuthDto, AppleAuthDto, FacebookAuthDto } from '../dto/social-auth.dto';
-
-// Servis injectionları
 import { AuthValidationService } from './auth-validation.service';
 import { UserRegistrationService } from './user-registration.service';
 import { LocalAuthenticationService } from './local-authentication.service';
@@ -35,6 +33,7 @@ export class AuthService {
     return this.userSessionService.createUserSession(user, request);
   }
   
+  // Genel social login fonksiyonu - ileride lazım olabileceği için tutuldu
   async socialLogin(userInfo: any, provider: string, request: Request) {
     const user = await this.socialAuthService.handleSocialUser(userInfo, provider);
     return this.userSessionService.createUserSession(user, request);
@@ -53,11 +52,6 @@ export class AuthService {
   async facebookMobileLogin(facebookAuthDto: FacebookAuthDto, request: Request) {
     const user = await this.socialAuthService.authenticateWithFacebook(facebookAuthDto);
     return this.userSessionService.createUserSession(user, request);
-  }
-
-  async facebookLoginCallback(req: Request, profile: any) {
-    const user = await this.socialAuthService.processFacebookCallback(req, profile);
-    return this.userSessionService.createUserSession(user, req);
   }
 
   async logout(userId: string, refreshToken: string) {
