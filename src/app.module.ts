@@ -18,25 +18,12 @@ import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
-    ThrottlerModule.forRoot({
-      throttlers: [
-        {
-          name: 'default',
-          ttl: 60000, 
-          limit: 10, 
-        },
-        {
-          name: 'login',
-          ttl: 60000, 
-          limit: 5, 
-        },
-        {
-          name: 'register',
-          ttl: 3600000, 
-          limit: 3, 
-        }
-      ],
-    }),
+    // Throttler modülü için doğru yapılandırma
+    ThrottlerModule.forRoot([{
+      ttl: 60000, // 1 dakika
+      limit: 1000, // Çok yüksek bir limit
+      name: 'default', // Throttler için bir isim belirtmek gerekiyor
+    }]),
     AuthModule,
     UsersModule,
     MechanicsModule,
@@ -51,6 +38,6 @@ import { ThrottlerModule } from '@nestjs/throttler';
     PrismaModule,
   ],
   controllers: [AppController],
-  providers: [AppService, PrismaService],
+  providers: [AppService],
 })
 export class AppModule {}

@@ -1,18 +1,20 @@
 import { Module } from '@nestjs/common';
-import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
+import { PassportModule } from '@nestjs/passport';
 import { AuthController } from './auth.controller';
 import { AuthService } from './services/auth.service';
 import { PrismaModule } from '../../prisma/prisma.module';
-import { EmailService } from './services/email.service';
-import { AuthValidationService } from './services/auth-validation.service';
-import { UserRegistrationService } from './services/user-registration.service';
-import { TokenService } from './services/token.service';
 import { LocalStrategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
-import { ThrottlerModule } from '@nestjs/throttler';
-import { APP_GUARD } from '@nestjs/core';
-import { CustomThrottlerGuard } from '../../common/guards/throttler/throttler.guard';
+import { TokenManagerService } from './services/token-manager.service';
+import { EmailService } from './services/email.service';
+import { SessionManagerService } from './services/session-manager.service';
+import { UserRegistrationService } from './services/user-registration.service';
+import { AuthValidationService } from './services/auth-validation.service';
+import { LocalAuthenticationService } from './services/local-authentication.service';
+import { SocialAuthenticationService } from './services/social-authentication.service';
+import { UserSessionService } from './services/user-session.service';
+
 
 @Module({
   imports: [
@@ -26,16 +28,17 @@ import { CustomThrottlerGuard } from '../../common/guards/throttler/throttler.gu
   controllers: [AuthController],
   providers: [
     AuthService,
-    EmailService,
-    AuthValidationService,
-    UserRegistrationService,
-    TokenService,
     LocalStrategy,
     JwtStrategy,
-    {
-      provide: APP_GUARD,
-      useClass: CustomThrottlerGuard,
-    },
+    TokenManagerService,
+    EmailService,
+    SessionManagerService,
+    UserRegistrationService,
+    AuthValidationService,
+    LocalAuthenticationService,
+    SocialAuthenticationService,
+    UserSessionService,
   ],
+  exports: [AuthService, TokenManagerService],
 })
 export class AuthModule {}

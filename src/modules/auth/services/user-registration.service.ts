@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { RegisterDto, AuthProvider } from '../dto/register.dto';
 import { EmailService } from './email.service';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UserRegistrationService {
@@ -9,6 +10,43 @@ export class UserRegistrationService {
     private prisma: PrismaService,
     private emailService: EmailService,
   ) {}
+
+  async registerUser(registerDto: RegisterDto) {
+    const existingUser = await this.prisma.users.findUnique({
+      where: { e_mail: registerDto.e_mail },
+      include: { user_auth: true },
+    });
+
+    const hashedPassword = registerDto.auth_provider === AuthProvider.LOCAL
+      ? await bcrypt.hash(registerDto.password, 10)
+      : null;
+
+    if (existingUser) {
+      const existingAuth = existingUser.user_auth.find(
+        (auth) => auth.auth_provider === registerDto.auth_provider,
+      );
+
+      if (existingAuth) {
+        throw new ConflictException(
+          'This authentication method is already linked to your account',
+        );
+      }
+
+      return this.handleExistingUser(
+        existingUser,
+        registerDto,
+        hashedPassword,
+      );
+    }
+
+    return await this.prisma.$transaction((prisma) =>
+      this.createNewUser(
+        prisma,
+        registerDto,
+        hashedPassword,
+      ),
+    );
+  }
 
   async handleExistingUser(
     existingUser: any,
