@@ -135,7 +135,7 @@ E-posta ve parola ile kullanıcı girişi yapar.
     "id": "8f7d6e5c-4b3a-2a1c-9f8e-7d6c5b4a3f2e",
     "full_name": "Mehmet Yılmaz",
     "e_mail": "mehmet@example.com",
-    "role": "CUSTOMER"
+    "role": "customer"
   }
 }
 ```
@@ -183,7 +183,7 @@ Google OAuth2 ile mobil uygulama için kimlik doğrulama ve giriş yapar.
   "providerId": "google-user-id",
   "email": "mehmet@gmail.com",
   "fullName": "Mehmet Yılmaz",
-  "role": "CUSTOMER",
+  "role": "customer",
   "kvkkApproved": true,
   "termsApproved": true
 }
@@ -201,7 +201,7 @@ Google OAuth2 ile mobil uygulama için kimlik doğrulama ve giriş yapar.
     "id": "8f7d6e5c-4b3a-2a1c-9f8e-7d6c5b4a3f2e",
     "full_name": "Mehmet Yılmaz",
     "e_mail": "mehmet@gmail.com",
-    "role": "CUSTOMER"
+    "role": "customer"
   }
 }
 ```
@@ -230,7 +230,7 @@ Apple ID ile mobil uygulama için kimlik doğrulama ve giriş yapar.
   "providerId": "apple-user-id",
   "email": "mehmet@icloud.com",
   "fullName": "Mehmet Yılmaz",
-  "role": "CUSTOMER",
+  "role": "customer",
   "kvkkApproved": true,
   "termsApproved": true
 }
@@ -248,7 +248,7 @@ Apple ID ile mobil uygulama için kimlik doğrulama ve giriş yapar.
     "id": "8f7d6e5c-4b3a-2a1c-9f8e-7d6c5b4a3f2e",
     "full_name": "Mehmet Yılmaz",
     "e_mail": "mehmet@icloud.com",
-    "role": "CUSTOMER"
+    "role": "customer"
   }
 }
 ```
@@ -269,7 +269,7 @@ Facebook OAuth ile mobil uygulama için kimlik doğrulama ve giriş yapar.
   "providerId": "facebook-user-id",
   "email": "mehmet@example.com",
   "fullName": "Mehmet Yılmaz",
-  "role": "CUSTOMER",
+  "role": "customer",
   "kvkkApproved": true,
   "termsApproved": true
 }
@@ -287,7 +287,7 @@ Facebook OAuth ile mobil uygulama için kimlik doğrulama ve giriş yapar.
     "id": "8f7d6e5c-4b3a-2a1c-9f8e-7d6c5b4a3f2e",
     "full_name": "Mehmet Yılmaz",
     "e_mail": "mehmet@example.com",
-    "role": "CUSTOMER"
+    "role": "customer"
   }
 }
 ```
