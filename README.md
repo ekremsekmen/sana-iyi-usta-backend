@@ -6,6 +6,8 @@ Bu proje, ustalar ve araç sahipleri için bir platformun backend tarafını olu
 
 ```bash
 sana-iyi-usta-backend/
+├── docs/
+│   └── auth-api-documentation.md
 ├── prisma/
 │   └── schema.prisma
 └── src/
@@ -14,19 +16,24 @@ sana-iyi-usta-backend/
     ├── app.service.ts
     ├── common/
     │   ├── decorators/
-    │   │   └── user.decorator.ts
+    │   ├── enums/
+    │   ├── exceptions/
     │   ├── filters/
     │   │   ├── database-exception.filter.ts
     │   │   ├── http-exception.filter.ts
     │   │   └── validation-exception.filter.ts
     │   ├── guards/
-    │   │   └── jwt/
-    │   │       └── jwt.guard.ts
+    │   │   ├── jwt/
+    │   │   │   └── jwt.guard.ts
+    │   │   └── throttler/
+    │   │       └── throttler.guard.ts
     │   ├── interceptors/
     │   │   └── logging/
     │   │       └── logging.interceptor.ts
-    │   └── middlewares/
-    │       └── logger.middleware.ts
+    │   ├── middlewares/
+    │   │   └── logger.middleware.ts
+    │   ├── utils/
+    │   └── validators/
     ├── config/
     │   ├── app.config.ts
     │   └── database.config.ts
@@ -42,14 +49,33 @@ sana-iyi-usta-backend/
     │   ├── auth/
     │   │   ├── auth.controller.ts
     │   │   ├── auth.module.ts
-    │   │   ├── auth.service.ts
     │   │   ├── dto/
+    │   │   │   ├── email.dto.ts
     │   │   │   ├── login.dto.ts
+    │   │   │   ├── refresh-token.dto.ts
     │   │   │   ├── register.dto.ts
     │   │   │   └── social-auth.dto.ts
+    │   │   ├── guards/
+    │   │   │   ├── apple-auth.guard.ts
+    │   │   │   ├── google-auth.guard.ts
+    │   │   │   ├── jwt-auth.guard.ts
+    │   │   │   └── local-auth.guard.ts
+    │   │   ├── services/
+    │   │   │   ├── auth-validation.service.ts
+    │   │   │   ├── auth.service.ts
+    │   │   │   ├── email.service.ts
+    │   │   │   ├── local-authentication.service.ts
+    │   │   │   ├── session-manager.service.ts
+    │   │   │   ├── social-authentication.service.ts
+    │   │   │   ├── token-manager.service.ts
+    │   │   │   ├── user-registration.service.ts
+    │   │   │   └── user-session.service.ts
     │   │   └── strategies/
-    │   │       ├── apple.strategy.ts
-    │   │       └── google.strategy.ts
+    │   │       ├── facebook.strategy.ts
+    │   │       ├── google.strategy.ts
+    │   │       ├── icloud.strategy.ts
+    │   │       ├── jwt.strategy.ts
+    │   │       └── local.strategy.ts
     │   ├── campaigns/
     │   │   ├── campaigns.controller.ts
     │   │   ├── campaigns.module.ts
@@ -64,13 +90,6 @@ sana-iyi-usta-backend/
     │   │   └── dto/
     │   │       ├── create-customer.dto.ts
     │   │       └── update-customer.dto.ts
-    │   ├── email/
-    │   │   ├── email.controller.ts
-    │   │   ├── email.module.ts
-    │   │   ├── email.service.ts
-    │   │   └── dto/
-    │   │       ├── send-verification-email.dto.ts
-    │   │       └── verify-email.dto.ts
     │   ├── mechanics/
     │   │   ├── mechanics.controller.ts
     │   │   ├── mechanics.module.ts
@@ -113,16 +132,19 @@ sana-iyi-usta-backend/
     │   │   └── dto/
     │   │       ├── create-user.dto.ts
     │   │       └── update-user.dto.ts
-    │   └── vehicles/
-    │       ├── vehicles.controller.ts
-    │       ├── vehicles.module.ts
-    │       ├── vehicles.service.ts
-    │       └── dto/
-    │           ├── create-vehicle.dto.ts
-    │           └── update-vehicle.dto.ts
+    │   ├── vehicles/
+    │   │   ├── vehicles.controller.ts
+    │   │   ├── vehicles.module.ts
+    │   │   ├── vehicles.service.ts
+    │   │   └── dto/
+    │   │       ├── create-vehicle.dto.ts
+    │   │       └── update-vehicle.dto.ts
+    │   └── verification/
     ├── prisma/
     │   ├── prisma.module.ts
     │   └── prisma.service.ts
+    ├── templates/
+    │   └── email-verification.template.ts
     ├── tests/
     └── utils/
         └── helpers.ts
@@ -130,7 +152,7 @@ sana-iyi-usta-backend/
 
 ## 📦 Modüller
 
-- **Auth**: Kimlik doğrulama ve yetkilendirme
+- **Auth**: Kimlik doğrulama ve yetkilendirme (JWT, Google, Facebook ve Apple OAuth)
 - **Users**: Kullanıcı yönetimi
 - **Mechanics**: Tamirci/usta yönetimi
 - **Vehicles**: Araç yönetimi
@@ -141,10 +163,13 @@ sana-iyi-usta-backend/
 - **Messages**: Mesajlaşma sistemi
 - **Notifications**: Bildirim sistemi
 - **Customers**: Müşteri yönetimi
-- **Email**: E-posta yönetimi
+- **Verification**: Hesap doğrulama sistemi
 
 ## 🛠 Teknik Altyapı
 
 - **Framework**: NestJS
 - **Veritabanı**: PostgreSQL + Prisma ORM
-- **Authentication**: JWT + Google & Apple OAuth
+- **Authentication**: JWT + Google, Facebook & Apple OAuth
+- **Dokümantasyon**: API belgeleri docs/ klasöründe bulunmaktadır
+- **Güvenlik**: Rate limiting, JWT tabanlı yetkilendirme
+- **Email**: Şablon tabanlı email gönderimi için destek
