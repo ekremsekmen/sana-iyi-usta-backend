@@ -6,6 +6,19 @@ Bu dokümantasyon, Sana İyi Usta uygulamasının backend API'lerini tanımlar. 
 
 Kimlik doğrulama ve kullanıcı yönetimi için gerekli tüm API'ler.
 
+### Mevcut Endpoint'ler
+
+| Method | Endpoint                  | Açıklama                          |
+|:------:|:--------------------------|:----------------------------------|
+| POST   | `/auth/register`          | Yeni kullanıcı kaydı              |
+| GET    | `/auth/verify-email`      | E-posta doğrulama                 |
+| POST   | `/auth/login`             | E-posta ve şifre ile giriş        |
+| POST   | `/auth/refresh-token`     | Access token yenileme             |
+| POST   | `/auth/logout`            | Kullanıcı oturumunu sonlandırma   |
+| POST   | `/auth/google/mobile`     | Google hesabı ile giriş           |
+| POST   | `/auth/apple/mobile`      | Apple ID ile giriş                |
+| POST   | `/auth/facebook/mobile`   | Facebook hesabı ile giriş         |
+
 ### Kullanıcı Kaydı
 
 Yeni bir kullanıcı hesabı oluşturur.
