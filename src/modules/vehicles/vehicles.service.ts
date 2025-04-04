@@ -1,76 +1,31 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { VehicleSelectService } from './services/vehicle-select.service';
 
 @Injectable()
 export class VehiclesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private vehicleSelectService: VehicleSelectService,
+  ) {}
 
-  async findAllBrands() {
-    return this.prisma.brands.findMany({
-      orderBy: {
-        name: 'asc',
-      },
-    });
+  async getAllBrands() {
+    return this.vehicleSelectService.findAllBrands();
   }
 
-  async findModelsByBrandId(brandId: string) {
-    return this.prisma.models.findMany({
-      where: {
-        brand_id: brandId,
-      },
-      orderBy: {
-        name: 'asc',
-      },
-    });
+  async getModelsByBrand(brandId: string) {
+    return this.vehicleSelectService.findModelsByBrandId(brandId);
   }
 
-  async findYearsByModelId(modelId: string) {
-    return this.prisma.model_years.findMany({
-      where: {
-        model_id: modelId,
-      },
-      orderBy: {
-        year: 'desc',
-      },
-    });
+  async getYearsByModel(modelId: string) {
+    return this.vehicleSelectService.findYearsByModelId(modelId);
   }
 
-  async findVariantsByYearId(yearId: string) {
-    return this.prisma.variants.findMany({
-      where: {
-        model_year_id: yearId,
-      },
-      orderBy: {
-        name: 'asc',
-      },
-    });
+  async getVariantsByYear(yearId: string) {
+    return this.vehicleSelectService.findVariantsByYearId(yearId);
   }
 
   async getFullVehicleInfo(variantId: string) {
-    const variant = await this.prisma.variants.findUnique({
-      where: { id: variantId },
-      include: {
-        model_years: {
-          include: {
-            models: {
-              include: {
-                brands: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!variant) {
-      return null;
-    }
-
-    return {
-      brand: variant.model_years.models.brands.name,
-      model: variant.model_years.models.name,
-      year: variant.model_years.year,
-      variant: variant.name,
-    };
+    return this.vehicleSelectService.getFullVehicleInfo(variantId);
   }
 }

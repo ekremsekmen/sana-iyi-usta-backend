@@ -1,5 +1,5 @@
 import { Controller, Post, Body, Get, Query, UseGuards, HttpCode, HttpStatus, Req, UseInterceptors } from '@nestjs/common';
-import { AuthService } from './services/auth.service';
+import { AuthService } from './auth.service';
 import { TokenManagerService } from './services/token-manager.service';
 import { RegisterDto } from './dto/register.dto';
 import { EmailService } from './services/email.service';

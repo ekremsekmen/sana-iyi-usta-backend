@@ -1,4 +1,8 @@
-import { PrismaClient } from '@prisma/client';
+// ARAÇ VERİLERİNİ PRISMA İLE VERİTABANINA YÜKLEMEK İÇİN KULLANDIĞIMIZ KOD
+
+
+
+/* import { PrismaClient } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
 import { v5 as uuidv5 } from 'uuid';
@@ -90,3 +94,5 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+
+  */

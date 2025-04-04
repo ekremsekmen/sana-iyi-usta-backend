@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { RegisterDto } from '../dto/register.dto';
-import { LoginDto } from '../dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
 import { Request } from 'express';
-import { GoogleAuthDto, AppleAuthDto, FacebookAuthDto } from '../dto/social-auth.dto';
-import { AuthValidationService } from './auth-validation.service';
-import { UserRegistrationService } from './user-registration.service';
-import { LocalAuthenticationService } from './local-authentication.service';
-import { SocialAuthenticationService } from './social-authentication.service';
-import { UserSessionService } from './user-session.service';
+import { GoogleAuthDto, AppleAuthDto, FacebookAuthDto } from './dto/social-auth.dto';
+import { AuthValidationService } from './services/auth-validation.service';
+import { UserRegistrationService } from './services/user-registration.service';
+import { LocalAuthenticationService } from './services/local-authentication.service';
+import { SocialAuthenticationService } from './services/social-authentication.service';
+import { UserSessionService } from './services/user-session.service';
 
 @Injectable()
 export class AuthService {
