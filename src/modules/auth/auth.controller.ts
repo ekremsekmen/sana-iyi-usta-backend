@@ -8,7 +8,7 @@ import { LocalAuthGuard } from './guards/local-auth.guard';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { Request } from 'express';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { JwtGuard } from '../../common/guards';
 import { Throttle } from '@nestjs/throttler';
 import { GoogleAuthDto, AppleAuthDto, FacebookAuthDto } from './dto/social-auth.dto';
 
@@ -50,7 +50,7 @@ export class AuthController {
     return this.tokenManager.refreshAccessToken(refreshTokenDto.refresh_token);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtGuard)
   @Post('logout')
   @HttpCode(HttpStatus.OK) 
   async logout(@Req() request: Request, @Body() refreshTokenDto: RefreshTokenDto) {

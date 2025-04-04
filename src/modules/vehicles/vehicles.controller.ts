@@ -1,8 +1,12 @@
-import { Controller, Get, Param, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Param, NotFoundException, UseGuards } from '@nestjs/common';
 import { VehiclesService } from './vehicles.service';
+import { JwtGuard } from 'src/common/guards';
+
+/*@UseGuards(JwtGuard) bunu uygulamayı test etmeyi kolaylaştırmak için yorum satırı haline getirdim
+ilerdide eklenecek.Bu endpointlere geçerli token ı olan kullanıcılar erişebilecek.*/
 
 @Controller('vehicle-select')
-export class VehicleSelectController {
+export class VehiclesController {
   constructor(
     private readonly vehiclesService: VehiclesService,
   ) {}
@@ -27,7 +31,7 @@ export class VehicleSelectController {
     return this.vehiclesService.getVariantsByYear(yearId);
   }
 
-  @Get('vehicles/:variantId')
+  @Get('vehicle/:variantId')
   async getVehicleInfo(@Param('variantId') variantId: string) {
     const vehicleInfo = await this.vehiclesService.getFullVehicleInfo(variantId);
     
