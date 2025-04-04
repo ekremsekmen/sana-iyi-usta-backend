@@ -1,8 +1,8 @@
 import { Controller, Get, Param, NotFoundException } from '@nestjs/common';
 import { VehiclesService } from './vehicles.service';
 
-@Controller('api')
-export class VehiclesController {
+@Controller('vehicle-select')
+export class VehicleSelectController {
   constructor(
     private readonly vehiclesService: VehiclesService,
   ) {}
