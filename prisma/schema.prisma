@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
 }
 
 datasource db {
@@ -26,6 +27,8 @@ model appointments {
   created_at                  DateTime                  @default(now()) @db.Timestamptz(6)
   status                      String
   vehicle_id                  String                    @db.Uuid
+  start_time                  DateTime                  @db.Timestamptz(6)
+  end_time                    DateTime                  @db.Timestamptz(6)
   customers                   customers                 @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   customer_service_requests   customer_service_requests @relation(fields: [customer_service_request_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   mechanics                   mechanics                 @relation(fields: [mechanic_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -156,7 +159,6 @@ model mechanics {
   location                    String?
   latitude                    Decimal?                      @db.Decimal(9, 6)
   longitude                   Decimal?                      @db.Decimal(9, 6)
-  working_hours               Json?
   on_site_service             Boolean?                      @default(false)
   average_rating              Decimal?                      @db.Decimal(3, 2)
   created_at                  DateTime                      @default(now()) @db.Timestamptz(6)
@@ -166,6 +168,7 @@ model mechanics {
   customer_service_requests   customer_service_requests[]
   mechanic_services           mechanic_services[]
   mechanic_supported_vehicles mechanic_supported_vehicles[]
+  mechanic_working_hours      mechanic_working_hours[]
   users                       users                         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   ratings_reviews             ratings_reviews[]
   vehicle_maintenance_records vehicle_maintenance_records[]
@@ -234,6 +237,7 @@ model ratings_reviews {
   review                    String?
   created_at                DateTime                   @default(now()) @db.Timestamptz(6)
   service_request_id        String?                    @unique @db.Uuid
+  mechanic_response         String?
   appointments              appointments?              @relation(fields: [appointment_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   customers                 customers                  @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   mechanics                 mechanics                  @relation(fields: [mechanic_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -346,4 +350,17 @@ model email_verifications {
   expires_at DateTime  @db.Timestamptz(6)
   created_at DateTime? @db.Timestamptz(6)
   users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model mechanic_working_hours {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mechanic_id   String    @db.Uuid
+  day_of_week   Int
+  start_time    String
+  end_time      String
+  slot_duration Int
+  is_day_off    Boolean   @default(false)
+  mechanics     mechanics @relation(fields: [mechanic_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([mechanic_id, day_of_week])
 }
