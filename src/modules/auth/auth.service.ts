@@ -74,4 +74,8 @@ export class AuthService {
   async resetPassword(email: string, code: string, newPassword: string) {
     return this.passwordService.resetPasswordWithCode(email, code, newPassword);
   }
+
+  async changePassword(userId: string, dto: { oldPassword: string; newPassword: string; newPasswordConfirm: string }) {
+    return this.passwordService.changePassword(userId, dto.oldPassword, dto.newPassword, dto.newPasswordConfirm);
+  }
 }

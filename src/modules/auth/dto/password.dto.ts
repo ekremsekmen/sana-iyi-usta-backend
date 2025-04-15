@@ -32,3 +32,18 @@ export class ResetPasswordWithCodeDto {
   @Length(8, 50, { message: 'Password must be at least 8 characters' })
   newPassword: string;
 }
+
+export class ChangePasswordDto {
+  @IsString({ message: 'Mevcut şifre gereklidir' })
+  @IsNotEmpty({ message: 'Mevcut şifre gereklidir' })
+  oldPassword: string;
+
+  @IsString({ message: 'Yeni şifre gereklidir' })
+  @IsNotEmpty({ message: 'Yeni şifre gereklidir' })
+  @Length(8, 50, { message: 'Yeni şifre en az 8 karakter olmalıdır' })
+  newPassword: string;
+
+  @IsString({ message: 'Yeni şifre tekrarı gereklidir' })
+  @IsNotEmpty({ message: 'Yeni şifre tekrarı gereklidir' })
+  newPasswordConfirm: string;
+}

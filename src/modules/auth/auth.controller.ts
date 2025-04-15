@@ -14,7 +14,8 @@ import { GoogleAuthDto, AppleAuthDto, FacebookAuthDto } from './dto/social-auth.
 import { 
   RequestPasswordResetDto, 
   ResetPasswordWithCodeDto, 
-  VerifyResetCodeDto // Yeni DTO ekle
+  VerifyResetCodeDto, 
+  ChangePasswordDto
 } from './dto/password.dto';
 
 @Controller('auth')
@@ -98,5 +99,13 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async resetPassword(@Body() dto: ResetPasswordWithCodeDto) {
     return this.authService.resetPassword(dto.email, dto.code, dto.newPassword);
+  }
+
+  @UseGuards(JwtGuard)
+  @Post('change-password')
+  @HttpCode(HttpStatus.OK)
+  async changePassword(@Req() request: Request, @Body() dto: ChangePasswordDto) {
+    const user = request.user as { id: string };
+    return this.authService.changePassword(user.id, dto);
   }
 }

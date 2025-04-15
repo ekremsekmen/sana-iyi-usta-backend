@@ -28,4 +28,6 @@ export const ERROR_MESSAGES = {
   NEW_AUTH_METHOD_ADDED: 'Yeni kimlik doğrulama yöntemi başarıyla eklendi',
   KVKK_APPROVAL_REQUIRED: 'KVKK onayı zorunludur',
   TERMS_APPROVAL_REQUIRED: 'Kullanım şartlarının onaylanması zorunludur',
+  PASSWORD_CHANGE_SUCCESS: 'Şifreniz başarıyla değiştirildi',
+  PASSWORDS_DO_NOT_MATCH: 'Yeni şifreler eşleşmiyor',
 };

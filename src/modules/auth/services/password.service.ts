@@ -199,4 +199,55 @@ export class PasswordService {
       };
     }
   }
+
+  async changePassword(userId: string, oldPassword: string, newPassword: string, newPasswordConfirm: string): Promise<{message: string, status: string}> {
+    // Yeni şifreler aynı mı kontrol et
+    if (newPassword !== newPasswordConfirm) {
+      return {
+        message: ERROR_MESSAGES.PASSWORDS_DO_NOT_MATCH,
+        status: 'error',
+      };
+    }
+    // Kullanıcıyı ve local auth'u bul
+    const user = await this.prisma.users.findUnique({
+      where: { id: userId },
+      include: {
+        user_auth: true,
+      },
+    });
+    if (!user) {
+      return {
+        message: ERROR_MESSAGES.EMAIL_NOT_FOUND,
+        status: 'error',
+      };
+    }
+    const localAuth = user.user_auth.find(auth => auth.auth_provider === 'local');
+    if (!localAuth || !localAuth.password_hash) {
+      return {
+        message: ERROR_MESSAGES.LOCAL_AUTH_NOT_FOUND,
+        status: 'error',
+      };
+    }
+    // Eski şifre doğru mu kontrol et
+    const isMatch = await bcrypt.compare(oldPassword, localAuth.password_hash);
+    if (!isMatch) {
+      return {
+        message: ERROR_MESSAGES.INVALID_CREDENTIALS,
+        status: 'error',
+      };
+    }
+    // Şifreyi güncelle
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await this.prisma.user_auth.updateMany({
+      where: {
+        user_id: user.id,
+        auth_provider: 'local',
+      },
+      data: { password_hash: hashedPassword },
+    });
+    return {
+      message: ERROR_MESSAGES.PASSWORD_CHANGE_SUCCESS,
+      status: 'success',
+    };
+  }
 }
