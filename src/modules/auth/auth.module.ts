@@ -14,7 +14,7 @@ import { AuthValidationService } from './services/auth-validation.service';
 import { LocalAuthenticationService } from './services/local-authentication.service';
 import { SocialAuthenticationService } from './services/social-authentication.service';
 import { UserSessionService } from './services/user-session.service';
-
+import { PasswordService } from './services/password.service';
 
 @Module({
   imports: [
@@ -38,6 +38,7 @@ import { UserSessionService } from './services/user-session.service';
     LocalAuthenticationService,
     SocialAuthenticationService,
     UserSessionService,
+    PasswordService,
   ],
   exports: [AuthService, TokenManagerService],
 })

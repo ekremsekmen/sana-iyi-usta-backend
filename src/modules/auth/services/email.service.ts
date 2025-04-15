@@ -15,6 +15,12 @@ import {
   VerifyEmailDto,
 } from '../dto/email.dto';
 
+// DTO tanımları
+interface SendPasswordResetCodeDto {
+  email: string;
+  resetCode: string;
+}
+
 @Injectable()
 export class EmailService {
   private transporter: Transporter;
@@ -178,5 +184,44 @@ export class EmailService {
         'success',
       ),
     };
+  }
+
+  // Şifre sıfırlama kodu gönderme
+  async sendPasswordResetCode({
+    email,
+    resetCode,
+  }: SendPasswordResetCodeDto) {
+    const mailOptions = {
+      from: process.env.SMTP_FROM,
+      to: email,
+      subject: 'Şifre Sıfırlama Kodu - Sana İyi Usta',
+      html: this.getPasswordResetCodeTemplate(resetCode),
+    };
+
+    return this.transporter.sendMail(mailOptions);
+  }
+
+  // 6 haneli kod için e-posta şablonu
+  private getPasswordResetCodeTemplate(resetCode: string): string {
+    return `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <h2>Şifre Sıfırlama Kodu</h2>
+        </div>
+        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px;">
+          <p>Şifrenizi sıfırlamak için aşağıdaki doğrulama kodunu kullanın:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <div style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #007bff; padding: 15px; background-color: #e9f0ff; border-radius: 10px; display: inline-block;">
+              ${resetCode}
+            </div>
+          </div>
+          <p>Bu kod 15 dakika boyunca geçerlidir.</p>
+          <p>Eğer bu isteği siz yapmadıysanız, bu e-postayı görmezden gelebilirsiniz.</p>
+        </div>
+        <div style="margin-top: 20px; font-size: 12px; color: #6c757d; text-align: center;">
+          <p>© ${new Date().getFullYear()} Sana İyi Usta. Tüm hakları saklıdır.</p>
+        </div>
+      </div>
+    `;
   }
 }

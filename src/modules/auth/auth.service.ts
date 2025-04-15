@@ -8,6 +8,7 @@ import { UserRegistrationService } from './services/user-registration.service';
 import { LocalAuthenticationService } from './services/local-authentication.service';
 import { SocialAuthenticationService } from './services/social-authentication.service';
 import { UserSessionService } from './services/user-session.service';
+import { PasswordService } from './services/password.service';
 
 @Injectable()
 export class AuthService {
@@ -17,6 +18,7 @@ export class AuthService {
     private readonly localAuthService: LocalAuthenticationService,
     private readonly socialAuthService: SocialAuthenticationService,
     private readonly userSessionService: UserSessionService,
+    private readonly passwordService: PasswordService,
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -33,7 +35,6 @@ export class AuthService {
     return this.userSessionService.createUserSession(user, request);
   }
   
-  // Genel social login fonksiyonu - ileride lazım olabileceği için tutuldu
   async socialLogin(userInfo: any, provider: string, request: Request) {
     const user = await this.socialAuthService.handleSocialUser(userInfo, provider);
     return this.userSessionService.createUserSession(user, request);
@@ -60,5 +61,17 @@ export class AuthService {
 
   async refreshToken(refreshToken: string) {
     return this.userSessionService.refreshAccessToken(refreshToken);
+  }
+
+  async initiatePasswordReset(email: string) {
+    return this.passwordService.initiatePasswordResetWithCode(email);
+  }
+
+  async verifyPasswordResetCode(email: string, code: string) {
+    return this.passwordService.verifyPasswordResetCode(email, code);
+  }
+
+  async resetPassword(email: string, code: string, newPassword: string) {
+    return this.passwordService.resetPasswordWithCode(email, code, newPassword);
   }
 }

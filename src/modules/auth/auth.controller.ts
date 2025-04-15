@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Query, UseGuards, HttpCode, HttpStatus, Req, UseInterceptors } from '@nestjs/common';
+import { Controller, Post, Body, Get, Query, UseGuards, HttpCode, HttpStatus, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { TokenManagerService } from './services/token-manager.service';
 import { RegisterDto } from './dto/register.dto';
@@ -11,6 +11,11 @@ import { Request } from 'express';
 import { JwtGuard } from '../../common/guards';
 import { Throttle } from '@nestjs/throttler';
 import { GoogleAuthDto, AppleAuthDto, FacebookAuthDto } from './dto/social-auth.dto';
+import { 
+  RequestPasswordResetDto, 
+  ResetPasswordWithCodeDto, 
+  VerifyResetCodeDto // Yeni DTO ekle
+} from './dto/password.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -74,5 +79,24 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async facebookMobileAuth(@Body() facebookAuthDto: FacebookAuthDto, @Req() req: Request) {
     return this.authService.facebookMobileLogin(facebookAuthDto, req);
+  }
+
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  async forgotPassword(@Body() dto: RequestPasswordResetDto) {
+    return this.authService.initiatePasswordReset(dto.email);
+  }
+
+  // Yeni endpoint ekliyoruz - doğrulama kodunu kontrol etmek için
+  @Post('verify-reset-code')
+  @HttpCode(HttpStatus.OK)
+  async verifyResetCode(@Body() dto: VerifyResetCodeDto) {
+    return this.authService.verifyPasswordResetCode(dto.email, dto.code);
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(@Body() dto: ResetPasswordWithCodeDto) {
+    return this.authService.resetPassword(dto.email, dto.code, dto.newPassword);
   }
 }
