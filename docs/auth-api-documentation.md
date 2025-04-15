@@ -13,11 +13,15 @@ Kimlik doğrulama ve kullanıcı yönetimi için gerekli tüm API'ler.
 | POST   | `/auth/register`          | Yeni kullanıcı kaydı              |
 | GET    | `/auth/verify-email`      | E-posta doğrulama                 |
 | POST   | `/auth/login`             | E-posta ve şifre ile giriş        |
-| POST   | `/auth/refresh-token`     | Access token yenileme             |
+| POST   | `/auth/refresh`           | Access token yenileme             |
 | POST   | `/auth/logout`            | Kullanıcı oturumunu sonlandırma   |
 | POST   | `/auth/google/mobile`     | Google hesabı ile giriş           |
 | POST   | `/auth/apple/mobile`      | Apple ID ile giriş                |
 | POST   | `/auth/facebook/mobile`   | Facebook hesabı ile giriş         |
+| POST   | `/auth/forgot-password`   | Şifre sıfırlama kodu gönderme     |
+| POST   | `/auth/verify-reset-code` | Şifre sıfırlama kodu doğrulama    |
+| POST   | `/auth/reset-password`    | Şifre sıfırlama (yeni şifre)      |
+| POST   | `/auth/change-password`   | Şifre değiştirme (giriş sonrası)  |
 
 ### Kullanıcı Kaydı
 
@@ -41,7 +45,7 @@ Yeni bir kullanıcı hesabı oluşturur.
 }
 ```
 
-**Başarılı Yanıt (200 OK)**
+**Başarılı Yanıt (201 Created)**
 
 ```json
 {
@@ -55,7 +59,7 @@ Yeni bir kullanıcı hesabı oluşturur.
 ```json
 {
   "statusCode": 400,
-  "message": "Password is required"
+  "message": "Şifre zorunludur"
 }
 ```
 
@@ -64,7 +68,7 @@ Yeni bir kullanıcı hesabı oluşturur.
 ```json
 {
   "statusCode": 409,
-  "message": "Account already exists"
+  "message": "Bu hesap zaten mevcut"
 }
 ```
 
@@ -91,7 +95,7 @@ Kayıt olduktan gönderilen e-posta linki ile e posta doğrular.
 ```json
 {
   "statusCode": 400,
-  "message": "Verification link expired"
+  "message": "Doğrulama bağlantısının süresi dolmuş"
 }
 ```
 
@@ -100,7 +104,7 @@ Kayıt olduktan gönderilen e-posta linki ile e posta doğrular.
 ```json
 {
   "statusCode": 404,
-  "message": "Invalid verification link"
+  "message": "Geçersiz doğrulama bağlantısı"
 }
 ```
 
@@ -145,7 +149,7 @@ E-posta ve parola ile kullanıcı girişi yapar.
 ```json
 {
   "statusCode": 400,
-  "message": "Password must be at least 8 characters long"
+  "message": "Şifre en az 8 karakter olmalıdır"
 }
 ```
 
@@ -154,7 +158,7 @@ E-posta ve parola ile kullanıcı girişi yapar.
 ```json
 {
   "statusCode": 401,
-  "message": "Invalid credentials"
+  "message": "Geçersiz kullanıcı adı veya şifre"
 }
 ```
 
@@ -163,7 +167,7 @@ veya
 ```json
 {
   "statusCode": 401,
-  "message": "Email not verified"
+  "message": "E-posta adresiniz doğrulanmamış"
 }
 ```
 
@@ -211,7 +215,7 @@ Google OAuth2 ile mobil uygulama için kimlik doğrulama ve giriş yapar.
 ```json
 {
   "statusCode": 401,
-  "message": "Invalid Google credentials"
+  "message": "Geçersiz kullanıcı adı veya şifre"
 }
 ```
 
@@ -250,6 +254,15 @@ Apple ID ile mobil uygulama için kimlik doğrulama ve giriş yapar.
     "e_mail": "mehmet@icloud.com",
     "role": "customer"
   }
+}
+```
+
+**Hata Yanıtı (400 Bad Request)**
+
+```json
+{
+  "statusCode": 400,
+  "message": "Apple ile kimlik doğrulama başarısız"
 }
 ```
 
@@ -297,7 +310,7 @@ Facebook OAuth ile mobil uygulama için kimlik doğrulama ve giriş yapar.
 ```json
 {
   "statusCode": 401,
-  "message": "Invalid Facebook credentials"
+  "message": "Geçersiz kullanıcı adı veya şifre"
 }
 ```
 
@@ -314,7 +327,7 @@ Kullanıcı oturumunu sonlandırır.
 
 ```json
 {
-  "refreshToken": "abcdef1234567890:ghijklmnopqrstuvwxyz1234567890..."
+  "refresh_token": "abcdef1234567890:ghijklmnopqrstuvwxyz1234567890..."
 }
 ```
 
@@ -340,7 +353,7 @@ Kullanıcı oturumunu sonlandırır.
 
 Access token süresi dolduğunda, mobil uygulama elindeki refresh token'ı kullanarak yeni bir access token alabilir.
 
-- **URL**: `/auth/refresh-token`
+- **URL**: `/auth/refresh`
 - **Method**: `POST`
 - **Content-Type**: `application/json`
 
@@ -348,7 +361,7 @@ Access token süresi dolduğunda, mobil uygulama elindeki refresh token'ı kulla
 
 ```json
 {
-  "refreshToken": "abcdef1234567890:ghijklmnopqrstuvwxyz1234567890..."
+  "refresh_token": "abcdef1234567890:ghijklmnopqrstuvwxyz1234567890..."
 }
 ```
 
@@ -370,7 +383,7 @@ Access token süresi dolduğunda, mobil uygulama elindeki refresh token'ı kulla
 ```json
 {
   "statusCode": 401,
-  "message": "Invalid refresh token"
+  "message": "Geçersiz veya süresi dolmuş refresh token"
 }
 ```
 
@@ -403,7 +416,7 @@ Kullanıcı şifresini unuttuğunda, e-posta adresini kullanarak şifre sıfırl
 
 ```json
 {
-  "message": "Bu hesap sadece sosyal medya ile giriş yapmaktadır. Lütfen aşağıdaki yöntemlerden birini kullanın:",
+  "message": "Bu hesap sadece sosyal medya ile giriş yapmaktadır. Lütfen sosyal giriş yöntemini kullanın.",
   "status": "social_auth_only",
   "socialProviders": ["google", "facebook", "icloud"]
 }
@@ -496,7 +509,7 @@ Kullanıcı, doğrulanmış kod ile birlikte yeni şifresini belirler.
 
 ```json
 {
-  "message": "Geçersiz veya doğrulanmamış kod",
+  "message": "Geçersiz doğrulama kodu",
   "status": "error"
 }
 ```
@@ -506,7 +519,7 @@ veya
 ```json
 {
   "statusCode": 400,
-  "message": "Bu hesap yerel şifre sıfırlama işlemi için uygun değil"
+  "message": "Bu e-posta adresi ile kayıtlı bir yerel hesap bulunamadı"
 }
 ```
 
@@ -539,6 +552,52 @@ veya
 > - Şifre en az 8 karakter uzunluğunda olmalıdır
 > - Frontend'de saklanan geçici verilerin (e-posta ve kod) güvenli bir şekilde saklanması önerilir (örn. memory state veya encrypted local storage)
 > - Kullanıcıya her aşamada ne yapması gerektiği açıkça belirtilmelidir
+
+### Şifre Değiştirme (Giriş Sonrası)
+
+Kullanıcı, giriş yaptıktan sonra mevcut şifresini değiştirir.
+
+- **URL**: `/auth/change-password`
+- **Method**: `POST`
+- **Content-Type**: `application/json`
+- **Authorization**: `Bearer [access_token]`
+
+**İstek (Request)**
+
+```json
+{
+  "oldPassword": "eski-parola",
+  "newPassword": "yeni-parola123",
+  "newPasswordConfirm": "yeni-parola123"
+}
+```
+
+**Başarılı Yanıt (200 OK)**
+
+```json
+{
+  "message": "Şifreniz başarıyla değiştirildi",
+  "status": "success"
+}
+```
+
+**Hata Yanıtı (400 Bad Request)**
+
+```json
+{
+  "message": "Yeni şifreler eşleşmiyor",
+  "status": "error"
+}
+```
+
+veya
+
+```json
+{
+  "message": "Geçersiz kullanıcı adı veya şifre",
+  "status": "error"
+}
+```
 
 ## Önemli Notlar ve Kısıtlamalar
 
@@ -579,7 +638,7 @@ veya
 2. Kullanıcı e-posta adresine gönderilen doğrulama bağlantısını takip ederek hesabını onaylasın
 3. `/auth/login` endpoint'ini kullanarak giriş yapın
 4. Dönen access token'ı Authorization header'ında kullanarak korumalı API'lere erişin
-5. Access token süresi dolduğunda `/auth/refresh-token` endpoint'ini kullanarak yeni bir token alın
+5. Access token süresi dolduğunda `/auth/refresh` endpoint'ini kullanarak yeni bir token alın
 6. Oturumu sonlandırmak için `/auth/logout` endpoint'ini kullanın
 
 ### Sosyal Medya Girişi Akışı
@@ -594,7 +653,7 @@ veya
 1. Kullanıcı uygulamaya giriş yaptığında, uygulama bir access token ve bir refresh token alır
 2. Uygulama, access token'ı API isteklerinde Authorization header'ında kullanır: `Authorization: Bearer [access_token]`
 3. Access token süresi dolduğunda (15 dakika sonra), API 401 Unauthorized hatası döndürür
-4. Bu durumda uygulama, sakladığı refresh token'ı kullanarak `/auth/refresh-token` endpoint'ine istek gönderir
+4. Bu durumda uygulama, sakladığı refresh token'ı kullanarak `/auth/refresh` endpoint'ine istek gönderir
 5. Başarılı yanıt durumunda yeni bir access token ve refresh token alır
 6. Uygulama, eski refresh token'ı yenisiyle değiştirir ve API isteklerine yeni access token ile devam eder
 7. Eğer refresh token da geçerliliğini yitirmişse (30 gün sonra), kullanıcı tekrar giriş yapmalıdır
