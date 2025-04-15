@@ -1,35 +1,34 @@
 import { IsEmail, IsNotEmpty, IsString, Length, Matches } from 'class-validator';
 
 export class RequestPasswordResetDto {
-  @IsEmail({}, { message: 'Geçerli bir e-posta adresi giriniz' })
-  @IsNotEmpty({ message: 'E-posta adresi zorunludur' })
+  @IsEmail({}, { message: 'Please enter a valid email address' })
+  @IsNotEmpty({ message: 'Email is required' })
   email: string;
 }
 
-
 export class VerifyResetCodeDto {
-  @IsEmail({}, { message: 'Geçerli bir e-posta adresi giriniz' })
-  @IsNotEmpty({ message: 'E-posta adresi zorunludur' })
+  @IsEmail({}, { message: 'Please enter a valid email address' })
+  @IsNotEmpty({ message: 'Email is required' })
   email: string;
 
-  @IsString({ message: 'Doğrulama kodu zorunludur' })
-  @IsNotEmpty({ message: 'Doğrulama kodu zorunludur' })
-  @Length(6, 6, { message: 'Doğrulama kodu 6 karakter olmalıdır' })
+  @IsString({ message: 'Verification code is required' })
+  @IsNotEmpty({ message: 'Verification code is required' })
+  @Length(6, 6, { message: 'Verification code must be 6 characters' })
   code: string;
 }
 
 export class ResetPasswordWithCodeDto {
-  @IsEmail({}, { message: 'Geçerli bir e-posta adresi giriniz' })
-  @IsNotEmpty({ message: 'E-posta adresi zorunludur' })
+  @IsEmail({}, { message: 'Please enter a valid email address' })
+  @IsNotEmpty({ message: 'Email is required' })
   email: string;
 
-  @IsString({ message: 'Doğrulama kodu zorunludur' })
-  @IsNotEmpty({ message: 'Doğrulama kodu zorunludur' })
-  @Length(6, 6, { message: 'Doğrulama kodu 6 karakter olmalıdır' })
+  @IsString({ message: 'Verification code is required' })
+  @IsNotEmpty({ message: 'Verification code is required' })
+  @Length(6, 6, { message: 'Verification code must be 6 characters' })
   code: string;
 
-  @IsString({ message: 'Yeni şifre zorunludur' })
-  @IsNotEmpty({ message: 'Yeni şifre zorunludur' })
-  @Length(8, 50, { message: 'Şifre en az 8 karakter olmalıdır' })
+  @IsString({ message: 'New password is required' })
+  @IsNotEmpty({ message: 'New password is required' })
+  @Length(8, 50, { message: 'Password must be at least 8 characters' })
   newPassword: string;
 }

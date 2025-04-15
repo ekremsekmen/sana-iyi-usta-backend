@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { Request } from 'express';
 import { SessionManagerService } from './session-manager.service';
 import { TokenManagerService } from './token-manager.service';
+import { ERROR_MESSAGES } from '../../../common/constants/error-messages';
 
 @Injectable()
 export class UserSessionService {
@@ -35,7 +36,7 @@ export class UserSessionService {
         },
       };
     } catch (error) {
-      throw new BadRequestException(`Session creation failed: ${error.message}`);
+      throw new BadRequestException(ERROR_MESSAGES.SESSION_CREATION_ERROR);
     }
   }
 

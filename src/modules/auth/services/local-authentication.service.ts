@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
+import { ERROR_MESSAGES } from '../../../common/constants/error-messages';
 
 @Injectable()
 export class LocalAuthenticationService {
@@ -18,17 +19,17 @@ export class LocalAuthenticationService {
     });
 
     if (!user || !user.user_auth.length) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException(ERROR_MESSAGES.INVALID_CREDENTIALS);
     }
 
     const userAuth = user.user_auth[0];
 
     if (!userAuth.password_hash || !await bcrypt.compare(password, userAuth.password_hash)) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException(ERROR_MESSAGES.INVALID_CREDENTIALS);
     }
 
     if (!userAuth.e_mail_verified) {
-      throw new UnauthorizedException('Email not verified');
+      throw new UnauthorizedException(ERROR_MESSAGES.EMAIL_NOT_VERIFIED);
     }
 
     const { user_auth, ...userWithoutAuth } = user;

@@ -14,6 +14,7 @@ import {
   EmailVerificationResponseDto,
   VerifyEmailDto,
 } from '../dto/email.dto';
+import { ERROR_MESSAGES } from '../../../common/constants/error-messages';
 
 // DTO tanımları
 interface SendPasswordResetCodeDto {
@@ -156,11 +157,11 @@ export class EmailService {
         };
       }
 
-      throw new NotFoundException('Invalid verification link');
+      throw new NotFoundException(ERROR_MESSAGES.INVALID_VERIFICATION_LINK);
     }
 
     if (verification.expires_at < new Date()) {
-      throw new BadRequestException('Verification link expired');
+      throw new BadRequestException(ERROR_MESSAGES.VERIFICATION_LINK_EXPIRED);
     }
 
     const existingVerification = verification.users.user_auth.some(

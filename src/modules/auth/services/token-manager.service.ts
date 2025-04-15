@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
+import { ERROR_MESSAGES } from '../../../common/constants/error-messages';
 
 @Injectable()
 export class TokenManagerService {
@@ -133,7 +134,7 @@ export class TokenManagerService {
     const tokenParts = combinedToken.split(':');
     
     if (tokenParts.length !== 2) {
-      throw new UnauthorizedException('Invalid refresh token format');
+      throw new UnauthorizedException(ERROR_MESSAGES.INVALID_TOKEN_FORMAT);
     }
     
     return [tokenParts[0], tokenParts[1]];
@@ -152,7 +153,7 @@ export class TokenManagerService {
     });
     
     if (!token) {
-      throw new UnauthorizedException('Refresh token not found or expired');
+      throw new UnauthorizedException(ERROR_MESSAGES.INVALID_REFRESH_TOKEN);
     }
     
     return token;
@@ -165,7 +166,7 @@ export class TokenManagerService {
     const isMatch = await bcrypt.compare(tokenValue, hashedToken);
     
     if (!isMatch) {
-      throw new UnauthorizedException('Invalid refresh token');
+      throw new UnauthorizedException(ERROR_MESSAGES.INVALID_REFRESH_TOKEN);
     }
   }
 

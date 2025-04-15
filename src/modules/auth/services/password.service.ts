@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../../../prisma/prisma.service';
 import { EmailService } from './email.service';
 import * as bcrypt from 'bcrypt';
+import { ERROR_MESSAGES } from '../../../common/constants/error-messages';
 
 @Injectable()
 export class PasswordService {
@@ -19,7 +20,7 @@ export class PasswordService {
     });
 
     if (!user) {
-      throw new NotFoundException('Bu e-posta adresi ile kayıtlı bir hesap bulunamadı');
+      throw new NotFoundException(ERROR_MESSAGES.EMAIL_NOT_FOUND);
     }
 
     const hasLocalAuth = user.user_auth.some(auth => auth.auth_provider === 'local');
@@ -29,14 +30,14 @@ export class PasswordService {
 
     if (!hasLocalAuth && socialProviders.length > 0) {
       return {
-        message: 'Bu hesap sadece sosyal medya ile giriş yapmaktadır. Lütfen aşağıdaki yöntemlerden birini kullanın:',
+        message: ERROR_MESSAGES.SOCIAL_AUTH_ONLY,
         status: 'social_auth_only',
         socialProviders: socialProviders
       };
     }
 
     if (!hasLocalAuth) {
-      throw new NotFoundException('Bu e-posta adresi ile kayıtlı bir yerel hesap bulunamadı');
+      throw new NotFoundException(ERROR_MESSAGES.LOCAL_AUTH_NOT_FOUND);
     }
 
     // 6 haneli doğrulama kodu oluştur
@@ -66,13 +67,13 @@ export class PasswordService {
         resetCode: resetCode,
       });
       return {
-        message: 'Şifre sıfırlama kodu e-posta adresinize gönderildi',
+        message: ERROR_MESSAGES.PASSWORD_RESET_CODE_SENT,
         status: 'success',
       };
     } catch (error) {
       console.error('Şifre sıfırlama kodu gönderme hatası:', error);
       return {
-        message: 'Şifre sıfırlama kodu gönderilemedi',
+        message: ERROR_MESSAGES.PASSWORD_RESET_CODE_SEND_FAILED,
         status: 'error',
       };
     }
@@ -89,17 +90,17 @@ export class PasswordService {
       });
 
       if (!user) {
-        throw new BadRequestException('Bu e-posta adresi ile kayıtlı bir hesap bulunamadı');
+        throw new BadRequestException(ERROR_MESSAGES.EMAIL_NOT_FOUND);
       }
 
       const hasLocalAuth = user.user_auth.some(auth => auth.auth_provider === 'local');
       
       if (!hasLocalAuth) {
-        throw new BadRequestException('Bu hesap yerel şifre sıfırlama işlemi için uygun değil');
+        throw new BadRequestException(ERROR_MESSAGES.LOCAL_AUTH_NOT_FOUND);
       }
 
       if (!user.password_reset_codes.length) {
-        throw new BadRequestException('Geçersiz doğrulama kodu veya süresi dolmuş istek');
+        throw new BadRequestException(ERROR_MESSAGES.INVALID_RESET_CODE);
       }
 
       const resetCode = user.password_reset_codes[0];
@@ -108,12 +109,12 @@ export class PasswordService {
         await this.prisma.password_reset_codes.delete({
           where: { id: resetCode.id },
         });
-        throw new BadRequestException('Doğrulama kodunun süresi dolmuş');
+        throw new BadRequestException(ERROR_MESSAGES.RESET_CODE_EXPIRED);
       }
 
       // Doğrudan kodu eşleştir (artık hash kullanmıyoruz)
       if (resetCode.reset_code !== code) {
-        throw new BadRequestException('Geçersiz doğrulama kodu');
+        throw new BadRequestException(ERROR_MESSAGES.INVALID_RESET_CODE);
       }
 
       // Kodu doğrulandı olarak işaretle
@@ -123,7 +124,7 @@ export class PasswordService {
       });
 
       return {
-        message: 'Doğrulama kodu geçerli. Yeni şifrenizi belirleyebilirsiniz.',
+        message: ERROR_MESSAGES.PASSWORD_RESET_CODE_VALID,
         status: 'success',
         isValid: true
       };
@@ -147,25 +148,25 @@ export class PasswordService {
       });
 
       if (!user) {
-        throw new BadRequestException('Bu e-posta adresi ile kayıtlı bir hesap bulunamadı');
+        throw new BadRequestException(ERROR_MESSAGES.EMAIL_NOT_FOUND);
       }
 
       const localAuth = user.user_auth.find(auth => auth.auth_provider === 'local');
       if (!localAuth) {
-        throw new BadRequestException('Bu hesap yerel şifre sıfırlama işlemi için uygun değil');
+        throw new BadRequestException(ERROR_MESSAGES.LOCAL_AUTH_NOT_FOUND);
       }
 
       const resetCode = user.password_reset_codes.find(rc => rc.reset_code === code && rc.is_verified);
       
       if (!resetCode) {
-        throw new BadRequestException('Geçersiz veya doğrulanmamış kod');
+        throw new BadRequestException(ERROR_MESSAGES.INVALID_RESET_CODE);
       }
       
       if (resetCode.expires_at < new Date()) {
         await this.prisma.password_reset_codes.delete({
           where: { id: resetCode.id },
         });
-        throw new BadRequestException('Doğrulama kodunun süresi dolmuş');
+        throw new BadRequestException(ERROR_MESSAGES.RESET_CODE_EXPIRED);
       }
       
       const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -184,7 +185,7 @@ export class PasswordService {
       ]);
 
       return {
-        message: 'Şifreniz başarıyla sıfırlandı',
+        message: ERROR_MESSAGES.PASSWORD_RESET_SUCCESS,
         status: 'success',
       };
     } catch (error) {
@@ -193,7 +194,7 @@ export class PasswordService {
       }
       
       return {
-        message: 'Şifre sıfırlama başarısız oldu',
+        message: ERROR_MESSAGES.PASSWORD_RESET_FAILED,
         status: 'error',
       };
     }

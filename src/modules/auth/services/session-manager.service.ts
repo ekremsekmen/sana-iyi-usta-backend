@@ -2,7 +2,7 @@ import { Injectable, Logger, InternalServerErrorException } from '@nestjs/common
 import { Request } from 'express';
 import { PrismaService } from '../../../prisma/prisma.service';
 import * as crypto from 'crypto';
-import * as bcrypt from 'bcrypt';
+import { ERROR_MESSAGES } from '../../../common/constants/error-messages';
 
 @Injectable()
 export class SessionManagerService {
@@ -41,7 +41,7 @@ export class SessionManagerService {
       return newSession;
     } catch (error) {
       this.logger.error(`Failed to create session for user ${userId}: ${error.message}`);
-      throw new InternalServerErrorException('Session creation failed');
+      throw new InternalServerErrorException(ERROR_MESSAGES.SESSION_CREATION_ERROR);
     }
   }
 
@@ -85,7 +85,7 @@ export class SessionManagerService {
       }
     } catch (error) {
       this.logger.error(`Failed to manage sessions for user ${userId}: ${error.message}`);
-      throw new InternalServerErrorException('Failed to manage user sessions');
+      throw new InternalServerErrorException(ERROR_MESSAGES.SESSION_MANAGEMENT_ERROR);
     }
   }
   
@@ -125,12 +125,12 @@ export class SessionManagerService {
   async logoutUser(userId: string, refreshToken: string) {
     try {
       if (!userId || !refreshToken) {
-        return { message: 'Invalid logout request', status: 'error' };
+        return { message: ERROR_MESSAGES.LOGOUT_ERROR, status: 'error' };
       }
 
       const tokenParts = refreshToken.split(':');
       if (tokenParts.length !== 2) {
-        return { message: 'Invalid token format', status: 'error' };
+        return { message: ERROR_MESSAGES.INVALID_TOKEN_FORMAT, status: 'error' };
       }
       
       await this.prisma.user_sessions.deleteMany({
@@ -141,7 +141,7 @@ export class SessionManagerService {
       return { message: 'Logged out successfully', status: 'success' };
     } catch (error) {
       this.logger.error(`Logout error for user ${userId}: ${error.message}`);
-      return { message: 'Error during logout', status: 'error' };
+      return { message: ERROR_MESSAGES.LOGOUT_ERROR, status: 'error' };
     }
   }
 }

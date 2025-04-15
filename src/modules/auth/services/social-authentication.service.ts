@@ -1,9 +1,9 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException, ConflictException } from '@nestjs/common';
 import { Request } from 'express';
 import axios from 'axios';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { GoogleAuthDto, AppleAuthDto, FacebookAuthDto } from '../dto/social-auth.dto';
-
+import { ERROR_MESSAGES } from '../../../common/constants/error-messages';
 
 export interface SocialUserInfo {
   e_mail: string;
@@ -29,7 +29,7 @@ export class SocialAuthenticationService {
       );
 
       if (googleUserInfo.data.sub !== googleAuthDto.providerId) {
-        throw new UnauthorizedException('Invalid Google credentials');
+        throw new UnauthorizedException(ERROR_MESSAGES.INVALID_CREDENTIALS);
       }
 
       // Standart SocialUserInfo nesnesine dönüştür
@@ -47,7 +47,7 @@ export class SocialAuthenticationService {
       if (error instanceof UnauthorizedException) {
         throw error;
       }
-      throw new BadRequestException('Failed to authenticate with Google');
+      throw new BadRequestException(ERROR_MESSAGES.SESSION_CREATION_ERROR);
     }
   }
 
@@ -65,7 +65,7 @@ export class SocialAuthenticationService {
 
       return await this.findOrCreateSocialUser(userInfo, 'icloud');
     } catch (error) {
-      throw new BadRequestException('Failed to authenticate with Apple');
+      throw new BadRequestException(ERROR_MESSAGES.APPLE_AUTH_FAILED);
     }
   }
 
@@ -77,7 +77,7 @@ export class SocialAuthenticationService {
       );
 
       if (fbUserInfo.data.id !== facebookAuthDto.providerId) {
-        throw new UnauthorizedException('Invalid Facebook credentials');
+        throw new UnauthorizedException(ERROR_MESSAGES.INVALID_CREDENTIALS);
       }
 
       // Standart SocialUserInfo nesnesine dönüştür
@@ -95,7 +95,7 @@ export class SocialAuthenticationService {
       if (error instanceof UnauthorizedException) {
         throw error;
       }
-      throw new BadRequestException('Failed to authenticate with Facebook');
+      throw new BadRequestException(ERROR_MESSAGES.SESSION_CREATION_ERROR);
     }
   }
 
@@ -107,17 +107,26 @@ export class SocialAuthenticationService {
    */
   async handleSocialUser(userInfo: any, provider: string) {
     if (!userInfo?.e_mail) {
-      throw new BadRequestException('Invalid social authentication data: Email required');
+      throw new BadRequestException(ERROR_MESSAGES.INVALID_CREDENTIALS);
     }
 
     const socialUserInfo: SocialUserInfo = {
       e_mail: userInfo.e_mail,
       full_name: userInfo.full_name || userInfo.name || `${provider} User`,
       provider_id: userInfo.provider_id || userInfo.sub || userInfo.id,
-      role: userInfo.role || 'CUSTOMER',
-      kvkk_approved: userInfo.kvkk_approved || true,
-      terms_approved: userInfo.terms_approved || true,
+      role: userInfo.role || 'customer',
+      kvkk_approved: userInfo.kvkk_approved === undefined ? false : userInfo.kvkk_approved,
+      terms_approved: userInfo.terms_approved === undefined ? false : userInfo.terms_approved,
     };
+
+    // KVKK ve kullanım şartları onay kontrolü
+    if (!socialUserInfo.kvkk_approved) {
+      throw new BadRequestException(ERROR_MESSAGES.KVKK_APPROVAL_REQUIRED);
+    }
+    
+    if (!socialUserInfo.terms_approved) {
+      throw new BadRequestException(ERROR_MESSAGES.TERMS_APPROVAL_REQUIRED);
+    }
 
     return this.findOrCreateSocialUser(socialUserInfo, provider);
   }
@@ -130,7 +139,16 @@ export class SocialAuthenticationService {
    */
   async findOrCreateSocialUser(userInfo: SocialUserInfo, provider: string) {
     if (!userInfo?.e_mail) {
-      throw new BadRequestException('Invalid social authentication data');
+      throw new BadRequestException(ERROR_MESSAGES.INVALID_CREDENTIALS);
+    }
+
+    // KVKK ve kullanım şartları onay kontrolü
+    if (!userInfo.kvkk_approved) {
+      throw new BadRequestException(ERROR_MESSAGES.KVKK_APPROVAL_REQUIRED);
+    }
+    
+    if (!userInfo.terms_approved) {
+      throw new BadRequestException(ERROR_MESSAGES.TERMS_APPROVAL_REQUIRED);
     }
 
     let user = await this.prisma.users.findUnique({
@@ -150,10 +168,12 @@ export class SocialAuthenticationService {
             auth_provider: provider,
             provider_id: userInfo.provider_id,
             e_mail_verified: true,
-            kvkk_approved: userInfo.kvkk_approved || true,
-            terms_approved: userInfo.terms_approved || true,
+            kvkk_approved: userInfo.kvkk_approved,
+            terms_approved: userInfo.terms_approved,
           },
         });
+      } else {
+        throw new ConflictException(ERROR_MESSAGES.AUTH_METHOD_ALREADY_LINKED);
       }
     } else {
       user = await this.prisma.users.create({
@@ -168,8 +188,8 @@ export class SocialAuthenticationService {
               auth_provider: provider,
               provider_id: userInfo.provider_id,
               e_mail_verified: true,
-              kvkk_approved: userInfo.kvkk_approved || true,
-              terms_approved: userInfo.terms_approved || true,
+              kvkk_approved: userInfo.kvkk_approved,
+              terms_approved: userInfo.terms_approved,
             },
           },
         },
@@ -180,7 +200,6 @@ export class SocialAuthenticationService {
     return user;
   }
 
-  // Yardımcı metot - sosyal kullanıcı bilgilerini standartlaştırma
   private mapToSocialUserInfo(
     email: string,
     fullName: string,

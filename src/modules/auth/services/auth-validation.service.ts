@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { RegisterDto, AuthProvider } from '../dto/register.dto';
+import { ERROR_MESSAGES } from '../../../common/constants/error-messages';
 
 @Injectable()
 export class AuthValidationService {
@@ -29,7 +30,7 @@ export class AuthValidationService {
         registerDto.provider_id,
       );
       if (existingAuth) {
-        throw new ConflictException('Account already exists');
+        throw new ConflictException(ERROR_MESSAGES.ACCOUNT_ALREADY_EXISTS);
       }
     }
 
@@ -37,14 +38,24 @@ export class AuthValidationService {
       registerDto.auth_provider === AuthProvider.LOCAL &&
       !registerDto.password
     ) {
-      throw new ConflictException('Password is required');
+      throw new ConflictException(ERROR_MESSAGES.PASSWORD_REQUIRED);
+    }
+
+    // KVKK onayı kontrolü
+    if (!registerDto.kvkk_approved) {
+      throw new BadRequestException(ERROR_MESSAGES.KVKK_APPROVAL_REQUIRED);
+    }
+
+    // Kullanım şartları kontrolü
+    if (!registerDto.terms_approved) {
+      throw new BadRequestException(ERROR_MESSAGES.TERMS_APPROVAL_REQUIRED);
     }
   }
 
   async validateUserRole(existingRole: string, newRole: string) {
     if (existingRole !== newRole) {
       throw new BadRequestException(
-        'Cannot register with a different role using the same email',
+        ERROR_MESSAGES.ROLE_CONFLICT,
       );
     }
   }

@@ -3,6 +3,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { RegisterDto, AuthProvider } from '../dto/register.dto';
 import { EmailService } from './email.service';
 import * as bcrypt from 'bcrypt';
+import { ERROR_MESSAGES } from '../../../common/constants/error-messages';
 
 @Injectable()
 export class UserRegistrationService {
@@ -27,9 +28,7 @@ export class UserRegistrationService {
       );
 
       if (existingAuth) {
-        throw new ConflictException(
-          'This authentication method is already linked to your account',
-        );
+        throw new ConflictException(ERROR_MESSAGES.AUTH_METHOD_ALREADY_LINKED);
       }
 
       return this.handleExistingUser(
@@ -70,13 +69,13 @@ export class UserRegistrationService {
       return {
         userId: existingUser.id,
         verificationEmailSent,
-        message: 'New authentication method added successfully',
+        message: ERROR_MESSAGES.NEW_AUTH_METHOD_ADDED,
       };
     }
 
     return {
       userId: existingUser.id,
-      message: 'New authentication method added successfully',
+      message: ERROR_MESSAGES.NEW_AUTH_METHOD_ADDED,
     };
   }
 

@@ -2,99 +2,99 @@ import { IsEmail, IsNotEmpty, IsString, IsOptional, IsEnum, IsBoolean } from 'cl
 import { UserRole } from './register.dto';
 
 export class GoogleAuthDto {
-  @IsNotEmpty()
-  @IsString()
+  @IsNotEmpty({ message: 'Access token is required' })
+  @IsString({ message: 'Access token must be a string' })
   accessToken: string;
 
-  @IsNotEmpty()
-  @IsString()
+  @IsNotEmpty({ message: 'Provider ID is required' })
+  @IsString({ message: 'Provider ID must be a string' })
   providerId: string;
 
-  @IsNotEmpty()
-  @IsEmail()
+  @IsNotEmpty({ message: 'Email is required' })
+  @IsEmail({}, { message: 'Please enter a valid email address' })
   email: string;
 
-  @IsNotEmpty()
-  @IsString()
+  @IsNotEmpty({ message: 'Full name is required' })
+  @IsString({ message: 'Full name must be a string' })
   fullName: string;
 
   @IsOptional()
-  @IsString()
+  @IsString({ message: 'Picture link must be a string' })
   picture?: string;
 
-  @IsNotEmpty()
-  @IsEnum(UserRole)
+  @IsNotEmpty({ message: 'Role is required' })
+  @IsEnum(UserRole, { message: 'Role is invalid' })
   role: UserRole;
 
-  @IsNotEmpty()
-  @IsBoolean()
+  @IsNotEmpty({ message: 'KVKK approval is required' })
+  @IsBoolean({ message: 'KVKK approval must be boolean' })
   kvkkApproved: boolean;
 
-  @IsNotEmpty()
-  @IsBoolean()
+  @IsNotEmpty({ message: 'Terms approval is required' })
+  @IsBoolean({ message: 'Terms approval must be boolean' })
   termsApproved: boolean;
 }
 
 export class AppleAuthDto {
-  @IsNotEmpty()
-  @IsString()
+  @IsNotEmpty({ message: 'Identity token is required' })
+  @IsString({ message: 'Identity token must be a string' })
   identityToken: string;
 
-  @IsNotEmpty()
-  @IsString()
+  @IsNotEmpty({ message: 'Provider ID is required' })
+  @IsString({ message: 'Provider ID must be a string' })
   providerId: string;
 
-  @IsNotEmpty()
-  @IsEmail()
+  @IsNotEmpty({ message: 'Email is required' })
+  @IsEmail({}, { message: 'Please enter a valid email address' })
   email: string;
 
   @IsOptional()
-  @IsString()
+  @IsString({ message: 'Full name must be a string' })
   fullName?: string;
 
-  @IsNotEmpty()
-  @IsEnum(UserRole)
+  @IsNotEmpty({ message: 'Role is required' })
+  @IsEnum(UserRole, { message: 'Role is invalid' })
   role: UserRole;
 
-  @IsNotEmpty()
-  @IsBoolean()
+  @IsNotEmpty({ message: 'KVKK approval is required' })
+  @IsBoolean({ message: 'KVKK approval must be boolean' })
   kvkkApproved: boolean;
 
-  @IsNotEmpty()
-  @IsBoolean()
+  @IsNotEmpty({ message: 'Terms approval is required' })
+  @IsBoolean({ message: 'Terms approval must be boolean' })
   termsApproved: boolean;
 }
 
 export class FacebookAuthDto {
-  @IsNotEmpty()
-  @IsString()
+  @IsNotEmpty({ message: 'Access token is required' })
+  @IsString({ message: 'Access token must be a string' })
   accessToken: string;
 
-  @IsNotEmpty()
-  @IsString()
+  @IsNotEmpty({ message: 'Provider ID is required' })
+  @IsString({ message: 'Provider ID must be a string' })
   providerId: string;
 
-  @IsNotEmpty()
-  @IsEmail()
+  @IsNotEmpty({ message: 'Email is required' })
+  @IsEmail({}, { message: 'Please enter a valid email address' })
   email: string;
 
-  @IsNotEmpty()
-  @IsString()
+  @IsNotEmpty({ message: 'Full name is required' })
+  @IsString({ message: 'Full name must be a string' })
   fullName: string;
 
   @IsOptional()
-  @IsString()
+  @IsString({ message: 'Picture must be a string' })
   picture?: string;
 
-  @IsNotEmpty()
-  @IsEnum(UserRole)
+  @IsNotEmpty({ message: 'Role is required' })
+  @IsEnum(UserRole, { message: 'Role is invalid' })
   role: UserRole;
 
-  @IsNotEmpty()
-  @IsBoolean()
+  @IsNotEmpty({ message: 'KVKK approval is required' })
+  @IsBoolean({ message: 'KVKK approval must be boolean' })
   kvkkApproved: boolean;
 
-  @IsNotEmpty()
-  @IsBoolean()
+  @IsNotEmpty({ message: 'Terms approval is required' })
+  @IsBoolean({ message: 'Terms approval must be boolean' })
   termsApproved: boolean;
 }
