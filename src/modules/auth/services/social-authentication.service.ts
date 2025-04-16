@@ -157,6 +157,8 @@ export class SocialAuthenticationService {
     });
 
     if (user) {
+      // Kullanıcı zaten varsa, rolü veritabanından al
+      userInfo.role = user.role;
       const existingAuth = user.user_auth.find(
         (auth) => auth.auth_provider === provider && auth.provider_id === userInfo.provider_id
       );
@@ -176,6 +178,7 @@ export class SocialAuthenticationService {
         throw new ConflictException(ERROR_MESSAGES.AUTH_METHOD_ALREADY_LINKED);
       }
     } else {
+      // Yeni kullanıcı ise, frontend'den gelen rolü kullan
       user = await this.prisma.users.create({
         data: {
           full_name: userInfo.full_name,
