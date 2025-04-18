@@ -170,14 +170,17 @@ veya
   "message": "E-posta adresiniz doğrulanmamış"
 }
 ```
-
 ### Google ile Mobil Giriş
 
-Google OAuth2 ile mobil uygulama için kimlik doğrulama ve giriş yapar.
+Google OAuth2 ile mobil uygulama için kimlik doğrulama ve giriş yapar. Bu endpoint hem ilk kayıt hem de mevcut hesaba giriş için kullanılır.
 
 - **URL**: `/auth/google/mobile`
 - **Method**: `POST`
 - **Content-Type**: `application/json`
+
+#### İlk Kez Google ile Kayıt (Yeni Kullanıcı)
+
+Kullanıcı ilk kez uygulama üzerinden Google hesabıyla kayıt oluyorsa, tüm bilgilerin gönderilmesi zorunludur.
 
 **İstek (Request)**
 
@@ -192,6 +195,24 @@ Google OAuth2 ile mobil uygulama için kimlik doğrulama ve giriş yapar.
   "termsApproved": true
 }
 ```
+
+> **Not:** İlk kayıt için `fullName`, `role`, `kvkkApproved` ve `termsApproved` alanları zorunludur. Eksik olması durumunda 400 Bad Request hatası döner.
+
+#### Mevcut Hesaba Google ile Giriş
+
+Kullanıcı daha önce kayıt olmuşsa, sadece temel doğrulama bilgileri yeterlidir.
+
+**İstek (Request)**
+
+```json
+{
+  "accessToken": "google-oauth2-access-token",
+  "providerId": "google-user-id",
+  "email": "mehmet@gmail.com"
+}
+```
+
+> **Not:** Daha önce kayıtlı kullanıcılar için sistem, veritabanındaki kayıtlı bilgileri (full_name, role, kvkk_approved, terms_approved) kullanır. Bu bilgilerin istekte gönderilmesi isteğe bağlıdır.
 
 **Başarılı Yanıt (200 OK)**
 
@@ -210,12 +231,21 @@ Google OAuth2 ile mobil uygulama için kimlik doğrulama ve giriş yapar.
 }
 ```
 
-**Hata Yanıtı (401 Unauthorized)**
+**Hata Yanıtı - Zorunlu Alan Eksik (400 Bad Request)**
+
+```json
+{
+  "statusCode": 400,
+  "message": "Bu gerekli alanlar eksik veya geçersiz: fullName, role, kvkkApproved, termsApproved"
+}
+```
+
+**Hata Yanıtı - Doğrulama Hatası (401 Unauthorized)**
 
 ```json
 {
   "statusCode": 401,
-  "message": "Geçersiz kullanıcı adı veya şifre"
+  "message": "Geçersiz kimlik bilgileri"
 }
 ```
 

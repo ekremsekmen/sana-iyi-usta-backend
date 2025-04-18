@@ -20,7 +20,6 @@ export class SocialAuthenticationService {
 
   async authenticateWithGoogle(googleAuthDto: GoogleAuthDto) {
     try {
-      // Google API'den kullanıcı bilgilerini doğrula
       const googleUserInfo = await axios.get(
         `https://www.googleapis.com/oauth2/v3/userinfo`,
         {
@@ -32,15 +31,42 @@ export class SocialAuthenticationService {
         throw new UnauthorizedException(ERROR_MESSAGES.INVALID_CREDENTIALS);
       }
 
-      // Standart SocialUserInfo nesnesine dönüştür
-      const userInfo = this.mapToSocialUserInfo(
-        googleAuthDto.email,
-        googleAuthDto.fullName,
-        googleAuthDto.providerId,
-        googleAuthDto.role,
-        googleAuthDto.kvkkApproved,
-        googleAuthDto.termsApproved
-      );
+      // Kullanıcı zaten var mı kontrolü
+      const existingUser = await this.prisma.users.findUnique({
+        where: { e_mail: googleAuthDto.email },
+        include: { user_auth: true },
+      });
+
+      let userInfo: SocialUserInfo;
+      if (existingUser) {
+        // Giriş: veritabanındaki bilgileri kullan
+        userInfo = {
+          e_mail: existingUser.e_mail,
+          full_name: existingUser.full_name,
+          provider_id: googleAuthDto.providerId,
+          role: existingUser.role,
+          kvkk_approved: existingUser.user_auth[0]?.kvkk_approved ?? true,
+          terms_approved: existingUser.user_auth[0]?.terms_approved ?? true,
+        };
+      } else {
+        // İlk kayıt: DTO'dan al, zorunlu kontrol
+        if (
+          !googleAuthDto.fullName ||
+          googleAuthDto.kvkkApproved === undefined ||
+          googleAuthDto.termsApproved === undefined ||
+          !googleAuthDto.role
+        ) {
+          throw new BadRequestException();
+        }
+        userInfo = this.mapToSocialUserInfo(
+          googleAuthDto.email,
+          googleAuthDto.fullName,
+          googleAuthDto.providerId,
+          googleAuthDto.role,
+          googleAuthDto.kvkkApproved,
+          googleAuthDto.termsApproved
+        );
+      }
 
       return await this.findOrCreateSocialUser(userInfo, 'google');
     } catch (error) {
@@ -53,15 +79,39 @@ export class SocialAuthenticationService {
 
   async authenticateWithApple(appleAuthDto: AppleAuthDto) {
     try {
-      // Apple için doğrulama daha basit
-      const userInfo = this.mapToSocialUserInfo(
-        appleAuthDto.email,
-        appleAuthDto.fullName || 'Apple User',
-        appleAuthDto.providerId,
-        appleAuthDto.role,
-        appleAuthDto.kvkkApproved,
-        appleAuthDto.termsApproved
-      );
+      // Kullanıcı zaten var mı kontrolü
+      const existingUser = await this.prisma.users.findUnique({
+        where: { e_mail: appleAuthDto.email },
+        include: { user_auth: true },
+      });
+
+      let userInfo: SocialUserInfo;
+      if (existingUser) {
+        userInfo = {
+          e_mail: existingUser.e_mail,
+          full_name: existingUser.full_name,
+          provider_id: appleAuthDto.providerId,
+          role: existingUser.role,
+          kvkk_approved: existingUser.user_auth[0]?.kvkk_approved ?? true,
+          terms_approved: existingUser.user_auth[0]?.terms_approved ?? true,
+        };
+      } else {
+        if (
+          appleAuthDto.kvkkApproved === undefined ||
+          appleAuthDto.termsApproved === undefined ||
+          !appleAuthDto.role
+        ) {
+          throw new BadRequestException('Bu hesap ile kayıtlı kullanıcı bulunamadı, önce kayıt olmalısınız.');
+        }
+        userInfo = this.mapToSocialUserInfo(
+          appleAuthDto.email,
+          appleAuthDto.fullName || 'Apple User',
+          appleAuthDto.providerId,
+          appleAuthDto.role,
+          appleAuthDto.kvkkApproved,
+          appleAuthDto.termsApproved
+        );
+      }
 
       return await this.findOrCreateSocialUser(userInfo, 'icloud');
     } catch (error) {
@@ -80,15 +130,40 @@ export class SocialAuthenticationService {
         throw new UnauthorizedException(ERROR_MESSAGES.INVALID_CREDENTIALS);
       }
 
-      // Standart SocialUserInfo nesnesine dönüştür
-      const userInfo = this.mapToSocialUserInfo(
-        facebookAuthDto.email,
-        facebookAuthDto.fullName,
-        facebookAuthDto.providerId,
-        facebookAuthDto.role,
-        facebookAuthDto.kvkkApproved,
-        facebookAuthDto.termsApproved
-      );
+      // Kullanıcı zaten var mı kontrolü
+      const existingUser = await this.prisma.users.findUnique({
+        where: { e_mail: facebookAuthDto.email },
+        include: { user_auth: true },
+      });
+
+      let userInfo: SocialUserInfo;
+      if (existingUser) {
+        userInfo = {
+          e_mail: existingUser.e_mail,
+          full_name: existingUser.full_name,
+          provider_id: facebookAuthDto.providerId,
+          role: existingUser.role,
+          kvkk_approved: existingUser.user_auth[0]?.kvkk_approved ?? true,
+          terms_approved: existingUser.user_auth[0]?.terms_approved ?? true,
+        };
+      } else {
+        if (
+          !facebookAuthDto.fullName ||
+          facebookAuthDto.kvkkApproved === undefined ||
+          facebookAuthDto.termsApproved === undefined ||
+          !facebookAuthDto.role
+        ) {
+          throw new BadRequestException('Bu hesap ile kayıtlı kullanıcı bulunamadı, önce kayıt olmalısınız.');
+        }
+        userInfo = this.mapToSocialUserInfo(
+          facebookAuthDto.email,
+          facebookAuthDto.fullName,
+          facebookAuthDto.providerId,
+          facebookAuthDto.role,
+          facebookAuthDto.kvkkApproved,
+          facebookAuthDto.termsApproved
+        );
+      }
 
       return await this.findOrCreateSocialUser(userInfo, 'facebook');
     } catch (error) {
@@ -174,11 +249,19 @@ export class SocialAuthenticationService {
             terms_approved: userInfo.terms_approved,
           },
         });
+        user = await this.prisma.users.findUnique({
+          where: { e_mail: userInfo.e_mail },
+          include: { user_auth: true },
+        });
+        return user;
       } else {
-        throw new ConflictException(ERROR_MESSAGES.AUTH_METHOD_ALREADY_LINKED);
+        return user;
       }
     } else {
-      // Yeni kullanıcı ise, frontend'den gelen rolü kullan
+      // Yeni kullanıcı ise, role zorunlu!
+      if (!userInfo.role) {
+        throw new BadRequestException('Role is required for new users');
+      }
       user = await this.prisma.users.create({
         data: {
           full_name: userInfo.full_name,

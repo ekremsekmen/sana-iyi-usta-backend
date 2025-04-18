@@ -14,25 +14,25 @@ export class GoogleAuthDto {
   @IsEmail({}, { message: 'Please enter a valid email address' })
   email: string;
 
-  @IsNotEmpty({ message: 'Full name is required' })
+  @IsOptional()
   @IsString({ message: 'Full name must be a string' })
-  fullName: string;
+  fullName?: string;
 
   @IsOptional()
   @IsString({ message: 'Picture link must be a string' })
   picture?: string;
 
-  @IsNotEmpty({ message: 'Role is required' })
+  @IsOptional()
   @IsEnum(UserRole, { message: 'Role is invalid' })
-  role: UserRole;
+  role?: UserRole;
 
-  @IsNotEmpty({ message: 'KVKK approval is required' })
+  @IsOptional()
   @IsBoolean({ message: 'KVKK approval must be boolean' })
-  kvkkApproved: boolean;
+  kvkkApproved?: boolean;
 
-  @IsNotEmpty({ message: 'Terms approval is required' })
+  @IsOptional()
   @IsBoolean({ message: 'Terms approval must be boolean' })
-  termsApproved: boolean;
+  termsApproved?: boolean;
 }
 
 export class AppleAuthDto {
@@ -52,17 +52,17 @@ export class AppleAuthDto {
   @IsString({ message: 'Full name must be a string' })
   fullName?: string;
 
-  @IsNotEmpty({ message: 'Role is required' })
+  @IsOptional()
   @IsEnum(UserRole, { message: 'Role is invalid' })
-  role: UserRole;
+  role?: UserRole;
 
-  @IsNotEmpty({ message: 'KVKK approval is required' })
+  @IsOptional()
   @IsBoolean({ message: 'KVKK approval must be boolean' })
-  kvkkApproved: boolean;
+  kvkkApproved?: boolean;
 
-  @IsNotEmpty({ message: 'Terms approval is required' })
+  @IsOptional()
   @IsBoolean({ message: 'Terms approval must be boolean' })
-  termsApproved: boolean;
+  termsApproved?: boolean;
 }
 
 export class FacebookAuthDto {
@@ -78,23 +78,23 @@ export class FacebookAuthDto {
   @IsEmail({}, { message: 'Please enter a valid email address' })
   email: string;
 
-  @IsNotEmpty({ message: 'Full name is required' })
+  @IsOptional()
   @IsString({ message: 'Full name must be a string' })
-  fullName: string;
+  fullName?: string;
 
   @IsOptional()
   @IsString({ message: 'Picture must be a string' })
   picture?: string;
 
-  @IsNotEmpty({ message: 'Role is required' })
+  @IsOptional()
   @IsEnum(UserRole, { message: 'Role is invalid' })
-  role: UserRole;
+  role?: UserRole;
 
-  @IsNotEmpty({ message: 'KVKK approval is required' })
+  @IsOptional()
   @IsBoolean({ message: 'KVKK approval must be boolean' })
-  kvkkApproved: boolean;
+  kvkkApproved?: boolean;
 
-  @IsNotEmpty({ message: 'Terms approval is required' })
+  @IsOptional()
   @IsBoolean({ message: 'Terms approval must be boolean' })
-  termsApproved: boolean;
+  termsApproved?: boolean;
 }
