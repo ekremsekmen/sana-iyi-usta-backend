@@ -240,6 +240,15 @@ Kullanıcı daha önce kayıt olmuşsa, sadece temel doğrulama bilgileri yeterl
 }
 ```
 
+**Hata Yanıtı - Rol Çakışması (409 Conflict)**
+
+```json
+{
+  "statusCode": 409,
+  "message": "Aynı e-posta ile farklı rol ile kayıt olunamaz"
+}
+```
+
 **Hata Yanıtı - Doğrulama Hatası (401 Unauthorized)**
 
 ```json
@@ -343,6 +352,19 @@ Facebook OAuth ile mobil uygulama için kimlik doğrulama ve giriş yapar.
   "message": "Geçersiz kullanıcı adı veya şifre"
 }
 ```
+
+**Hata Yanıtı - Rol Çakışması (409 Conflict)**
+
+```json
+{
+  "statusCode": 409,
+  "message": "Aynı e-posta ile farklı rol ile kayıt olunamaz"
+}
+```
+
+> **Not:**  
+> Eğer bir kullanıcı daha önce bir rol ile kayıt olduysa (ör. "customer"), aynı e-posta ile farklı bir rol ("mechanic" veya "admin") ile sosyal giriş/kayıt yapılmaya çalışılırsa sistem 409 Conflict ve `"Aynı e-posta ile farklı rol ile kayıt olunamaz"` mesajı döner.  
+> Bu, kullanıcıların bir e-posta adresiyle yalnızca bir rol ile kayıt olmasını ve giriş yapmasını garanti eder.
 
 ### Çıkış (Logout)
 

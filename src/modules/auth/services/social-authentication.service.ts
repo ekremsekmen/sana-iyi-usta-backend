@@ -232,6 +232,10 @@ export class SocialAuthenticationService {
     });
 
     if (user) {
+      // Rol çakışması kontrolü
+      if (userInfo.role && user.role !== userInfo.role) {
+        throw new ConflictException(ERROR_MESSAGES.ROLE_CONFLICT);
+      }
       // Kullanıcı zaten varsa, rolü veritabanından al
       userInfo.role = user.role;
       const existingAuth = user.user_auth.find(
