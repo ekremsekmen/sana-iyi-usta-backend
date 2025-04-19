@@ -7,7 +7,6 @@ import { ERROR_MESSAGES } from '../../../common/constants/error-messages';
 @Injectable()
 export class SessionManagerService {
   private readonly logger = new Logger(SessionManagerService.name);
-  private readonly MAX_ACTIVE_DEVICES = 2;
 
   constructor(
     private prisma: PrismaService,
@@ -16,16 +15,10 @@ export class SessionManagerService {
   async createUserSession(userId: string, request: Request) {
     try {
       const deviceId = this.getOrCreateDeviceId(request);
-      const existingSession = await this.findExistingSession(userId, deviceId);
-      
-      if (existingSession) {
-        this.logger.debug(`Updating existing session for user ${userId} with device ${deviceId}`);
-        return existingSession;
-      }
-      
+      await this.prisma.user_sessions.deleteMany({
+        where: { user_id: userId },
+      });
 
-      await this.manageUserSessions(userId, deviceId);
-      
       const newSession = await this.prisma.user_sessions.create({
         data: {
           user_id: userId,
@@ -45,51 +38,6 @@ export class SessionManagerService {
     }
   }
 
-
-  private async findExistingSession(userId: string, deviceId: string) {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
-    return await this.prisma.user_sessions.findFirst({
-      where: {
-        user_id: userId,
-        device_id: deviceId,
-        created_at: {
-          gte: thirtyDaysAgo
-        }
-      },
-      orderBy: {
-        created_at: 'desc'
-      }
-    });
-  }
-  
-
-  private async manageUserSessions(userId: string, currentDeviceId: string) {
-    try {
-      const activeSessions = await this.prisma.user_sessions.findMany({
-        where: { user_id: userId },
-        orderBy: { created_at: 'asc' }
-      });
-      
-      if (activeSessions.length >= this.MAX_ACTIVE_DEVICES) {
-        const sessionsToDelete = activeSessions.length - this.MAX_ACTIVE_DEVICES + 1;
-        const oldestSessions = activeSessions.slice(0, sessionsToDelete);
-        
-        for (const session of oldestSessions) {
-          await this.prisma.user_sessions.delete({
-            where: { id: session.id }
-          });
-          this.logger.debug(`Deleted oldest session ID: ${session.id} for user ${userId}`);
-        }
-      }
-    } catch (error) {
-      this.logger.error(`Failed to manage sessions for user ${userId}: ${error.message}`);
-      throw new InternalServerErrorException(ERROR_MESSAGES.SESSION_MANAGEMENT_ERROR);
-    }
-  }
-  
-
   private getOrCreateDeviceId(request: Request): string {
     const providedDeviceId = request.headers['device-id'] as string;
     if (providedDeviceId) {
@@ -101,7 +49,6 @@ export class SessionManagerService {
     
     return crypto.createHash('md5').update(`${userAgent}:${ip}`).digest('hex');
   }
-
 
   async updateFcmToken(userId: string, deviceId: string, fcmToken: string) {
     if (!fcmToken) return;

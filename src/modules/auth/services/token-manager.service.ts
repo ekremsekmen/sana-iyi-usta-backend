@@ -7,8 +7,6 @@ import { ERROR_MESSAGES } from '../../../common/constants/error-messages';
 
 @Injectable()
 export class TokenManagerService {
-  private readonly MAX_ACTIVE_TOKENS = 2;  // Cihaz başına maksimum token sayısı
-
   constructor(
     private jwtService: JwtService,
     private prisma: PrismaService,
@@ -18,10 +16,11 @@ export class TokenManagerService {
    * Kullanıcı için access ve refresh token üretir
    */
   async generateTokens(userId: string, role: string) {
-    // Aktif token sayısını yönet
-    await this.manageUserTokens(userId);
-    
-    // Token'ları üret
+    // Kullanıcının eski refresh tokenlarını sil
+    await this.prisma.refresh_tokens.deleteMany({
+      where: { user_id: userId },
+    });
+
     const refreshToken = await this.generateRefreshToken(userId);
     const accessToken = await this.generateAccessToken(userId, role);
 
@@ -31,35 +30,6 @@ export class TokenManagerService {
       token_type: 'Bearer',
       expires_in: 900, // 15 dakika
     };
-  }
-
-  /**
-   * Kullanıcının token sayısını kontrol eder ve gerekirse en eski tokenları siler
-   */
-  private async manageUserTokens(userId: string): Promise<void> {
-    try {
-      const activeTokens = await this.prisma.refresh_tokens.findMany({
-        where: { 
-          user_id: userId,
-          expires_at: { gt: new Date() }
-        },
-        orderBy: { created_at: 'asc' }
-      });
-      
-      if (activeTokens.length >= this.MAX_ACTIVE_TOKENS) {
-        const tokensToDelete = activeTokens.length - this.MAX_ACTIVE_TOKENS + 1;
-        const tokensToDeleteIds = activeTokens.slice(0, tokensToDelete).map(token => token.id);
-        
-        await this.prisma.refresh_tokens.deleteMany({
-          where: { 
-            id: { in: tokensToDeleteIds } 
-          }
-        });
-      }
-    } catch (error) {
-      // Hata loglama
-      console.error(`Token management error for user ${userId}:`, error);
-    }
   }
 
   /**
@@ -105,20 +75,22 @@ export class TokenManagerService {
   async refreshAccessToken(combinedToken: string) {
     // Token doğrulama ve ayırma
     const [tokenId, tokenValue] = this.parseRefreshToken(combinedToken);
-    
+
     // Token DB kaydını bul
     const tokenEntry = await this.findRefreshTokenEntry(tokenId);
-    
+
     // Token hash doğrulaması
     await this.verifyRefreshTokenHash(tokenValue, tokenEntry.hashed_token);
-    
-    // Kullanılan token'ı sil
-    await this.deleteRefreshToken(tokenId);
-    
+
+    // Kullanılan token'ı ve kullanıcıya ait diğer refresh tokenları sil
+    await this.prisma.refresh_tokens.deleteMany({
+      where: { user_id: tokenEntry.user_id },
+    });
+
     // Yeni tokenlar üret
     const newRefreshToken = await this.generateRefreshToken(tokenEntry.user_id);
     const accessToken = await this.generateAccessToken(tokenEntry.user_id, tokenEntry.users.role);
-    
+
     return {
       access_token: accessToken,
       refresh_token: newRefreshToken, 
