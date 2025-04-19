@@ -19,21 +19,24 @@ model advertisements {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model appointments {
-  id                          String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  customer_service_request_id String                    @db.Uuid
-  mechanic_id                 String                    @db.Uuid
-  customer_id                 String                    @db.Uuid
-  appointment_date            DateTime                  @db.Timestamptz(6)
-  created_at                  DateTime                  @default(now()) @db.Timestamptz(6)
-  status                      String
-  vehicle_id                  String                    @db.Uuid
-  start_time                  DateTime                  @db.Timestamptz(6)
-  end_time                    DateTime                  @db.Timestamptz(6)
-  customers                   customers                 @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  customer_service_requests   customer_service_requests @relation(fields: [customer_service_request_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  mechanics                   mechanics                 @relation(fields: [mechanic_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  customer_vehicles           customer_vehicles         @relation(fields: [vehicle_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_appointments_vehicle_id")
-  ratings_reviews             ratings_reviews?
+  id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mechanic_id       String            @db.Uuid
+  customer_id       String            @db.Uuid
+  appointment_date  DateTime          @db.Timestamptz(6)
+  created_at        DateTime          @default(now()) @db.Timestamptz(6)
+  status            String
+  vehicle_id        String            @db.Uuid
+  start_time        DateTime          @db.Timestamptz(6)
+  end_time          DateTime          @db.Timestamptz(6)
+  description       String?
+  location          String?
+  latitude          Decimal?          @db.Decimal(9, 6)
+  longitude         Decimal?          @db.Decimal(9, 6)
+  appointment_type  AppointmentType
+  customers         customers         @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  mechanics         mechanics         @relation(fields: [mechanic_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  customer_vehicles customer_vehicles @relation(fields: [vehicle_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_appointments_vehicle_id")
+  ratings_reviews   ratings_reviews?
 }
 
 model brands {
@@ -73,26 +76,6 @@ model campaigns {
   variants            variants?             @relation(fields: [variant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-model customer_service_requests {
-  id                      String                    @id(map: "service_requests_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  customer_id             String                    @db.Uuid
-  vehicle_id              String                    @db.Uuid
-  description             String
-  location                String
-  latitude                Decimal                   @db.Decimal
-  longitude               Decimal                   @db.Decimal
-  status                  String                    @default("pending")
-  created_at              DateTime                  @default(now()) @db.Timestamptz(6)
-  mechanic_id             String?                   @db.Uuid
-  appointments            appointments[]
-  mechanics               mechanics?                @relation(fields: [mechanic_id], references: [id], onUpdate: NoAction)
-  customers               customers                 @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "service_requests_customer_id_fkey")
-  customer_vehicles       customer_vehicles         @relation(fields: [vehicle_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "service_requests_vehicle_id_fkey")
-  ratings_reviews         ratings_reviews?
-  requested_services_list requested_services_list[]
-}
-
 model customer_vehicles {
   id                          String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   customer_id                 String                        @db.Uuid
@@ -103,7 +86,6 @@ model customer_vehicles {
   plate_number                String?                       @unique
   created_at                  DateTime                      @default(now()) @db.Timestamptz(6)
   appointments                appointments[]
-  customer_service_requests   customer_service_requests[]
   brands                      brands                        @relation(fields: [brand_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   customers                   customers                     @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   models                      models                        @relation(fields: [model_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -121,7 +103,6 @@ model customers {
   longitude                   Decimal?                      @db.Decimal(9, 6)
   created_at                  DateTime?                     @default(now()) @db.Timestamptz(6)
   appointments                appointments[]
-  customer_service_requests   customer_service_requests[]
   customer_vehicles           customer_vehicles[]
   users                       users                         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   ratings_reviews             ratings_reviews[]
@@ -165,7 +146,6 @@ model mechanics {
   advertisements              advertisements[]
   appointments                appointments[]
   campaigns                   campaigns[]
-  customer_service_requests   customer_service_requests[]
   mechanic_services           mechanic_services[]
   mechanic_supported_vehicles mechanic_supported_vehicles[]
   mechanic_working_hours      mechanic_working_hours[]
@@ -229,19 +209,17 @@ model payments {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model ratings_reviews {
-  id                        String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  appointment_id            String?                    @unique @db.Uuid
-  mechanic_id               String                     @db.Uuid
-  customer_id               String                     @db.Uuid
-  rating                    Decimal                    @db.Decimal
-  review                    String?
-  created_at                DateTime                   @default(now()) @db.Timestamptz(6)
-  service_request_id        String?                    @unique @db.Uuid
-  mechanic_response         String?
-  appointments              appointments?              @relation(fields: [appointment_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  customers                 customers                  @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  mechanics                 mechanics                  @relation(fields: [mechanic_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  customer_service_requests customer_service_requests? @relation(fields: [service_request_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id                String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  appointment_id    String?       @unique @db.Uuid
+  mechanic_id       String        @db.Uuid
+  customer_id       String        @db.Uuid
+  rating            Decimal       @db.Decimal
+  review            String?
+  created_at        DateTime      @default(now()) @db.Timestamptz(6)
+  mechanic_response String?
+  appointments      appointments? @relation(fields: [appointment_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  customers         customers     @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  mechanics         mechanics     @relation(fields: [mechanic_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
 model refresh_tokens {
@@ -253,21 +231,12 @@ model refresh_tokens {
   users        users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
-model requested_services_list {
-  service_request_id        String                    @db.Uuid
-  service_id                Int
-  id                        String                    @id(map: "service_request_services_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  services_categories       services_categories       @relation(fields: [service_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "service_request_services_service_id_fkey")
-  customer_service_requests customer_service_requests @relation(fields: [service_request_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "service_request_services_service_request_id_fkey")
-}
-
 model services_categories {
-  id                      Int                       @id(map: "services_pkey") @default(autoincrement())
-  name                    String?
-  category                String?
-  campaign_categories     campaign_categories[]
-  mechanic_services       mechanic_services[]
-  requested_services_list requested_services_list[]
+  id                  Int                   @id(map: "services_pkey") @default(autoincrement())
+  name                String?
+  category            String?
+  campaign_categories campaign_categories[]
+  mechanic_services   mechanic_services[]
 }
 
 model user_auth {
@@ -374,4 +343,9 @@ model password_reset_codes {
   expires_at  DateTime @db.Timestamptz(6)
   created_at  DateTime @default(now()) @db.Timestamptz(6)
   users       users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+enum AppointmentType {
+  AT_SERVICE
+  ON_SITE
 }
