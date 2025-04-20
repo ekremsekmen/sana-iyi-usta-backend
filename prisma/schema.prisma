@@ -29,11 +29,10 @@ model appointments {
   start_time        DateTime          @db.Timestamptz(6)
   end_time          DateTime          @db.Timestamptz(6)
   description       String?
-  location          String?
-  latitude          Decimal?          @db.Decimal(9, 6)
-  longitude         Decimal?          @db.Decimal(9, 6)
   appointment_type  AppointmentType
+  location_id       String?           @db.Uuid
   customers         customers         @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  locations         locations?        @relation(fields: [location_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   mechanics         mechanics         @relation(fields: [mechanic_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   customer_vehicles customer_vehicles @relation(fields: [vehicle_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_appointments_vehicle_id")
   ratings_reviews   ratings_reviews?
@@ -98,9 +97,6 @@ model customers {
   id                          String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   user_id                     String                        @db.Uuid
   city                        String
-  location                    String?
-  latitude                    Decimal?                      @db.Decimal(9, 6)
-  longitude                   Decimal?                      @db.Decimal(9, 6)
   created_at                  DateTime?                     @default(now()) @db.Timestamptz(6)
   appointments                appointments[]
   customer_vehicles           customer_vehicles[]
@@ -137,9 +133,6 @@ model mechanics {
   user_id                     String                        @db.Uuid
   business_name               String
   city                        String?
-  location                    String?
-  latitude                    Decimal?                      @db.Decimal(9, 6)
-  longitude                   Decimal?                      @db.Decimal(9, 6)
   on_site_service             Boolean?                      @default(false)
   average_rating              Decimal?                      @db.Decimal(3, 2)
   created_at                  DateTime                      @default(now()) @db.Timestamptz(6)
@@ -276,6 +269,7 @@ model users {
   e_mail                               String                 @unique
   customers                            customers[]
   email_verifications                  email_verifications[]
+  locations                            locations[]
   mechanics                            mechanics[]
   messages_messages_receiver_idTousers messages[]             @relation("messages_receiver_idTousers")
   messages_messages_sender_idTousers   messages[]             @relation("messages_sender_idTousers")
@@ -343,6 +337,18 @@ model password_reset_codes {
   expires_at  DateTime @db.Timestamptz(6)
   created_at  DateTime @default(now()) @db.Timestamptz(6)
   users       users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model locations {
+  id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id      String         @db.Uuid
+  address      String
+  latitude     Decimal?       @db.Decimal(9, 6)
+  longitude    Decimal?       @db.Decimal(9, 6)
+  label        String?
+  created_at   DateTime?      @default(now()) @db.Timestamptz(6)
+  appointments appointments[]
+  users        users          @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
 enum AppointmentType {
