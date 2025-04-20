@@ -14,10 +14,11 @@ import { ServiceRequestsModule } from './modules/service-requests/service-reques
 import { CustomersModule } from './modules/customers/customers.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { ConfigModule } from '@nestjs/config'; // Eklendi
 
 @Module({
   imports: [
-    // Throttler modülü için doğru yapılandırma
+    ConfigModule.forRoot({ isGlobal: true }), // .env desteği için eklendi
     ThrottlerModule.forRoot([{
       ttl: 60000, // 1 dakika
       limit: 1000, // Çok yüksek bir limit

@@ -15,14 +15,20 @@ import { LocalAuthenticationService } from './services/local-authentication.serv
 import { SocialAuthenticationService } from './services/social-authentication.service';
 import { UserSessionService } from './services/user-session.service';
 import { PasswordService } from './services/password.service';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
+    ConfigModule,
     PrismaModule,
     PassportModule,
-    JwtModule.register({
-      secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: '15m' },
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET'),
+        signOptions: { expiresIn: '15m' },
+      }),
     }),
   ],
   controllers: [AuthController],
