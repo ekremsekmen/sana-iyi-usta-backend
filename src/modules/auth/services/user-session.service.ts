@@ -42,16 +42,30 @@ export class UserSessionService {
 
 
   async logout(userId: string, refreshToken: string) {
-    const result = await this.sessionManager.logoutUser(userId, refreshToken);
-    
-    if (result.status === 'success') {
-      const tokenParts = refreshToken.split(':');
-      if (tokenParts.length === 2) {
-        await this.tokenManager.deleteRefreshToken(tokenParts[0]);
-      }
+    const parts = refreshToken.split(':');
+    if (parts.length !== 2) {
+      throw new BadRequestException(ERROR_MESSAGES.INVALID_TOKEN_FORMAT);
     }
-    
-    return result;
+    const tokenId = parts[0];
+
+    const tokenExists = await this.tokenManager.checkRefreshTokenExists(tokenId);
+    if (!tokenExists) {
+      throw new BadRequestException(ERROR_MESSAGES.INVALID_REFRESH_TOKEN);
+    }
+
+    const sessionExists = await this.sessionManager.checkUserSession(userId);
+    if (!sessionExists) {
+      throw new BadRequestException(ERROR_MESSAGES.LOGOUT_ERROR);
+    }
+
+    try {
+      await this.sessionManager.logoutUser(userId);
+    } catch (err) {
+      throw new BadRequestException(err.message || ERROR_MESSAGES.LOGOUT_ERROR);
+    }
+
+    await this.tokenManager.deleteRefreshToken(tokenId);
+    return { message: 'Logged out successfully', status: 'success' };
   }
 
   async refreshAccessToken(refreshToken: string) {

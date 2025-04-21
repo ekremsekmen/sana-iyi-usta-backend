@@ -1,8 +1,6 @@
 import { Controller, Post, Body, Get, Query, UseGuards, HttpCode, HttpStatus, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { TokenManagerService } from './services/token-manager.service';
 import { RegisterDto } from './dto/register.dto';
-import { EmailService } from './services/email.service';
 import { EmailVerificationResponseDto, VerifyEmailDto } from './dto/email.dto';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { LoginDto } from './dto/login.dto';
@@ -22,8 +20,6 @@ import {
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
-    private readonly emailService: EmailService,
-    private readonly tokenManager: TokenManagerService,
   ) {}
 
   @Post('register')
@@ -38,7 +34,8 @@ export class AuthController {
   async verifyEmail(
     @Query() verifyEmailDto: VerifyEmailDto,
   ): Promise<EmailVerificationResponseDto> {
-    return await this.emailService.verifyEmail(verifyEmailDto);
+    // EmailService yerine AuthService'i kullanıyoruz
+    return await this.authService.verifyEmail(verifyEmailDto);
   }
 
   @UseGuards(LocalAuthGuard)
@@ -53,7 +50,7 @@ export class AuthController {
   @Throttle({ default: { limit: 50, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   async refreshToken(@Body() refreshTokenDto: RefreshTokenDto) {
-    return this.tokenManager.refreshAccessToken(refreshTokenDto.refresh_token);
+    return this.authService.refreshToken(refreshTokenDto.refresh_token);
   }
 
   @UseGuards(JwtGuard)
@@ -88,7 +85,6 @@ export class AuthController {
     return this.authService.initiatePasswordReset(dto.email);
   }
 
-  // Yeni endpoint ekliyoruz - doğrulama kodunu kontrol etmek için
   @Post('verify-reset-code')
   @HttpCode(HttpStatus.OK)
   async verifyResetCode(@Body() dto: VerifyResetCodeDto) {

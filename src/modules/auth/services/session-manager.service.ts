@@ -69,26 +69,26 @@ export class SessionManagerService {
     }
   }
 
-  async logoutUser(userId: string, refreshToken: string) {
+  async logoutUser(userId: string): Promise<void> {
     try {
-      if (!userId || !refreshToken) {
-        return { message: ERROR_MESSAGES.LOGOUT_ERROR, status: 'error' };
-      }
-
-      const tokenParts = refreshToken.split(':');
-      if (tokenParts.length !== 2) {
-        return { message: ERROR_MESSAGES.INVALID_TOKEN_FORMAT, status: 'error' };
-      }
-      
       await this.prisma.user_sessions.deleteMany({
-        where: { user_id: userId }
+        where: { user_id: userId },
       });
-      
-      this.logger.debug(`User ${userId} logged out successfully - sessions cleared`);
-      return { message: 'Logged out successfully', status: 'success' };
+      this.logger.debug(`User ${userId} sessions cleared`);
     } catch (error) {
       this.logger.error(`Logout error for user ${userId}: ${error.message}`);
-      return { message: ERROR_MESSAGES.LOGOUT_ERROR, status: 'error' };
+      throw new InternalServerErrorException(ERROR_MESSAGES.LOGOUT_ERROR);
     }
+  }
+
+  /**
+   * Kullanıcının aktif bir oturumu olup olmadığını kontrol eder
+   */
+  async checkUserSession(userId: string): Promise<boolean> {
+    const sessionCount = await this.prisma.user_sessions.count({
+      where: { user_id: userId }
+    });
+    
+    return sessionCount > 0;
   }
 }

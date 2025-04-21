@@ -9,6 +9,9 @@ import { LocalAuthenticationService } from './services/local-authentication.serv
 import { SocialAuthenticationService } from './services/social-authentication.service';
 import { UserSessionService } from './services/user-session.service';
 import { PasswordService } from './services/password.service';
+import { TokenManagerService } from './services/token-manager.service';
+import { EmailService } from './services/email.service';
+import { EmailVerificationResponseDto, VerifyEmailDto } from './dto/email.dto';
 
 @Injectable()
 export class AuthService {
@@ -19,6 +22,8 @@ export class AuthService {
     private readonly socialAuthService: SocialAuthenticationService,
     private readonly userSessionService: UserSessionService,
     private readonly passwordService: PasswordService,
+    private readonly tokenManager: TokenManagerService,
+    private readonly emailService: EmailService,
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -60,7 +65,7 @@ export class AuthService {
   }
 
   async refreshToken(refreshToken: string) {
-    return this.userSessionService.refreshAccessToken(refreshToken);
+    return this.tokenManager.refreshAccessToken(refreshToken);
   }
 
   async initiatePasswordReset(email: string) {
@@ -77,5 +82,9 @@ export class AuthService {
 
   async changePassword(userId: string, dto: { oldPassword: string; newPassword: string; newPasswordConfirm: string }) {
     return this.passwordService.changePassword(userId, dto.oldPassword, dto.newPassword, dto.newPasswordConfirm);
+  }
+
+  async verifyEmail(verifyEmailDto: VerifyEmailDto): Promise<EmailVerificationResponseDto> {
+    return this.emailService.verifyEmail(verifyEmailDto);
   }
 }

@@ -12,11 +12,8 @@ export class TokenManagerService {
     private prisma: PrismaService,
   ) {}
 
-  /**
-   * Kullanıcı için access ve refresh token üretir
-   */
+
   async generateTokens(userId: string, role: string) {
-    // Kullanıcının eski refresh tokenlarını sil
     await this.prisma.refresh_tokens.deleteMany({
       where: { user_id: userId },
     });
@@ -28,13 +25,11 @@ export class TokenManagerService {
       access_token: accessToken,
       refresh_token: refreshToken,
       token_type: 'Bearer',
-      expires_in: 900, // 15 dakika
+      expires_in: 900, 
     };
   }
 
-  /**
-   * Access token üretir
-   */
+
   private async generateAccessToken(userId: string, role: string): Promise<string> {
     const nonce = crypto.randomBytes(8).toString('hex');
     
@@ -45,16 +40,14 @@ export class TokenManagerService {
     });
   }
 
-  /**
-   * Refresh token üretir ve veritabanına kaydeder
-   */
+ 
   private async generateRefreshToken(userId: string): Promise<string> {
     const refreshToken = crypto.randomBytes(40).toString('hex');
     const hashedToken = await bcrypt.hash(refreshToken, 10);
     const tokenId = crypto.randomBytes(16).toString('hex');
     
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 30); // 30 günlük
+    expiresAt.setDate(expiresAt.getDate() + 30); 
     
     await this.prisma.refresh_tokens.create({
       data: {
@@ -69,25 +62,22 @@ export class TokenManagerService {
     return `${tokenId}:${refreshToken}`;
   }
 
-  /**
-   * Token yenileme - refresh token ile yeni token kümesi üretir
-   */
   async refreshAccessToken(combinedToken: string) {
-    // Token doğrulama ve ayırma
     const [tokenId, tokenValue] = this.parseRefreshToken(combinedToken);
 
-    // Token DB kaydını bul
     const tokenEntry = await this.findRefreshTokenEntry(tokenId);
 
-    // Token hash doğrulaması
+    const isValid = await this.validateRefreshToken(tokenEntry.user_id, combinedToken);
+    if (!isValid) {
+      throw new UnauthorizedException(ERROR_MESSAGES.INVALID_REFRESH_TOKEN);
+    }
+
     await this.verifyRefreshTokenHash(tokenValue, tokenEntry.hashed_token);
 
-    // Kullanılan token'ı ve kullanıcıya ait diğer refresh tokenları sil
     await this.prisma.refresh_tokens.deleteMany({
       where: { user_id: tokenEntry.user_id },
     });
 
-    // Yeni tokenlar üret
     const newRefreshToken = await this.generateRefreshToken(tokenEntry.user_id);
     const accessToken = await this.generateAccessToken(tokenEntry.user_id, tokenEntry.users.role);
 
@@ -95,13 +85,10 @@ export class TokenManagerService {
       access_token: accessToken,
       refresh_token: newRefreshToken, 
       token_type: 'Bearer',
-      expires_in: 900, // 15 dakika
+      expires_in: 900, 
     };
   }
-  
-  /**
-   * Refresh token'ı ayrıştırır
-   */
+
   private parseRefreshToken(combinedToken: string): [string, string] {
     const tokenParts = combinedToken.split(':');
     
@@ -112,9 +99,7 @@ export class TokenManagerService {
     return [tokenParts[0], tokenParts[1]];
   }
   
-  /**
-   * Refresh token DB kaydını bulur
-   */
+
   private async findRefreshTokenEntry(tokenId: string) {
     const token = await this.prisma.refresh_tokens.findFirst({
       where: {
@@ -130,10 +115,7 @@ export class TokenManagerService {
     
     return token;
   }
-  
-  /**
-   * Refresh token hash doğrulaması yapar
-   */
+
   private async verifyRefreshTokenHash(tokenValue: string, hashedToken: string) {
     const isMatch = await bcrypt.compare(tokenValue, hashedToken);
     
@@ -142,9 +124,7 @@ export class TokenManagerService {
     }
   }
 
-  /**
-   * Refresh token doğrulama fonksiyonu
-   */
+ 
   async validateRefreshToken(userId: string, refreshToken: string): Promise<boolean> {
     if (!userId || !refreshToken) {
       return false;
@@ -160,7 +140,8 @@ export class TokenManagerService {
     const tokenEntry = await this.prisma.refresh_tokens.findFirst({
       where: { 
         id: tokenId,
-        user_id: userId 
+        user_id: userId,
+        expires_at: { gt: new Date() } 
       },
     });
 
@@ -171,14 +152,24 @@ export class TokenManagerService {
     return bcrypt.compare(tokenValue, tokenEntry.hashed_token);
   }
 
-  /**
-   * Token silme fonksiyonu
-   */
-  async deleteRefreshToken(tokenId: string): Promise<void> {
-    await this.prisma.refresh_tokens.delete({ 
-      where: { id: tokenId } 
-    }).catch(() => {
-      // Silme işlemi başarısız olsa bile devam et
+
+  async checkRefreshTokenExists(tokenId: string): Promise<boolean> {
+    const token = await this.prisma.refresh_tokens.findUnique({
+      where: { id: tokenId },
+      select: { id: true }
     });
+    
+    return !!token;
+  }
+
+
+  async deleteRefreshToken(tokenId: string): Promise<void> {
+    const tokenExists = await this.checkRefreshTokenExists(tokenId);
+
+    if (tokenExists) {
+      await this.prisma.refresh_tokens.delete({ 
+        where: { id: tokenId } 
+      });
+    }
   }
 }
