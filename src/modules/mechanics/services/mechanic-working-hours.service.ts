@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateMechanicWorkingHoursDto } from '../dto/create-mechanic-working-hours.dto';
 import { UpdateMechanicWorkingHoursDto } from '../dto/update-mechanic-working-hours.dto';
 import { randomUUID } from 'crypto';
@@ -89,15 +89,16 @@ export class MechanicWorkingHoursService {
   async createOrUpdateBulk(mechanicId: string, dtoList: CreateMechanicWorkingHoursDto[]) {
     const results: mechanic_working_hours[] = [];
     
+    const existingHours = await this.prisma.mechanic_working_hours.findMany({
+      where: {
+        mechanic_id: mechanicId,
+      },
+    });
+    
     for (const dto of dtoList) {
       dto.mechanic_id = mechanicId;
       
-      const existing = await this.prisma.mechanic_working_hours.findFirst({
-        where: {
-          mechanic_id: mechanicId,
-          day_of_week: dto.day_of_week,
-        },
-      });
+      const existing = existingHours.find(hour => hour.day_of_week === dto.day_of_week);
       
       let result: mechanic_working_hours;
       if (existing) {

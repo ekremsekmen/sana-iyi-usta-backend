@@ -10,7 +10,6 @@ import { CampaignsModule } from './modules/campaigns/campaigns.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { MessagesModule } from './modules/messages/messages.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
-import { ServiceRequestsModule } from './modules/service-requests/service-requests.module';
 import { CustomersModule } from './modules/customers/customers.module';
 import { LocationsModule } from './modules/locations/locations.module'; // Eklendi
 import { PrismaModule } from './prisma/prisma.module';
@@ -34,9 +33,8 @@ import { ConfigModule } from '@nestjs/config';
     NotificationsModule,
     MessagesModule,
     ReviewsModule,
-    ServiceRequestsModule,
     CustomersModule,
-    LocationsModule, // Eklendi
+    LocationsModule, 
     PrismaModule,
   ],
   controllers: [AppController],

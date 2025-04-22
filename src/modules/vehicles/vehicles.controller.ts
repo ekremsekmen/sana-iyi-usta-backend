@@ -2,9 +2,7 @@ import { Controller, Get, Param, NotFoundException, UseGuards } from '@nestjs/co
 import { VehiclesService } from './vehicles.service';
 import { JwtGuard } from 'src/common/guards';
 
-/*@UseGuards(JwtGuard) bunu uygulamayı test etmeyi kolaylaştırmak için yorum satırı haline getirdim
-ilerdide eklenecek.Bu endpointlere geçerli token ı olan kullanıcılar erişebilecek.*/
-
+@UseGuards(JwtGuard) 
 @Controller('vehicle-select')
 export class VehiclesController {
   constructor(

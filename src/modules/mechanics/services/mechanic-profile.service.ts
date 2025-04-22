@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateMechanicDto } from '../dto/create-mechanic.dto';
 import { UpdateMechanicDto } from '../dto/update-mechanic.dto';
 import { randomUUID } from 'crypto';
@@ -13,7 +13,6 @@ export class MechanicProfileService {
       data: {
         id: randomUUID(), 
         business_name: dto.business_name,
-        city: dto.city,
         on_site_service: dto.on_site_service,
         users: { connect: { id: dto.user_id } },
       },
@@ -34,7 +33,6 @@ export class MechanicProfileService {
         where: { id },
         data: {
           business_name: dto.business_name,
-          city: dto.city,
           on_site_service: dto.on_site_service,
           users: { connect: { id: dto.user_id } },
         },

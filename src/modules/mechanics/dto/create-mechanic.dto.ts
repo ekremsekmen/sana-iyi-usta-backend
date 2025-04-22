@@ -9,10 +9,6 @@ export class CreateMechanicDto {
   @IsNotEmpty()
   business_name: string;
 
-  @IsString()
-  @IsOptional()
-  city?: string;
-
   @IsBoolean()
   @IsOptional()
   on_site_service?: boolean;
