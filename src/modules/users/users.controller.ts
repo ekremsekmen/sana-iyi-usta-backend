@@ -2,6 +2,7 @@ import { Controller, Get, Body, Patch, Delete, UseGuards, Request, Param, HttpCo
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtGuard } from '../../common/guards/jwt/jwt.guard';
+import { RequestWithUser } from '../../common/interfaces/request-with-user.interface';
 
 @Controller('users')
 export class UsersController {
@@ -10,21 +11,21 @@ export class UsersController {
   @UseGuards(JwtGuard)
   @Get('me')
   @HttpCode(HttpStatus.OK)
-  getMyProfile(@Request() req) {
+  getMyProfile(@Request() req: RequestWithUser) {
     return this.usersService.findOne(req.user.id);
   }
 
   @UseGuards(JwtGuard)
   @Patch('me')
   @HttpCode(HttpStatus.OK)
-  updateMyProfile(@Request() req, @Body() updateUserDto: UpdateUserDto) {
+  updateMyProfile(@Request() req: RequestWithUser, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.update(req.user.id, updateUserDto);
   }
 
   @UseGuards(JwtGuard)
   @Delete('me')
   @HttpCode(HttpStatus.OK)
-  removeMyAccount(@Request() req) {
+  removeMyAccount(@Request() req: RequestWithUser) {
     return this.usersService.remove(req.user.id);
   }
 

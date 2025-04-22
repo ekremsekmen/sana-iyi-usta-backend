@@ -5,7 +5,6 @@ import { EmailVerificationResponseDto, VerifyEmailDto } from './dto/email.dto';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
-import { Request } from 'express';
 import { JwtGuard } from '../../common/guards';
 import { Throttle } from '@nestjs/throttler';
 import { GoogleAuthDto, AppleAuthDto, FacebookAuthDto } from './dto/social-auth.dto';
@@ -15,6 +14,8 @@ import {
   VerifyResetCodeDto, 
   ChangePasswordDto
 } from './dto/password.dto';
+import { RequestWithUser } from '../../common/interfaces/request-with-user.interface';
+import { Request } from 'express';
 
 @Controller('auth')
 export class AuthController {
@@ -34,7 +35,6 @@ export class AuthController {
   async verifyEmail(
     @Query() verifyEmailDto: VerifyEmailDto,
   ): Promise<EmailVerificationResponseDto> {
-    // EmailService yerine AuthService'i kullanıyoruz
     return await this.authService.verifyEmail(verifyEmailDto);
   }
 
@@ -56,9 +56,8 @@ export class AuthController {
   @UseGuards(JwtGuard)
   @Post('logout')
   @HttpCode(HttpStatus.OK) 
-  async logout(@Req() request: Request, @Body() refreshTokenDto: RefreshTokenDto) {
-    const user = request.user as { id: string, role: string };
-    return this.authService.logout(user.id, refreshTokenDto.refresh_token);
+  async logout(@Req() request: RequestWithUser, @Body() refreshTokenDto: RefreshTokenDto) {
+    return this.authService.logout(request.user.id, refreshTokenDto.refresh_token);
   }
 
   @Post('google/mobile')
@@ -100,8 +99,7 @@ export class AuthController {
   @UseGuards(JwtGuard)
   @Post('change-password')
   @HttpCode(HttpStatus.OK)
-  async changePassword(@Req() request: Request, @Body() dto: ChangePasswordDto) {
-    const user = request.user as { id: string };
-    return this.authService.changePassword(user.id, dto);
+  async changePassword(@Req() request: RequestWithUser, @Body() dto: ChangePasswordDto) {
+    return this.authService.changePassword(request.user.id, dto);
   }
 }

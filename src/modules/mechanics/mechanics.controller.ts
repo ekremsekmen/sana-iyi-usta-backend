@@ -3,7 +3,7 @@ import { MechanicsService } from './mechanics.service';
 import { CreateMechanicDto } from './dto/create-mechanic.dto';
 import { UpdateMechanicDto } from './dto/update-mechanic.dto';
 import { JwtGuard } from '../../common/guards';
-import { Request } from 'express';
+import { RequestWithUser } from '../../common/interfaces/request-with-user.interface';
 
 @Controller('mechanics')
 export class MechanicsController {
@@ -13,9 +13,8 @@ export class MechanicsController {
   @Post()
   @UsePipes(new ValidationPipe({ whitelist: true }))
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() createMechanicDto: CreateMechanicDto, @Req() request: Request) {
-    const user = request.user as { id: string, role: string };
-    createMechanicDto.user_id = user.id;
+  create(@Body() createMechanicDto: CreateMechanicDto, @Req() request: RequestWithUser) {
+    createMechanicDto.user_id = request.user.id;
     return this.mechanicsService.create(createMechanicDto);
   }
 
@@ -32,12 +31,11 @@ export class MechanicsController {
   async update(
     @Param('id', new ParseUUIDPipe()) id: string, 
     @Body() updateMechanicDto: UpdateMechanicDto,
-    @Req() request: Request
+    @Req() request: RequestWithUser
   ) {
-    const user = request.user as { id: string, role: string };
-    updateMechanicDto.user_id = user.id;
+    updateMechanicDto.user_id = request.user.id;
     const mechanic = await this.mechanicsService.findOne(id);
-    if (mechanic.user_id !== user.id) {
+    if (mechanic.user_id !== request.user.id) {
       throw new ForbiddenException('Bu kaydı güncelleme yetkiniz yok.');
     }
     return this.mechanicsService.update(id, updateMechanicDto);
@@ -46,10 +44,9 @@ export class MechanicsController {
   @UseGuards(JwtGuard)
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  async remove(@Param('id', new ParseUUIDPipe()) id: string, @Req() request: Request) {
-    const user = request.user as { id: string, role: string };
+  async remove(@Param('id', new ParseUUIDPipe()) id: string, @Req() request: RequestWithUser) {
     const mechanic = await this.mechanicsService.findOne(id);
-    if (mechanic.user_id !== user.id) {
+    if (mechanic.user_id !== request.user.id) {
       throw new ForbiddenException('Bu kaydı silme yetkiniz yok.');
     }
     return this.mechanicsService.remove(id);
