@@ -127,7 +127,6 @@ export class MechanicsController {
     return this.mechanicsService.updateBulkSupportedVehicles(id, dto.brand_ids);
   }
 
-  // Working Hours Endpoints
   @UseGuards(JwtGuard)
   @Get(':id/working-hours')
   @HttpCode(HttpStatus.OK)
