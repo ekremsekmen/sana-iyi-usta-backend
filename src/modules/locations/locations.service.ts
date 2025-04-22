@@ -1,0 +1,71 @@
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
+import { CreateLocationDto } from './dto/create-location.dto';
+import { UpdateLocationDto } from './dto/update-location.dto';
+
+@Injectable()
+export class LocationsService {
+  constructor(private prisma: PrismaService) {}
+
+  async create(userId: string, createLocationDto: CreateLocationDto) {
+    return this.prisma.locations.create({
+      data: {
+        user_id: userId,
+        address: createLocationDto.address,
+        latitude: createLocationDto.latitude,
+        longitude: createLocationDto.longitude,
+        label: createLocationDto.label,
+        city: createLocationDto.city,
+        district: createLocationDto.district,
+      },
+    });
+  }
+
+  async findAll(userId: string) {
+    return this.prisma.locations.findMany({
+      where: { user_id: userId },
+    });
+  }
+
+  async findOne(id: string, userId: string) {
+    const location = await this.prisma.locations.findUnique({
+      where: { id },
+    });
+
+    if (!location) {
+      throw new NotFoundException(`Konum #${id} bulunamadı`);
+    }
+
+    if (location.user_id !== userId) {
+      throw new ForbiddenException('Bu konuma erişim yetkiniz yok');
+    }
+
+    return location;
+  }
+
+  async update(id: string, userId: string, updateLocationDto: UpdateLocationDto) {
+    await this.findOne(id, userId);
+
+    return this.prisma.locations.update({
+      where: { id },
+      data: {
+        address: updateLocationDto.address,
+        latitude: updateLocationDto.latitude,
+        longitude: updateLocationDto.longitude,
+        label: updateLocationDto.label,
+        ...(updateLocationDto.city !== undefined && { city: updateLocationDto.city }),
+        ...(updateLocationDto.district !== undefined && { district: updateLocationDto.district }),
+      },
+    });
+  }
+
+  async remove(id: string, userId: string) {
+    await this.findOne(id, userId);
+
+    await this.prisma.locations.delete({
+      where: { id },
+    });
+
+    return { message: 'Konum başarıyla silindi' };
+  }
+}

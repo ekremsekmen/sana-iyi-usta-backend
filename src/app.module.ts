@@ -12,17 +12,18 @@ import { MessagesModule } from './modules/messages/messages.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { ServiceRequestsModule } from './modules/service-requests/service-requests.module';
 import { CustomersModule } from './modules/customers/customers.module';
+import { LocationsModule } from './modules/locations/locations.module'; // Eklendi
 import { PrismaModule } from './prisma/prisma.module';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { ConfigModule } from '@nestjs/config'; // Eklendi
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }), // .env desteği için eklendi
+    ConfigModule.forRoot({ isGlobal: true }),
     ThrottlerModule.forRoot([{
-      ttl: 60000, // 1 dakika
-      limit: 1000, // Çok yüksek bir limit
-      name: 'default', // Throttler için bir isim belirtmek gerekiyor
+      ttl: 60000,
+      limit: 1000, 
+      name: 'default',
     }]),
     AuthModule,
     UsersModule,
@@ -35,6 +36,7 @@ import { ConfigModule } from '@nestjs/config'; // Eklendi
     ReviewsModule,
     ServiceRequestsModule,
     CustomersModule,
+    LocationsModule, // Eklendi
     PrismaModule,
   ],
   controllers: [AppController],
