@@ -1,5 +1,4 @@
 import { Injectable, UnauthorizedException, BadRequestException, ConflictException } from '@nestjs/common';
-import { Request } from 'express';
 import axios from 'axios';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { GoogleAuthDto, AppleAuthDto, FacebookAuthDto } from '../dto/social-auth.dto';
@@ -20,17 +19,6 @@ export class SocialAuthenticationService {
 
   async authenticateWithGoogle(googleAuthDto: GoogleAuthDto) {
     try {
-      const googleUserInfo = await axios.get(
-        `https://www.googleapis.com/oauth2/v3/userinfo`,
-        {
-          headers: { Authorization: `Bearer ${googleAuthDto.accessToken}` },
-        }
-      );
-
-      if (googleUserInfo.data.sub !== googleAuthDto.providerId) {
-        throw new UnauthorizedException(ERROR_MESSAGES.INVALID_CREDENTIALS);
-      }
-
       // Kullanıcı zaten var mı kontrolü
       const existingUser = await this.prisma.users.findUnique({
         where: { e_mail: googleAuthDto.email },
@@ -56,7 +44,7 @@ export class SocialAuthenticationService {
           googleAuthDto.termsApproved === undefined ||
           !googleAuthDto.role
         ) {
-          throw new BadRequestException();
+          throw new BadRequestException('Bu hesap ile kayıt için gerekli bilgiler eksik.');
         }
         userInfo = this.mapToSocialUserInfo(
           googleAuthDto.email,
@@ -70,7 +58,7 @@ export class SocialAuthenticationService {
 
       return await this.findOrCreateSocialUser(userInfo, 'google');
     } catch (error) {
-      if (error instanceof UnauthorizedException) {
+      if (error instanceof BadRequestException) {
         throw error;
       }
       throw new BadRequestException(ERROR_MESSAGES.SESSION_CREATION_ERROR);
