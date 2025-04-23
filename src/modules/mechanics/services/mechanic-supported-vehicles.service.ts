@@ -86,21 +86,52 @@ export class MechanicSupportedVehiclesService {
   }
 
   async updateBulkSupportedVehicles(mechanicId: string, brandIds: string[]) {
-    await this.prisma.mechanic_supported_vehicles.deleteMany({
-      where: {
-        mechanic_id: mechanicId,
-      },
-    });
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        await tx.mechanic_supported_vehicles.deleteMany({
+          where: {
+            mechanic_id: mechanicId,
+          },
+        });
 
-    const results = [];
-    for (const brandId of brandIds) {
-      const result = await this.create({
-        mechanic_id: mechanicId,
-        brand_id: brandId,
+        if (brandIds.length === 0) {
+          return [];
+        }
+
+        const brands = await tx.brands.findMany({
+          where: {
+            id: { in: brandIds }
+          },
+          select: { id: true }
+        });
+
+        const foundBrandIds = brands.map(b => b.id);
+        const notFoundBrandIds = brandIds.filter(id => !foundBrandIds.includes(id));
+
+        if (notFoundBrandIds.length > 0) {
+          throw new NotFoundException(`Bu ID'lere sahip markalar bulunamadı: ${notFoundBrandIds.join(', ')}`);
+        }
+
+        const createPromises = brandIds.map(brandId => 
+          tx.mechanic_supported_vehicles.create({
+            data: {
+              id: randomUUID(),
+              mechanic_id: mechanicId,
+              brand_id: brandId,
+            },
+            include: {
+              brands: true,
+            }
+          })
+        );
+
+        return await Promise.all(createPromises);
       });
-      results.push(result);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new Error(`Desteklenen araçları güncellerken hata: ${error.message}`);
     }
-
-    return results;
   }
 }
