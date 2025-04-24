@@ -15,6 +15,7 @@ import { LocationsModule } from './modules/locations/locations.module'; // Eklen
 import { PrismaModule } from './prisma/prisma.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ConfigModule } from '@nestjs/config';
+import { ServicesModule } from './modules/services/services.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { ConfigModule } from '@nestjs/config';
     CustomersModule,
     LocationsModule, 
     PrismaModule,
+    ServicesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
