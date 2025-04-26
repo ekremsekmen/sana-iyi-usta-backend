@@ -104,14 +104,6 @@ model customers {
   vehicle_maintenance_records vehicle_maintenance_records[]
 }
 
-model mechanic_services {
-  mechanic_id         String              @db.Uuid
-  service_category_id Int
-  id                  String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  mechanics           mechanics           @relation(fields: [mechanic_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  services_categories services_categories @relation(fields: [service_category_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-}
-
 model mechanic_supported_vehicles {
   mechanic_id String    @db.Uuid
   brand_id    String    @db.Uuid
@@ -133,7 +125,8 @@ model mechanics {
   advertisements              advertisements[]
   appointments                appointments[]
   campaigns                   campaigns[]
-  mechanic_services           mechanic_services[]
+  mechanic_categories         mechanic_categories[]
+  mechanic_subcategories      mechanic_subcategories[]
   mechanic_supported_vehicles mechanic_supported_vehicles[]
   mechanic_working_hours      mechanic_working_hours[]
   users                       users                         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -221,7 +214,7 @@ model services_categories {
   name                  String
   category              String?
   campaign_categories   campaign_categories[]
-  mechanic_services     mechanic_services[]
+  mechanic_categories   mechanic_categories[]
   service_subcategories service_subcategories[]
 }
 
@@ -349,11 +342,31 @@ model locations {
 }
 
 model service_subcategories {
-  id                  String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  category_id         Int
-  name                String
-  created_at          DateTime?           @default(now()) @db.Timestamptz(6)
-  services_categories services_categories @relation(fields: [category_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_service_subcategory_category")
+  id                     String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  category_id            Int
+  name                   String
+  created_at             DateTime?                @default(now()) @db.Timestamptz(6)
+  mechanic_subcategories mechanic_subcategories[]
+  services_categories    services_categories      @relation(fields: [category_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_service_subcategory_category")
+}
+
+model mechanic_categories {
+  mechanic_id         String              @db.Uuid
+  service_category_id Int
+  id                  String              @id(map: "mechanic_services_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mechanics           mechanics           @relation(fields: [mechanic_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  services_categories services_categories @relation(fields: [service_category_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model mechanic_subcategories {
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mechanic_id           String                @db.Uuid
+  subcategory_id        String                @db.Uuid
+  created_at            DateTime              @default(now()) @db.Timestamptz(6)
+  mechanics             mechanics             @relation(fields: [mechanic_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  service_subcategories service_subcategories @relation(fields: [subcategory_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([mechanic_id, subcategory_id], map: "unique_mechanic_subcategory")
 }
 
 enum AppointmentType {
