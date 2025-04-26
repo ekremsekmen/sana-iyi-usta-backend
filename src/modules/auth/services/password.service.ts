@@ -45,6 +45,7 @@ export class PasswordService {
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + 15); 
 
+    // Veritabanı işlemlerini transaction içinde yap
     await this.prisma.$transaction([
       // Varolan kodları temizle
       this.prisma.password_reset_codes.deleteMany({
@@ -61,6 +62,7 @@ export class PasswordService {
       }),
     ]);
 
+    // Transaction dışında e-posta gönderimi
     try {
       await this.emailService.sendPasswordResetCode({
         email: user.e_mail,

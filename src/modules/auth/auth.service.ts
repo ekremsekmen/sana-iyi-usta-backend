@@ -4,7 +4,7 @@ import { LoginDto } from './dto/login.dto';
 import { Request } from 'express';
 import { GoogleAuthDto, AppleAuthDto, FacebookAuthDto } from './dto/social-auth.dto';
 import { AuthValidationService } from './services/auth-validation.service';
-import { UserRegistrationService } from './services/user-registration.service';
+import { UserRegistrationService, RegistrationResult } from './services/user-registration.service';
 import { LocalAuthenticationService } from './services/local-authentication.service';
 import { SocialAuthenticationService } from './services/social-authentication.service';
 import { UserSessionService } from './services/user-session.service';
@@ -26,7 +26,7 @@ export class AuthService {
     private readonly emailService: EmailService,
   ) {}
 
-  async register(registerDto: RegisterDto) {
+  async register(registerDto: RegisterDto): Promise<RegistrationResult> {
     await this.authValidationService.validateRegistration(registerDto);
     return this.registrationService.registerUser(registerDto);
   }

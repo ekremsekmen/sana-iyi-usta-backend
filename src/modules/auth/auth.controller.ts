@@ -16,6 +16,7 @@ import {
 } from './dto/password.dto';
 import { RequestWithUser } from '../../common/interfaces/request-with-user.interface';
 import { Request } from 'express';
+import { RegistrationResult } from './services/user-registration.service';
 
 @Controller('auth')
 export class AuthController {
@@ -26,7 +27,7 @@ export class AuthController {
   @Post('register')
   @Throttle({ default: { limit: 50, ttl: 60000 } })
   @HttpCode(HttpStatus.CREATED) 
-  async register(@Body() registerDto: RegisterDto) {
+  async register(@Body() registerDto: RegisterDto): Promise<RegistrationResult> {
     return await this.authService.register(registerDto);
   }
 

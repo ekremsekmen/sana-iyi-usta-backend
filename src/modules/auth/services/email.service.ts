@@ -46,7 +46,7 @@ export class EmailService {
   }
 
   private async insertVerificationRecord(
-    prisma: Prisma.TransactionClient,
+    prisma: Prisma.TransactionClient | PrismaService,
     userId: string,
     token: string,
     expiresAt: Date,
@@ -62,13 +62,19 @@ export class EmailService {
   }
 
   async createVerification(
-    prisma: Prisma.TransactionClient,
+    prisma: Prisma.TransactionClient | PrismaService,
     userId: string,
     email: string,
-  ) {
+  ): Promise<string> {
     const { token, expiresAt } = this.createVerificationToken();
     await this.insertVerificationRecord(prisma, userId, token, expiresAt);
+    return token;
+  }
 
+  async sendVerificationEmailByToken(
+    email: string,
+    token: string,
+  ): Promise<boolean> {
     try {
       await this.sendVerificationEmail({
         email,
