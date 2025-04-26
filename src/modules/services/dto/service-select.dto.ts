@@ -29,6 +29,14 @@ export class ServiceSubcategoryDto {
 }
 
 export class ServiceInfoDto {
+  @IsNumber()
+  @IsNotEmpty()
+  category_id: number;
+
+  @IsString()
+  @IsNotEmpty()
+  subcategory_id: string;
+
   @IsString()
   @IsNotEmpty()
   category: string;

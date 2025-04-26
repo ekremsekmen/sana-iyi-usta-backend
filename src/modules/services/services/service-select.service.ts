@@ -38,6 +38,8 @@ export class ServiceSelectService {
     }
 
     return {
+      category_id: subcategory.category_id,
+      subcategory_id: subcategory.id,
       category: subcategory.services_categories.name,
       subcategory: subcategory.name,
     };
