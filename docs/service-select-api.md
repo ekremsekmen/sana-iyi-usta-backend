@@ -1,146 +1,189 @@
-# Service Select API Dokümantasyonu
+# Service Select API
 
-Bu dokümantasyon, hizmet seçimi için API endpointlerini detaylandırır. Tüm isteklerde JWT yetkilendirmesi gereklidir.
+## GET /services/categories
 
-## Temel URL
+### Açıklama
+Tüm kategorileri getirir. İsteğe bağlı olarak `parentId` filtresi ile üst veya alt kategoriler alınabilir.
 
+### İstek
+```http
+GET /services/categories
 ```
-/service-select
+
+#### Query Parametreleri
+| Parametre | Tip    | Açıklama                                   |
+|-----------|--------|-------------------------------------------|
+| parentId  | string | Belirli bir üst kategoriye ait alt kategorileri getirir. |
+
+### Örnek İstek
+```http
+GET /services/categories?parentId=null
 ```
 
-## Endpointler
-
-### 1. Hizmet Kategorilerini Listeleme
-
-Sistemde kayıtlı tüm hizmet kategorilerini alfabetik sıralamayla getirir.
-
-**URL:** `GET /service-select/categories`
-
-**Yetkilendirme:** JWT Token gerekli
-
-**Başarılı Yanıt:**
+### Cevap
 ```json
 [
-  {
-    "id": 7,
-    "name": "Araç Detaylı Temizlik ve Kuaför Hizmetleri",
-    "category": null
-  },
-  {
-    "id": 9,
-    "name": "Araç Ekspertiz ve Muayene İşlemleri",
-    "category": null
-  },
-  {
-    "id": 6,
-    "name": "Cam, Aksesuar ve Donanım Montajı",
-    "category": null
-  },
-  {
-    "id": 2,
-    "name": "Elektrik ve Elektronik Sistemler",
-    "category": null
-  }
+    {
+        "id": "384e7701-b6ac-4a73-92a7-a429c606fbd1",
+        "name": "Akü Kontrol & Bakım",
+        "parent_id": "00000000-0000-0000-0000-000000000005",
+        "created_at": "2025-04-27T09:40:15.670Z"
+    },
+    {
+        "id": "435d0ca2-e354-499c-be06-18ba41a74ca9",
+        "name": "Akü & Şarj Sistemi",
+        "parent_id": "00000000-0000-0000-0000-000000000002",
+        "created_at": "2025-04-27T09:40:15.670Z"
+    },
+    {
+        "id": "00000000-0000-0000-0000-000000000007",
+        "name": "Araç Detaylı Temizlik ve Kuaför Hizmetleri",
+        "parent_id": null,
+        "created_at": "2025-04-27T09:31:12.160Z"
+    }
 ]
 ```
 
-**Hata Yanıtları:**
-- `401 Unauthorized`: Geçersiz veya eksik yetkilendirme
-- `500 Internal Server Error`: Sunucu hatası
+---
 
-### 2. Kategoriye Göre Alt Kategorileri Listeleme
+## GET /services/parent-categories
 
-Belirli bir hizmet kategorisine ait tüm alt kategorileri alfabetik sıralamayla getirir.
+### Açıklama
+Sadece üst kategorileri (parent_id null olanlar) getirir.
 
-**URL:** `GET /service-select/categories/:categoryId/subcategories`
+### İstek
+```http
+GET /services/parent-categories
+```
 
-**Parametreler:**
-- `categoryId` (path): Kategori ID değeri (number)
+### Örnek İstek
+```http
+GET /services/parent-categories
+```
 
-**Yetkilendirme:** JWT Token gerekli
-
-**Başarılı Yanıt:**
+### Cevap
 ```json
 [
-  {
-    "id": "2ef96a63-4f8d-447f-b359-a39388c49018",
-    "category_id": 5,
+    {
+        "id": "00000000-0000-0000-0000-000000000007",
+        "name": "Araç Detaylı Temizlik ve Kuaför Hizmetleri",
+        "parent_id": null,
+        "created_at": "2025-04-27T09:31:12.160Z"
+    },
+    {
+        "id": "00000000-0000-0000-0000-000000000009",
+        "name": "Araç Ekspertiz ve Muayene İşlemleri",
+        "parent_id": null,
+        "created_at": "2025-04-27T09:31:12.160Z"
+    }
+]
+```
+
+---
+
+## GET /services/category-tree
+
+### Açıklama
+Tüm kategori ağacını optimize edilmiş bir şekilde getirir.
+
+### İstek
+```http
+GET /services/category-tree
+```
+
+### Örnek İstek
+```http
+GET /services/category-tree
+```
+
+### Cevap
+```json
+[
+    {
+        "id": "00000000-0000-0000-0000-000000000007",
+        "name": "Araç Detaylı Temizlik ve Kuaför Hizmetleri",
+        "parent_id": null,
+        "created_at": "2025-04-27T09:31:12.160Z",
+        "subcategories": [
+            {
+                "id": "10bfad30-1af9-467c-ba8e-7dc63c5f9e80",
+                "name": "Dış Yıkama",
+                "parent_id": "00000000-0000-0000-0000-000000000007",
+                "created_at": "2025-04-27T09:40:15.670Z"
+            }
+        ]
+    }
+]
+```
+
+---
+
+## GET /services/category/:id
+
+### Açıklama
+Belirtilen ID'ye sahip kategoriyi getirir.
+
+### İstek
+```http
+GET /services/category/:id
+```
+
+#### Path Parametreleri
+| Parametre | Tip    | Açıklama                  |
+|-----------|--------|--------------------------|
+| id        | string | Kategori ID'si           |
+
+### Örnek İstek
+```http
+GET /services/category/384e7701-b6ac-4a73-92a7-a429c606fbd1
+```
+
+### Cevap
+```json
+{
+    "id": "384e7701-b6ac-4a73-92a7-a429c606fbd1",
     "name": "Akü Kontrol & Bakım",
-    "created_at": "2025-04-24T23:16:25.835Z"
-  },
-  {
-    "id": "abbf8230-bddc-4cb7-ba56-7429e97f62da",
-    "category_id": 5,
-    "name": "Fren Balatası & Disk Değişimi",
-    "created_at": "2025-04-24T23:16:25.835Z"
-  },
-  {
-    "id": "fe242f1f-a269-46f2-8750-b308c599dee9",
-    "category_id": 5,
-    "name": "Genel Bakım Paketi",
-    "created_at": "2025-04-24T23:16:25.835Z"
-  }
-]
+    "parent_id": "00000000-0000-0000-0000-000000000005",
+    "created_at": "2025-04-27T09:40:15.670Z"
+}
 ```
 
-**Hata Yanıtları:**
-- `401 Unauthorized`: Geçersiz veya eksik yetkilendirme
-- `404 Not Found`: Belirtilen kategoriye ait alt kategoriler bulunamadı
-- `500 Internal Server Error`: Sunucu hatası
+---
 
-### 3. Alt Kategoriye Göre Tam Hizmet Bilgisini Getirme
+## GET /services/subcategories/:parentId
 
-Alt kategori ID'sini kullanarak hizmet hakkında tam bilgiyi getirir.
+### Açıklama
+Belirtilen üst kategoriye ait alt kategorileri getirir.
 
-**URL:** `GET /service-select/subcategories/:subcategoryId`
+### İstek
+```http
+GET /services/subcategories/:parentId
+```
 
-**Parametreler:**
-- `subcategoryId` (path): Alt kategori ID değeri (string)
+#### Path Parametreleri
+| Parametre | Tip    | Açıklama                  |
+|-----------|--------|--------------------------|
+| parentId  | string | Üst kategori ID'si       |
 
-**Yetkilendirme:** JWT Token gerekli
+### Örnek İstek
+```http
+GET /services/subcategories/00000000-0000-0000-0000-000000000007
+```
 
-**Başarılı Yanıt:**
+### Cevap
 ```json
-{
-  "category_id": 5,
-  "subcategory_id": "2ef96a63-4f8d-447f-b359-a39388c49018",
-  "category": "Periyodik Bakım ve Servis İşlemleri",
-  "subcategory": "Akü Kontrol & Bakım"
-}
-```
-
-**Hata Yanıtları:**
-- `401 Unauthorized`: Geçersiz veya eksik yetkilendirme
-- `404 Not Found`: Belirtilen alt kategori bulunamadı
-- `500 Internal Server Error`: Sunucu hatası
-
-## Data Modelleri
-
-### ServiceCategoryDto
-```
-{
-  id: number;      // Kategori benzersiz tanımlayıcısı
-  name: string;    // Kategori adı
-  category?: string; // Üst kategori adı (opsiyonel, çoğunlukla null)
-}
-```
-
-### ServiceSubcategoryDto
-```
-{
-  id: string;       // Alt kategori benzersiz tanımlayıcısı (UUID formatında)
-  name: string;     // Alt kategori adı
-  category_id: number; // İlişkili kategori ID'si
-  created_at: string;  // Oluşturulma tarihi (ISO formatında)
-}
-```
-
-### ServiceInfoDto
-```
-{
-  category_id: number;     // Kategori ID'si
-  subcategory_id: string;  // Alt kategori ID'si (UUID formatında)
-  category: string;        // Kategori adı
-  subcategory: string;     // Alt kategori adı
-}
+[
+    {
+        "id": "10bfad30-1af9-467c-ba8e-7dc63c5f9e80",
+        "name": "Dış Yıkama",
+        "parent_id": "00000000-0000-0000-0000-000000000007",
+        "created_at": "2025-04-27T09:40:15.670Z"
+    },
+    {
+        "id": "31100ee6-8d19-41ea-94a6-748abd9da1b3",
+        "name": "İç Detaylı Temizlik",
+        "parent_id": "00000000-0000-0000-0000-000000000007",
+        "created_at": "2025-04-27T09:40:15.670Z"
+    }
+]
 ```

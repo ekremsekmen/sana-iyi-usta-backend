@@ -1,23 +1,20 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
 import { ServiceSelectService } from './services/service-select.service';
+import { CategoryDto, CategoryFilterDto } from './dto/service-select.dto';
 
 @Injectable()
 export class ServicesService {
-  constructor(
-    private prisma: PrismaService,
-    private serviceSelectService: ServiceSelectService,
-  ) {}
+  constructor(private readonly serviceSelectService: ServiceSelectService) {}
 
-  async getAllCategories() {
-    return this.serviceSelectService.findAllCategories();
+  async getAllCategories(filterDto?: CategoryFilterDto): Promise<CategoryDto[]> {
+    return this.serviceSelectService.getAllCategories(filterDto);
   }
 
-  async getSubcategoriesByCategory(categoryId: number) {
-    return this.serviceSelectService.findSubcategoriesByCategoryId(categoryId);
+  async getCategoryById(id: string): Promise<CategoryDto> {
+    return this.serviceSelectService.getCategoryById(id);
   }
-
-  async getFullServiceInfo(subcategoryId: string) {
-    return this.serviceSelectService.getFullServiceInfo(subcategoryId);
+  
+  async getEfficientCategoryTree(): Promise<CategoryDto[]> {
+    return this.serviceSelectService.getEfficientCategoryTree();
   }
 }

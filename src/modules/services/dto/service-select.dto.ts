@@ -1,47 +1,31 @@
-import { IsString, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsUUID, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 
-export class ServiceCategoryDto {
-  @IsNumber()
-  @IsNotEmpty()
-  id: number;
+export class CategoryDto {
+  @IsString()
+  id: string;
 
   @IsString()
-  @IsNotEmpty()
   name: string;
 
   @IsString()
   @IsOptional()
-  category?: string;
+  parent_id: string | null;
+
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => CategoryDto)
+  subcategories?: CategoryDto[];
+
+  created_at: Date;
 }
 
-export class ServiceSubcategoryDto {
-  @IsString()
-  @IsNotEmpty()
-  id: string;
-
-  @IsNumber()
-  @IsNotEmpty()
-  category_id: number;
+export class CategoryFilterDto {
+  @IsBoolean()
+  @IsOptional()
+  onlyParentCategories?: boolean; // Geriye dönük uyumluluk için tutuldu
 
   @IsString()
-  @IsNotEmpty()
-  name: string;
-}
-
-export class ServiceInfoDto {
-  @IsNumber()
-  @IsNotEmpty()
-  category_id: number;
-
-  @IsString()
-  @IsNotEmpty()
-  subcategory_id: string;
-
-  @IsString()
-  @IsNotEmpty()
-  category: string;
-
-  @IsString()
-  @IsNotEmpty()
-  subcategory: string;
+  @IsOptional()
+  parentId?: string; // Null olabilir veya bir UUID olabilir
 }
