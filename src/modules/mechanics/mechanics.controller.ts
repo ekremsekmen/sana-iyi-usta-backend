@@ -60,7 +60,6 @@ export class MechanicsController {
     return this.mechanicsService.remove(id);
   }
 
-  // Supported Vehicles Endpoints
   @UseGuards(JwtGuard)
   @Get(':id/supported-vehicles')
   @HttpCode(HttpStatus.OK)
@@ -78,7 +77,7 @@ export class MechanicsController {
   @HttpCode(HttpStatus.CREATED)
   async addSupportedVehicle(
     @Param('id', new ParseUUIDPipe()) id: string,
-    @Body('brand_id', new ParseUUIDPipe()) brandId: string,
+    @Body() body: { brand_id?: string, brand_ids?: string[] },
     @Req() request: RequestWithUser
   ) {
     const mechanic = await this.mechanicsService.findOne(id);
@@ -88,7 +87,8 @@ export class MechanicsController {
 
     const dto: CreateMechanicSupportedVehicleDto = {
       mechanic_id: id,
-      brand_id: brandId
+      brand_id: body.brand_id,
+      brand_ids: body.brand_ids
     };
 
     return this.mechanicsService.addSupportedVehicle(dto);
@@ -144,7 +144,7 @@ export class MechanicsController {
   @HttpCode(HttpStatus.CREATED)
   async createWorkingHours(
     @Param('id', new ParseUUIDPipe()) id: string, 
-    @Body() createWorkingHoursDto: CreateMechanicWorkingHoursDto,
+    @Body() createWorkingHoursDto: CreateMechanicWorkingHoursDto | CreateMechanicWorkingHoursDto[],
     @Req() request: RequestWithUser
   ) {
     const mechanic = await this.mechanicsService.findOne(id);
@@ -207,7 +207,7 @@ export class MechanicsController {
   @HttpCode(HttpStatus.CREATED)
   async addCategory(
     @Param('id', new ParseUUIDPipe()) id: string,
-    @Body('category_id', new ParseUUIDPipe()) categoryId: string,
+    @Body() body: { category_id?: string, category_ids?: string[] },
     @Req() request: RequestWithUser
   ) {
     const mechanic = await this.mechanicsService.findOne(id);
@@ -217,7 +217,8 @@ export class MechanicsController {
 
     const dto: CreateMechanicCategoryDto = {
       mechanic_id: id,
-      category_id: categoryId
+      category_id: body.category_id,
+      category_ids: body.category_ids
     };
 
     return this.mechanicsService.addCategory(dto);

@@ -35,9 +35,8 @@ export class MechanicsService {
     return this.mechanicProfileService.remove(id);
   }
 
-  createWorkingHours(mechanicId: string, dto: CreateMechanicWorkingHoursDto) {
-    dto.mechanic_id = mechanicId;
-    return this.mechanicWorkingHoursService.create(dto);
+  createWorkingHours(mechanicId: string, dto: CreateMechanicWorkingHoursDto | CreateMechanicWorkingHoursDto[]) {
+    return this.mechanicWorkingHoursService.createForMechanic(mechanicId, dto);
   }
 
   getWorkingHours(mechanicId: string) {
@@ -61,7 +60,7 @@ export class MechanicsService {
   }
 
   addSupportedVehicle(dto: CreateMechanicSupportedVehicleDto) {
-    return this.mechanicSupportedVehiclesService.create(dto);
+    return this.mechanicSupportedVehiclesService.addSupportedVehicle(dto);
   }
 
   removeSupportedVehicle(id: string) {

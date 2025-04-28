@@ -105,7 +105,6 @@ export class MechanicSupportedVehiclesService {
           }
         }
 
-        // Mevcut desteklenen markaları al
         const existingRecords = await tx.mechanic_supported_vehicles.findMany({
           where: { mechanic_id: mechanicId },
           select: { id: true, brand_id: true }
@@ -113,13 +112,10 @@ export class MechanicSupportedVehiclesService {
         
         const existingBrandIds = existingRecords.map(record => record.brand_id);
         
-        // Silinecek markaları belirle
         const brandIdsToRemove = existingBrandIds.filter(id => !brandIds.includes(id));
         
-        // Eklenecek markaları belirle
         const brandIdsToAdd = brandIds.filter(id => !existingBrandIds.includes(id));
         
-        // Silinecek kayıtları sil
         if (brandIdsToRemove.length > 0) {
           await tx.mechanic_supported_vehicles.deleteMany({
             where: {
@@ -129,7 +125,6 @@ export class MechanicSupportedVehiclesService {
           });
         }
         
-        // Yeni kayıtları ekle
         const newRecords = brandIdsToAdd.map(brandId => ({
           id: randomUUID(),
           mechanic_id: mechanicId,
@@ -142,7 +137,6 @@ export class MechanicSupportedVehiclesService {
           });
         }
         
-        // Güncellenmiş kayıtları döndür
         return await tx.mechanic_supported_vehicles.findMany({
           where: { mechanic_id: mechanicId },
           include: { brands: true }
@@ -153,6 +147,89 @@ export class MechanicSupportedVehiclesService {
         throw error;
       }
       throw new Error(`Desteklenen araçları güncellerken hata: ${error.message}`);
+    }
+  }
+
+  async createMultiple(mechanicId: string, brandIds: string[]) {
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const brands = await tx.brands.findMany({
+          where: {
+            id: { in: brandIds }
+          },
+          select: { id: true }
+        });
+
+        const foundBrandIds = brands.map(b => b.id);
+        const notFoundBrandIds = brandIds.filter(id => !foundBrandIds.includes(id));
+
+        if (notFoundBrandIds.length > 0) {
+          throw new NotFoundException(`Bu ID'lere sahip markalar bulunamadı: ${notFoundBrandIds.join(', ')}`);
+        }
+
+        // Mevcut desteklenen markaları al
+        const existingRecords = await tx.mechanic_supported_vehicles.findMany({
+          where: { mechanic_id: mechanicId },
+          select: { brand_id: true }
+        });
+        
+        const existingBrandIds = existingRecords.map(record => record.brand_id);
+        
+        // Sadece yeni eklenecek markaları filtreleyerek işlemleri optimize edelim
+        const newBrandIds = brandIds.filter(id => !existingBrandIds.includes(id));
+        
+        // Zaten ekli olan markalar varsa bunları bildir
+        const alreadyExistingBrandIds = brandIds.filter(id => existingBrandIds.includes(id));
+        
+        // Yeni kayıtları ekle
+        const newRecords = newBrandIds.map(brandId => ({
+          id: randomUUID(),
+          mechanic_id: mechanicId,
+          brand_id: brandId
+        }));
+        
+        let createdRecords = [];
+        if (newRecords.length > 0) {
+          await tx.mechanic_supported_vehicles.createMany({
+            data: newRecords
+          });
+          
+          // Yeni eklenen kayıtları getir
+          createdRecords = await tx.mechanic_supported_vehicles.findMany({
+            where: { 
+              mechanic_id: mechanicId,
+              brand_id: { in: newBrandIds }
+            },
+            include: { brands: true }
+          });
+        }
+        
+        return {
+          created: createdRecords,
+          alreadyExisting: alreadyExistingBrandIds.length > 0 ? 
+            `Bu markalar zaten ekli: ${alreadyExistingBrandIds.join(', ')}` : null
+        };
+      });
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new Error(`Desteklenen araçları eklerken hata: ${error.message}`);
+    }
+  }
+
+  async addSupportedVehicle(dto: CreateMechanicSupportedVehicleDto) {
+    if (dto.brand_ids && dto.brand_ids.length > 0) {
+      return this.createMultiple(dto.mechanic_id, dto.brand_ids);
+    } 
+    else if (dto.brand_id) {
+      return this.create({
+        mechanic_id: dto.mechanic_id,
+        brand_id: dto.brand_id
+      });
+    }
+    else {
+      throw new Error('En az bir marka ID\'si (brand_id veya brand_ids) belirtilmelidir.');
     }
   }
 }

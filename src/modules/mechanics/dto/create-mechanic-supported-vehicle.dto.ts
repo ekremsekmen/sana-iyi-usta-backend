@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsUUID } from 'class-validator';
+import { IsArray, IsNotEmpty, IsOptional, IsUUID } from 'class-validator';
 
 export class CreateMechanicSupportedVehicleDto {
   @IsUUID()
@@ -6,6 +6,11 @@ export class CreateMechanicSupportedVehicleDto {
   mechanic_id: string;
 
   @IsUUID()
-  @IsNotEmpty()
-  brand_id: string;
+  @IsOptional()
+  brand_id?: string;
+
+  @IsArray()
+  @IsUUID(undefined, { each: true })
+  @IsOptional()
+  brand_ids?: string[];
 }

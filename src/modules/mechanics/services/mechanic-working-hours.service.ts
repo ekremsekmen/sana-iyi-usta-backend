@@ -9,35 +9,91 @@ import { mechanic_working_hours } from '@prisma/client';
 export class MechanicWorkingHoursService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(dto: CreateMechanicWorkingHoursDto) {
-    try {
-      const existingHours = await this.prisma.mechanic_working_hours.findFirst({
-        where: {
-          mechanic_id: dto.mechanic_id,
-          day_of_week: dto.day_of_week,
-        },
-      });
+  async createForMechanic(mechanicId: string, dto: CreateMechanicWorkingHoursDto | CreateMechanicWorkingHoursDto[]) {
+    if (Array.isArray(dto)) {
+      const modifiedDto = dto.map(item => ({
+        ...item,
+        mechanic_id: mechanicId
+      }));
+      return this.create(modifiedDto);
+    } else {
+      const modifiedDto = {
+        ...dto,
+        mechanic_id: mechanicId
+      };
+      return this.create(modifiedDto);
+    }
+  }
 
-      if (existingHours) {
-        throw new ConflictException(`Working hours for day ${dto.day_of_week} already exist.`);
-      }
+  async create(dto: CreateMechanicWorkingHoursDto | CreateMechanicWorkingHoursDto[]) {
+    // Eğer girdi bir dizi ise, çoklu işlem yap
+    if (Array.isArray(dto)) {
+      const results = [];
+      
+      for (const item of dto) {
+        try {
+          const existingHours = await this.prisma.mechanic_working_hours.findFirst({
+            where: {
+              mechanic_id: item.mechanic_id,
+              day_of_week: item.day_of_week,
+            },
+          });
 
-      return await this.prisma.mechanic_working_hours.create({
-        data: {
-          id: randomUUID(),
-          mechanic_id: dto.mechanic_id,
-          day_of_week: dto.day_of_week,
-          start_time: dto.start_time,
-          end_time: dto.end_time,
-          slot_duration: dto.slot_duration,
-          is_day_off: dto.is_day_off || false,
-        },
-      });
-    } catch (error) {
-      if (error instanceof ConflictException) {
-        throw error;
+          if (existingHours) {
+            continue; // Çoklu eklemede eğer gün zaten varsa, atla ve devam et
+          }
+
+          const result = await this.prisma.mechanic_working_hours.create({
+            data: {
+              id: randomUUID(),
+              mechanic_id: item.mechanic_id,
+              day_of_week: item.day_of_week,
+              start_time: item.start_time,
+              end_time: item.end_time,
+              slot_duration: item.slot_duration,
+              is_day_off: item.is_day_off || false,
+            },
+          });
+          
+          results.push(result);
+        } catch (error) {
+          // Çoklu işlemde bireysel hataları yok say ve devam et
+        }
       }
-      throw new Error(`Error creating working hours: ${error.message}`);
+      
+      return results;
+    } 
+    // Tekil DTO işlemi (mevcut davranışı koru)
+    else {
+      try {
+        const existingHours = await this.prisma.mechanic_working_hours.findFirst({
+          where: {
+            mechanic_id: dto.mechanic_id,
+            day_of_week: dto.day_of_week,
+          },
+        });
+
+        if (existingHours) {
+          throw new ConflictException(`Working hours for day ${dto.day_of_week} already exist.`);
+        }
+
+        return await this.prisma.mechanic_working_hours.create({
+          data: {
+            id: randomUUID(),
+            mechanic_id: dto.mechanic_id,
+            day_of_week: dto.day_of_week,
+            start_time: dto.start_time,
+            end_time: dto.end_time,
+            slot_duration: dto.slot_duration,
+            is_day_off: dto.is_day_off || false,
+          },
+        });
+      } catch (error) {
+        if (error instanceof ConflictException) {
+          throw error;
+        }
+        throw new Error(`Error creating working hours: ${error.message}`);
+      }
     }
   }
 
@@ -100,14 +156,17 @@ export class MechanicWorkingHoursService {
       
       const existing = existingHours.find(hour => hour.day_of_week === dto.day_of_week);
       
-      let result: mechanic_working_hours;
       if (existing) {
-        result = await this.update(existing.id, dto);
+        const result = await this.update(existing.id, dto);
+        results.push(result);
       } else {
-        result = await this.create(dto);
+        const createResult = await this.create(dto);
+        if (Array.isArray(createResult)) {
+          results.push(...createResult);
+        } else {
+          results.push(createResult);
+        }
       }
-      
-      results.push(result);
     }
     
     return results;

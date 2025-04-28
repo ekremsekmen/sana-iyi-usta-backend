@@ -20,35 +20,47 @@ export class MechanicCategoriesService {
 
   async create(dto: CreateMechanicCategoryDto) {
     try {
-      const existingRecord = await this.prisma.mechanic_categories.findFirst({
-        where: {
-          mechanic_id: dto.mechanic_id,
-          category_id: dto.category_id,
-        },
-      });
-
-      if (existingRecord) {
-        throw new ConflictException('Bu kategori zaten tamircinin hizmetleri listesinde mevcut.');
+      // Hiçbir kategori ID'si belirtilmemişse hata fırlat
+      if (!(dto.category_ids?.length > 0) && !dto.category_id) {
+        throw new Error('En az bir kategori ID\'si (category_id veya category_ids) belirtilmelidir.');
       }
+      
+      // Eğer category_ids varsa, çoklu kategori ekleme işlemi yap
+      if (dto.category_ids && dto.category_ids.length > 0) {
+        return this.createMultipleCategories(dto.mechanic_id, dto.category_ids);
+      } 
+      // Eğer sadece category_id varsa, tekil kategori ekle
+      else if (dto.category_id) {
+        const existingRecord = await this.prisma.mechanic_categories.findFirst({
+          where: {
+            mechanic_id: dto.mechanic_id,
+            category_id: dto.category_id,
+          },
+        });
 
-      const category = await this.prisma.categories.findUnique({
-        where: { id: dto.category_id },
-      });
-
-      if (!category) {
-        throw new NotFoundException(`${dto.category_id} ID'li kategori bulunamadı.`);
-      }
-
-      return await this.prisma.mechanic_categories.create({
-        data: {
-          id: randomUUID(),
-          mechanic_id: dto.mechanic_id,
-          category_id: dto.category_id,
-        },
-        include: {
-          categories: true,
+        if (existingRecord) {
+          throw new ConflictException('Bu kategori zaten tamircinin hizmetleri listesinde mevcut.');
         }
-      });
+
+        const category = await this.prisma.categories.findUnique({
+          where: { id: dto.category_id },
+        });
+
+        if (!category) {
+          throw new NotFoundException(`${dto.category_id} ID'li kategori bulunamadı.`);
+        }
+
+        return await this.prisma.mechanic_categories.create({
+          data: {
+            id: randomUUID(),
+            mechanic_id: dto.mechanic_id,
+            category_id: dto.category_id,
+          },
+          include: {
+            categories: true,
+          }
+        });
+      }
     } catch (error) {
       if (error instanceof ConflictException || error instanceof NotFoundException) {
         throw error;
@@ -153,6 +165,76 @@ export class MechanicCategoriesService {
         throw error;
       }
       throw new Error(`Kategorileri güncellerken hata: ${error.message}`);
+    }
+  }
+
+  // Çoklu kategori ekleme yardımcı metodu
+  private async createMultipleCategories(mechanicId: string, categoryIds: string[]) {
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        // Tüm kategori ID'lerinin geçerli olduğunu kontrol et
+        const categories = await tx.categories.findMany({
+          where: {
+            id: { in: categoryIds }
+          },
+          select: { id: true }
+        });
+
+        const foundCategoryIds = categories.map(c => c.id);
+        const notFoundCategoryIds = categoryIds.filter(id => !foundCategoryIds.includes(id));
+
+        if (notFoundCategoryIds.length > 0) {
+          throw new NotFoundException(`Bu ID'lere sahip kategoriler bulunamadı: ${notFoundCategoryIds.join(', ')}`);
+        }
+
+        // Mevcut kategorileri al
+        const existingRecords = await tx.mechanic_categories.findMany({
+          where: { mechanic_id: mechanicId },
+          select: { category_id: true }
+        });
+        
+        const existingCategoryIds = existingRecords.map(record => record.category_id);
+        
+        // Sadece yeni eklenecek kategorileri filtreleyerek işlemleri optimize edelim
+        const newCategoryIds = categoryIds.filter(id => !existingCategoryIds.includes(id));
+        
+        // Zaten ekli olan kategoriler varsa bunları bildir
+        const alreadyExistingCategoryIds = categoryIds.filter(id => existingCategoryIds.includes(id));
+        
+        // Yeni kayıtları ekle
+        const newRecords = newCategoryIds.map(categoryId => ({
+          id: randomUUID(),
+          mechanic_id: mechanicId,
+          category_id: categoryId
+        }));
+        
+        let createdRecords = [];
+        if (newRecords.length > 0) {
+          await tx.mechanic_categories.createMany({
+            data: newRecords
+          });
+          
+          // Yeni eklenen kayıtları getir
+          createdRecords = await tx.mechanic_categories.findMany({
+            where: { 
+              mechanic_id: mechanicId,
+              category_id: { in: newCategoryIds }
+            },
+            include: { categories: true }
+          });
+        }
+        
+        return {
+          created: createdRecords,
+          alreadyExisting: alreadyExistingCategoryIds.length > 0 ? 
+            `Bu kategoriler zaten ekli: ${alreadyExistingCategoryIds.join(', ')}` : null
+        };
+      });
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new Error(`Kategorileri eklerken hata: ${error.message}`);
     }
   }
 }
