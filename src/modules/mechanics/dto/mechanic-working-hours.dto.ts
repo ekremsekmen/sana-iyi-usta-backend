@@ -26,5 +26,5 @@ export class MechanicWorkingHoursDto {
 
   @IsBoolean()
   @IsOptional()
-  is_day_off?: boolean = false;
+  is_day_off?: boolean ;
 }
