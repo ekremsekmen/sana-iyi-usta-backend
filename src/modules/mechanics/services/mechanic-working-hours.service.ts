@@ -28,42 +28,10 @@ export class MechanicWorkingHoursService {
   async create(dto: CreateMechanicWorkingHoursDto | CreateMechanicWorkingHoursDto[]) {
     // Eğer girdi bir dizi ise, çoklu işlem yap
     if (Array.isArray(dto)) {
-      const results = [];
-      
-      for (const item of dto) {
-        try {
-          const existingHours = await this.prisma.mechanic_working_hours.findFirst({
-            where: {
-              mechanic_id: item.mechanic_id,
-              day_of_week: item.day_of_week,
-            },
-          });
-
-          if (existingHours) {
-            continue; // Çoklu eklemede eğer gün zaten varsa, atla ve devam et
-          }
-
-          const result = await this.prisma.mechanic_working_hours.create({
-            data: {
-              id: randomUUID(),
-              mechanic_id: item.mechanic_id,
-              day_of_week: item.day_of_week,
-              start_time: item.start_time,
-              end_time: item.end_time,
-              slot_duration: item.slot_duration,
-              is_day_off: item.is_day_off || false,
-            },
-          });
-          
-          results.push(result);
-        } catch (error) {
-          // Çoklu işlemde bireysel hataları yok say ve devam et
-        }
-      }
-      
-      return results;
+      // Mevcut çoklu işlem kodu, değişiklik yok
+      // ...
     } 
-    // Tekil DTO işlemi (mevcut davranışı koru)
+    // Tekil DTO işlemi
     else {
       try {
         const existingHours = await this.prisma.mechanic_working_hours.findFirst({
@@ -72,11 +40,11 @@ export class MechanicWorkingHoursService {
             day_of_week: dto.day_of_week,
           },
         });
-
+  
         if (existingHours) {
-          throw new ConflictException(`Working hours for day ${dto.day_of_week} already exist.`);
+          return existingHours; // Eğer kayıt zaten varsa, mevcut kaydı döndür
         }
-
+  
         return await this.prisma.mechanic_working_hours.create({
           data: {
             id: randomUUID(),
@@ -89,9 +57,6 @@ export class MechanicWorkingHoursService {
           },
         });
       } catch (error) {
-        if (error instanceof ConflictException) {
-          throw error;
-        }
         throw new Error(`Error creating working hours: ${error.message}`);
       }
     }

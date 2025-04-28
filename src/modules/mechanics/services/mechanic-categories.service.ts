@@ -36,20 +36,23 @@ export class MechanicCategoriesService {
             mechanic_id: dto.mechanic_id,
             category_id: dto.category_id,
           },
+          include: {
+            categories: true,
+          }
         });
-
+  
         if (existingRecord) {
-          throw new ConflictException('Bu kategori zaten tamircinin hizmetleri listesinde mevcut.');
+          return existingRecord; // Eğer kayıt zaten varsa, mevcut kaydı döndür
         }
-
+  
         const category = await this.prisma.categories.findUnique({
           where: { id: dto.category_id },
         });
-
+  
         if (!category) {
           throw new NotFoundException(`${dto.category_id} ID'li kategori bulunamadı.`);
         }
-
+  
         return await this.prisma.mechanic_categories.create({
           data: {
             id: randomUUID(),
@@ -62,7 +65,7 @@ export class MechanicCategoriesService {
         });
       }
     } catch (error) {
-      if (error instanceof ConflictException || error instanceof NotFoundException) {
+      if (error instanceof NotFoundException) {
         throw error;
       }
       throw new Error(`Kategori kaydı oluşturulurken hata: ${error.message}`);
@@ -179,14 +182,14 @@ export class MechanicCategoriesService {
           },
           select: { id: true }
         });
-
+  
         const foundCategoryIds = categories.map(c => c.id);
         const notFoundCategoryIds = categoryIds.filter(id => !foundCategoryIds.includes(id));
-
+  
         if (notFoundCategoryIds.length > 0) {
           throw new NotFoundException(`Bu ID'lere sahip kategoriler bulunamadı: ${notFoundCategoryIds.join(', ')}`);
         }
-
+  
         // Mevcut kategorileri al
         const existingRecords = await tx.mechanic_categories.findMany({
           where: { mechanic_id: mechanicId },
@@ -198,9 +201,6 @@ export class MechanicCategoriesService {
         // Sadece yeni eklenecek kategorileri filtreleyerek işlemleri optimize edelim
         const newCategoryIds = categoryIds.filter(id => !existingCategoryIds.includes(id));
         
-        // Zaten ekli olan kategoriler varsa bunları bildir
-        const alreadyExistingCategoryIds = categoryIds.filter(id => existingCategoryIds.includes(id));
-        
         // Yeni kayıtları ekle
         const newRecords = newCategoryIds.map(categoryId => ({
           id: randomUUID(),
@@ -208,27 +208,24 @@ export class MechanicCategoriesService {
           category_id: categoryId
         }));
         
-        let createdRecords = [];
-        if (newRecords.length > 0) {
-          await tx.mechanic_categories.createMany({
-            data: newRecords
-          });
-          
-          // Yeni eklenen kayıtları getir
-          createdRecords = await tx.mechanic_categories.findMany({
-            where: { 
-              mechanic_id: mechanicId,
-              category_id: { in: newCategoryIds }
-            },
-            include: { categories: true }
-          });
+        // Eğer eklenecek yeni kayıt yoksa boş dizi döndür
+        if (newRecords.length === 0) {
+          return [];
         }
         
-        return {
-          created: createdRecords,
-          alreadyExisting: alreadyExistingCategoryIds.length > 0 ? 
-            `Bu kategoriler zaten ekli: ${alreadyExistingCategoryIds.join(', ')}` : null
-        };
+        // Yeni kayıtları ekle
+        await tx.mechanic_categories.createMany({
+          data: newRecords
+        });
+        
+        // Sadece yeni eklenen kayıtları döndür
+        return await tx.mechanic_categories.findMany({
+          where: { 
+            mechanic_id: mechanicId,
+            category_id: { in: newCategoryIds }
+          },
+          include: { categories: true }
+        });
       });
     } catch (error) {
       if (error instanceof NotFoundException) {

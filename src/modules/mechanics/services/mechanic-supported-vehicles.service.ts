@@ -25,20 +25,23 @@ export class MechanicSupportedVehiclesService {
           mechanic_id: dto.mechanic_id,
           brand_id: dto.brand_id,
         },
+        include: {
+          brands: true,
+        }
       });
-
+  
       if (existingRecord) {
-        throw new ConflictException('Bu marka zaten tamircinin desteklediği araçlar listesinde mevcut.');
+        return existingRecord; // Eğer kayıt zaten varsa, mevcut kaydı döndür
       }
-
+  
       const brand = await this.prisma.brands.findUnique({
         where: { id: dto.brand_id },
       });
-
+  
       if (!brand) {
         throw new NotFoundException(`${dto.brand_id} ID'li marka bulunamadı.`);
       }
-
+  
       return await this.prisma.mechanic_supported_vehicles.create({
         data: {
           id: randomUUID(),
@@ -50,7 +53,7 @@ export class MechanicSupportedVehiclesService {
         }
       });
     } catch (error) {
-      if (error instanceof ConflictException || error instanceof NotFoundException) {
+      if (error instanceof NotFoundException) {
         throw error;
       }
       throw new Error(`Desteklenen araç kaydı oluşturulurken hata: ${error.message}`);
@@ -153,20 +156,21 @@ export class MechanicSupportedVehiclesService {
   async createMultiple(mechanicId: string, brandIds: string[]) {
     try {
       return await this.prisma.$transaction(async (tx) => {
+        // Tüm marka ID'lerinin geçerli olduğunu kontrol et
         const brands = await tx.brands.findMany({
           where: {
             id: { in: brandIds }
           },
           select: { id: true }
         });
-
+  
         const foundBrandIds = brands.map(b => b.id);
         const notFoundBrandIds = brandIds.filter(id => !foundBrandIds.includes(id));
-
+  
         if (notFoundBrandIds.length > 0) {
           throw new NotFoundException(`Bu ID'lere sahip markalar bulunamadı: ${notFoundBrandIds.join(', ')}`);
         }
-
+  
         // Mevcut desteklenen markaları al
         const existingRecords = await tx.mechanic_supported_vehicles.findMany({
           where: { mechanic_id: mechanicId },
@@ -178,9 +182,6 @@ export class MechanicSupportedVehiclesService {
         // Sadece yeni eklenecek markaları filtreleyerek işlemleri optimize edelim
         const newBrandIds = brandIds.filter(id => !existingBrandIds.includes(id));
         
-        // Zaten ekli olan markalar varsa bunları bildir
-        const alreadyExistingBrandIds = brandIds.filter(id => existingBrandIds.includes(id));
-        
         // Yeni kayıtları ekle
         const newRecords = newBrandIds.map(brandId => ({
           id: randomUUID(),
@@ -188,27 +189,24 @@ export class MechanicSupportedVehiclesService {
           brand_id: brandId
         }));
         
-        let createdRecords = [];
-        if (newRecords.length > 0) {
-          await tx.mechanic_supported_vehicles.createMany({
-            data: newRecords
-          });
-          
-          // Yeni eklenen kayıtları getir
-          createdRecords = await tx.mechanic_supported_vehicles.findMany({
-            where: { 
-              mechanic_id: mechanicId,
-              brand_id: { in: newBrandIds }
-            },
-            include: { brands: true }
-          });
+        // Eğer eklenecek yeni kayıt yoksa boş dizi döndür
+        if (newRecords.length === 0) {
+          return [];
         }
         
-        return {
-          created: createdRecords,
-          alreadyExisting: alreadyExistingBrandIds.length > 0 ? 
-            `Bu markalar zaten ekli: ${alreadyExistingBrandIds.join(', ')}` : null
-        };
+        // Yeni kayıtları ekle
+        await tx.mechanic_supported_vehicles.createMany({
+          data: newRecords
+        });
+        
+        // Sadece yeni eklenen kayıtları döndür
+        return await tx.mechanic_supported_vehicles.findMany({
+          where: { 
+            mechanic_id: mechanicId,
+            brand_id: { in: newBrandIds }
+          },
+          include: { brands: true }
+        });
       });
     } catch (error) {
       if (error instanceof NotFoundException) {
