@@ -88,44 +88,65 @@ export class MechanicSupportedVehiclesService {
   async updateBulkSupportedVehicles(mechanicId: string, brandIds: string[]) {
     try {
       return await this.prisma.$transaction(async (tx) => {
-        await tx.mechanic_supported_vehicles.deleteMany({
-          where: {
-            mechanic_id: mechanicId,
-          },
-        });
-
-        if (brandIds.length === 0) {
-          return [];
-        }
-
-        const brands = await tx.brands.findMany({
-          where: {
-            id: { in: brandIds }
-          },
-          select: { id: true }
-        });
-
-        const foundBrandIds = brands.map(b => b.id);
-        const notFoundBrandIds = brandIds.filter(id => !foundBrandIds.includes(id));
-
-        if (notFoundBrandIds.length > 0) {
-          throw new NotFoundException(`Bu ID'lere sahip markalar bulunamadı: ${notFoundBrandIds.join(', ')}`);
-        }
-
-        const createPromises = brandIds.map(brandId => 
-          tx.mechanic_supported_vehicles.create({
-            data: {
-              id: randomUUID(),
-              mechanic_id: mechanicId,
-              brand_id: brandId,
+        // Tüm marka ID'lerinin geçerli olduğunu kontrol et
+        if (brandIds.length > 0) {
+          const brands = await tx.brands.findMany({
+            where: {
+              id: { in: brandIds }
             },
-            include: {
-              brands: true,
-            }
-          })
-        );
+            select: { id: true }
+          });
 
-        return await Promise.all(createPromises);
+          const foundBrandIds = brands.map(b => b.id);
+          const notFoundBrandIds = brandIds.filter(id => !foundBrandIds.includes(id));
+
+          if (notFoundBrandIds.length > 0) {
+            throw new NotFoundException(`Bu ID'lere sahip markalar bulunamadı: ${notFoundBrandIds.join(', ')}`);
+          }
+        }
+
+        // Mevcut desteklenen markaları al
+        const existingRecords = await tx.mechanic_supported_vehicles.findMany({
+          where: { mechanic_id: mechanicId },
+          select: { id: true, brand_id: true }
+        });
+        
+        const existingBrandIds = existingRecords.map(record => record.brand_id);
+        
+        // Silinecek markaları belirle
+        const brandIdsToRemove = existingBrandIds.filter(id => !brandIds.includes(id));
+        
+        // Eklenecek markaları belirle
+        const brandIdsToAdd = brandIds.filter(id => !existingBrandIds.includes(id));
+        
+        // Silinecek kayıtları sil
+        if (brandIdsToRemove.length > 0) {
+          await tx.mechanic_supported_vehicles.deleteMany({
+            where: {
+              mechanic_id: mechanicId,
+              brand_id: { in: brandIdsToRemove }
+            }
+          });
+        }
+        
+        // Yeni kayıtları ekle
+        const newRecords = brandIdsToAdd.map(brandId => ({
+          id: randomUUID(),
+          mechanic_id: mechanicId,
+          brand_id: brandId
+        }));
+        
+        if (newRecords.length > 0) {
+          await tx.mechanic_supported_vehicles.createMany({
+            data: newRecords
+          });
+        }
+        
+        // Güncellenmiş kayıtları döndür
+        return await tx.mechanic_supported_vehicles.findMany({
+          where: { mechanic_id: mechanicId },
+          include: { brands: true }
+        });
       });
     } catch (error) {
       if (error instanceof NotFoundException) {

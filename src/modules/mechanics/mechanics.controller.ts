@@ -6,15 +6,15 @@ import { JwtGuard } from '../../common/guards';
 import { RequestWithUser } from '../../common/interfaces/request-with-user.interface';
 import { BulkUpdateSupportedVehiclesDto } from './dto/bulk-update-supported-vehicles.dto';
 import { CreateMechanicSupportedVehicleDto } from './dto/create-mechanic-supported-vehicle.dto';
-import { MechanicWorkingHoursService } from './services/mechanic-working-hours.service';
 import { CreateMechanicWorkingHoursDto } from './dto/create-mechanic-working-hours.dto';
 import { UpdateMechanicWorkingHoursDto } from './dto/update-mechanic-working-hours.dto';
+import { CreateMechanicCategoryDto } from './dto/create-mechanic-category.dto';
+import { BulkUpdateCategoriesDto } from './dto/bulk-update-categories.dto';
 
 @Controller('mechanics')
 export class MechanicsController {
   constructor(
     private readonly mechanicsService: MechanicsService,
-    private readonly mechanicWorkingHoursService: MechanicWorkingHoursService,
   ) {}
 
   @UseGuards(JwtGuard)
@@ -135,7 +135,7 @@ export class MechanicsController {
     if (mechanic.user_id !== request.user.id) {
       throw new ForbiddenException('Bu bilgileri görüntüleme yetkiniz yok.');
     }
-    return this.mechanicWorkingHoursService.findByMechanic(id);
+    return this.mechanicsService.getWorkingHours(id);
   }
 
   @UseGuards(JwtGuard)
@@ -152,8 +152,7 @@ export class MechanicsController {
       throw new ForbiddenException('Bu işlemi gerçekleştirme yetkiniz yok.');
     }
     
-    createWorkingHoursDto.mechanic_id = id;
-    return this.mechanicWorkingHoursService.create(createWorkingHoursDto);
+    return this.mechanicsService.createWorkingHours(id, createWorkingHoursDto);
   }
 
   @UseGuards(JwtGuard)
@@ -171,7 +170,7 @@ export class MechanicsController {
       throw new ForbiddenException('Bu işlemi gerçekleştirme yetkiniz yok.');
     }
     
-    return this.mechanicWorkingHoursService.update(hourId, updateWorkingHoursDto);
+    return this.mechanicsService.updateWorkingHours(hourId, updateWorkingHoursDto);
   }
 
   @UseGuards(JwtGuard)
@@ -187,6 +186,73 @@ export class MechanicsController {
       throw new ForbiddenException('Bu işlemi gerçekleştirme yetkiniz yok.');
     }
     
-    return this.mechanicWorkingHoursService.remove(hourId);
+    return this.mechanicsService.deleteWorkingHours(hourId);
+  }
+
+  // Categories Endpoints
+  @UseGuards(JwtGuard)
+  @Get(':id/categories')
+  @HttpCode(HttpStatus.OK)
+  async getCategories(@Param('id', new ParseUUIDPipe()) id: string, @Req() request: RequestWithUser) {
+    const mechanic = await this.mechanicsService.findOne(id);
+    if (mechanic.user_id !== request.user.id) {
+      throw new ForbiddenException('Bu bilgileri görüntüleme yetkiniz yok.');
+    }
+    return this.mechanicsService.getCategories(id);
+  }
+
+  @UseGuards(JwtGuard)
+  @Post(':id/categories')
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  @HttpCode(HttpStatus.CREATED)
+  async addCategory(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body('category_id', new ParseUUIDPipe()) categoryId: string,
+    @Req() request: RequestWithUser
+  ) {
+    const mechanic = await this.mechanicsService.findOne(id);
+    if (mechanic.user_id !== request.user.id) {
+      throw new ForbiddenException('Bu işlemi gerçekleştirme yetkiniz yok.');
+    }
+
+    const dto: CreateMechanicCategoryDto = {
+      mechanic_id: id,
+      category_id: categoryId
+    };
+
+    return this.mechanicsService.addCategory(dto);
+  }
+
+  @UseGuards(JwtGuard)
+  @Delete(':id/categories/:categoryId')
+  @HttpCode(HttpStatus.OK)
+  async removeCategory(
+    @Param('id', new ParseUUIDPipe()) id: string, 
+    @Param('categoryId', new ParseUUIDPipe()) categoryId: string,
+    @Req() request: RequestWithUser
+  ) {
+    const mechanic = await this.mechanicsService.findOne(id);
+    if (mechanic.user_id !== request.user.id) {
+      throw new ForbiddenException('Bu işlemi gerçekleştirme yetkiniz yok.');
+    }
+    
+    return this.mechanicsService.removeCategoryByMechanicAndCategory(id, categoryId);
+  }
+
+  @UseGuards(JwtGuard)
+  @Patch(':id/categories')
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  @HttpCode(HttpStatus.OK)
+  async updateCategories(
+    @Param('id', new ParseUUIDPipe()) id: string, 
+    @Body() dto: BulkUpdateCategoriesDto,
+    @Req() request: RequestWithUser
+  ) {
+    const mechanic = await this.mechanicsService.findOne(id);
+    if (mechanic.user_id !== request.user.id) {
+      throw new ForbiddenException('Bu işlemi gerçekleştirme yetkiniz yok.');
+    }
+    
+    return this.mechanicsService.updateBulkCategories(id, dto.category_ids);
   }
 }

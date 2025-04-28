@@ -2,18 +2,21 @@ import { Injectable } from '@nestjs/common';
 import { MechanicProfileService } from './services/mechanic-profile.service';
 import { MechanicWorkingHoursService } from './services/mechanic-working-hours.service';
 import { MechanicSupportedVehiclesService } from './services/mechanic-supported-vehicles.service';
+import { MechanicCategoriesService } from './services/mechanic-categories.service';
 import { CreateMechanicDto } from './dto/create-mechanic.dto';
 import { UpdateMechanicDto } from './dto/update-mechanic.dto';
 import { CreateMechanicWorkingHoursDto } from './dto/create-mechanic-working-hours.dto';
 import { UpdateMechanicWorkingHoursDto } from './dto/update-mechanic-working-hours.dto';
 import { CreateMechanicSupportedVehicleDto } from './dto/create-mechanic-supported-vehicle.dto';
+import { CreateMechanicCategoryDto } from './dto/create-mechanic-category.dto';
 
 @Injectable()
 export class MechanicsService {
   constructor(
     private readonly mechanicProfileService: MechanicProfileService,
     private readonly mechanicWorkingHoursService: MechanicWorkingHoursService,
-    private readonly mechanicSupportedVehiclesService: MechanicSupportedVehiclesService
+    private readonly mechanicSupportedVehiclesService: MechanicSupportedVehiclesService,
+    private readonly mechanicCategoriesService: MechanicCategoriesService
   ) {}
 
   create(createMechanicDto: CreateMechanicDto) {
@@ -71,5 +74,25 @@ export class MechanicsService {
 
   updateBulkSupportedVehicles(mechanicId: string, brandIds: string[]) {
     return this.mechanicSupportedVehiclesService.updateBulkSupportedVehicles(mechanicId, brandIds);
+  }
+
+  getCategories(mechanicId: string) {
+    return this.mechanicCategoriesService.findByMechanic(mechanicId);
+  }
+
+  addCategory(dto: CreateMechanicCategoryDto) {
+    return this.mechanicCategoriesService.create(dto);
+  }
+
+  removeCategory(id: string) {
+    return this.mechanicCategoriesService.remove(id);
+  }
+
+  removeCategoryByMechanicAndCategory(mechanicId: string, categoryId: string) {
+    return this.mechanicCategoriesService.removeByMechanicAndCategory(mechanicId, categoryId);
+  }
+
+  updateBulkCategories(mechanicId: string, categoryIds: string[]) {
+    return this.mechanicCategoriesService.updateBulkCategories(mechanicId, categoryIds);
   }
 }

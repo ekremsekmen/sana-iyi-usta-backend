@@ -4,6 +4,7 @@ import { MechanicsService } from './mechanics.service';
 import { MechanicProfileService } from './services/mechanic-profile.service';
 import { MechanicWorkingHoursService } from './services/mechanic-working-hours.service';
 import { MechanicSupportedVehiclesService } from './services/mechanic-supported-vehicles.service';
+import { MechanicCategoriesService } from './services/mechanic-categories.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Module({
@@ -13,6 +14,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
     MechanicProfileService, 
     MechanicWorkingHoursService,
     MechanicSupportedVehiclesService,
+    MechanicCategoriesService,
     PrismaService
   ]
 })
