@@ -1,14 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { CreateMechanicDto } from '../dto/create-mechanic.dto';
-import { UpdateMechanicDto } from '../dto/update-mechanic.dto';
+import { MechanicProfileDto } from '../dto/mechanic-profile.dto';
 import { randomUUID } from 'crypto';
 
 @Injectable()
 export class MechanicProfileService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(dto: CreateMechanicDto) {
+  async create(dto: MechanicProfileDto) {
     return this.prisma.mechanics.create({
       data: {
         id: randomUUID(), 
@@ -27,17 +26,29 @@ export class MechanicProfileService {
     return mechanic;
   }
 
-  async update(id: string, dto: UpdateMechanicDto) {
+  async update(id: string, dto: MechanicProfileDto) {
     try {
+      // Güncellenecek verileri içeren nesneyi oluştur
+      const updateData: any = {
+        business_name: dto.business_name,
+        on_site_service: dto.on_site_service,
+      };
+      
+      // Eğer mevcut mechanic'in user_id'si farklıysa, yeni bağlantı ekle
+      const currentMechanic = await this.prisma.mechanics.findUnique({
+        where: { id },
+        select: { user_id: true }
+      });
+      
+      if (currentMechanic && currentMechanic.user_id !== dto.user_id && dto.user_id) {
+        updateData.users = { connect: { id: dto.user_id } };
+      }
+      
       return await this.prisma.mechanics.update({
         where: { id },
-        data: {
-          business_name: dto.business_name,
-          on_site_service: dto.on_site_service,
-          users: { connect: { id: dto.user_id } },
-        },
+        data: updateData,
       });
-    } catch {
+    } catch (error) {
       throw new NotFoundException(`Mechanic with id ${id} not found.`);
     }
   }

@@ -1,6 +1,6 @@
 import { IsBoolean, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
 
-export class CreateMechanicWorkingHoursDto {
+export class MechanicWorkingHoursDto {
   @IsUUID()
   @IsOptional()
   mechanic_id?: string;

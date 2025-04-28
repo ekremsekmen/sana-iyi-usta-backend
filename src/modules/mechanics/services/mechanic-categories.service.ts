@@ -1,7 +1,7 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { randomUUID } from 'crypto';
-import { CreateMechanicCategoryDto } from '../dto/create-mechanic-category.dto';
+import { MechanicCategoryDto } from '../dto/mechanic-category.dto';
 
 @Injectable()
 export class MechanicCategoriesService {
@@ -18,51 +18,66 @@ export class MechanicCategoriesService {
     return categories;
   }
 
-  async create(dto: CreateMechanicCategoryDto) {
+  async create(dto: MechanicCategoryDto | MechanicCategoryDto[]) {
     try {
-      // Hiçbir kategori ID'si belirtilmemişse hata fırlat
-      if (!(dto.category_ids?.length > 0) && !dto.category_id) {
-        throw new Error('En az bir kategori ID\'si (category_id veya category_ids) belirtilmelidir.');
-      }
-      
-      // Eğer category_ids varsa, çoklu kategori ekleme işlemi yap
-      if (dto.category_ids && dto.category_ids.length > 0) {
-        return this.createMultipleCategories(dto.mechanic_id, dto.category_ids);
+      // Dizi (çoklu) kategori işlemi
+      if (Array.isArray(dto)) {
+        if (dto.length === 0) {
+          return []; // Boş dizi durumunda boş dizi döndür
+        }
+        
+        // Tüm öğelerin aynı mechanic_id'ye sahip olduğundan emin ol
+        const mechanicId = dto[0].mechanic_id;
+        const hasInconsistentMechanicId = dto.some(item => item.mechanic_id !== mechanicId);
+        
+        if (hasInconsistentMechanicId) {
+          throw new BadRequestException('Tüm kategori kayıtları aynı tamirciye ait olmalıdır.');
+        }
+        
+        return this.createMultipleCategories(dto[0].mechanic_id, dto.map(item => item.category_id));
       } 
-      // Eğer sadece category_id varsa, tekil kategori ekle
-      else if (dto.category_id) {
+      // Tekil kategori işlemi
+      else {
         const existingRecord = await this.prisma.mechanic_categories.findFirst({
           where: {
             mechanic_id: dto.mechanic_id,
             category_id: dto.category_id,
           },
-          include: {
-            categories: true,
-          }
         });
-  
-        if (existingRecord) {
-          return existingRecord; // Eğer kayıt zaten varsa, mevcut kaydı döndür
-        }
-  
+
+        // Kategori varlığını kontrol et
         const category = await this.prisma.categories.findUnique({
           where: { id: dto.category_id },
         });
-  
+
         if (!category) {
           throw new NotFoundException(`${dto.category_id} ID'li kategori bulunamadı.`);
         }
-  
-        return await this.prisma.mechanic_categories.create({
-          data: {
-            id: randomUUID(),
-            mechanic_id: dto.mechanic_id,
-            category_id: dto.category_id,
-          },
-          include: {
-            categories: true,
-          }
-        });
+
+        if (existingRecord) {
+          // Mevcut kaydı güncelle - tutarlılık için eklenmiştir
+          return await this.prisma.mechanic_categories.update({
+            where: { id: existingRecord.id },
+            data: {
+              category_id: dto.category_id,
+            },
+            include: {
+              categories: true,
+            }
+          });
+        } else {
+          // Yeni kayıt oluştur
+          return await this.prisma.mechanic_categories.create({
+            data: {
+              id: randomUUID(),
+              mechanic_id: dto.mechanic_id,
+              category_id: dto.category_id,
+            },
+            include: {
+              categories: true,
+            }
+          });
+        }
       }
     } catch (error) {
       if (error instanceof NotFoundException) {
@@ -102,22 +117,25 @@ export class MechanicCategoriesService {
 
   async updateBulkCategories(mechanicId: string, categoryIds: string[]) {
     try {
+      // Boş dizi kontrolü - eğer boş dizi gönderilirse hata fırlat
+      if (!categoryIds || categoryIds.length === 0) {
+        throw new BadRequestException('En az bir kategori belirtilmelidir. Tüm kategorileri kaldırmak istiyorsanız, silme işlemini özel olarak gerçekleştirin.');
+      }
+      
       return await this.prisma.$transaction(async (tx) => {
         // Tüm kategori ID'lerinin geçerli olduğunu kontrol et
-        if (categoryIds.length > 0) {
-          const categories = await tx.categories.findMany({
-            where: {
-              id: { in: categoryIds }
-            },
-            select: { id: true }
-          });
+        const categories = await tx.categories.findMany({
+          where: {
+            id: { in: categoryIds }
+          },
+          select: { id: true }
+        });
 
-          const foundCategoryIds = categories.map(c => c.id);
-          const notFoundCategoryIds = categoryIds.filter(id => !foundCategoryIds.includes(id));
+        const foundCategoryIds = categories.map(c => c.id);
+        const notFoundCategoryIds = categoryIds.filter(id => !foundCategoryIds.includes(id));
 
-          if (notFoundCategoryIds.length > 0) {
-            throw new NotFoundException(`Bu ID'lere sahip kategoriler bulunamadı: ${notFoundCategoryIds.join(', ')}`);
-          }
+        if (notFoundCategoryIds.length > 0) {
+          throw new NotFoundException(`Bu ID'lere sahip kategoriler bulunamadı: ${notFoundCategoryIds.join(', ')}`);
         }
         
         // Mevcut kategorileri al
@@ -164,7 +182,7 @@ export class MechanicCategoriesService {
         });
       });
     } catch (error) {
-      if (error instanceof NotFoundException) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
       }
       throw new Error(`Kategorileri güncellerken hata: ${error.message}`);
@@ -174,6 +192,11 @@ export class MechanicCategoriesService {
   // Çoklu kategori ekleme yardımcı metodu
   private async createMultipleCategories(mechanicId: string, categoryIds: string[]) {
     try {
+      // Boş dizi kontrolü
+      if (!categoryIds || categoryIds.length === 0) {
+        throw new BadRequestException('En az bir kategori belirtilmelidir.');
+      }
+      
       return await this.prisma.$transaction(async (tx) => {
         // Tüm kategori ID'lerinin geçerli olduğunu kontrol et
         const categories = await tx.categories.findMany({
@@ -228,10 +251,26 @@ export class MechanicCategoriesService {
         });
       });
     } catch (error) {
-      if (error instanceof NotFoundException) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
       }
       throw new Error(`Kategorileri eklerken hata: ${error.message}`);
+    }
+  }
+
+  async createForMechanic(mechanicId: string, dto: MechanicCategoryDto | MechanicCategoryDto[]) {
+    if (Array.isArray(dto)) {
+      const modifiedDto = dto.map(item => ({
+        ...item,
+        mechanic_id: mechanicId
+      }));
+      return this.create(modifiedDto);
+    } else {
+      const modifiedDto = {
+        ...dto,
+        mechanic_id: mechanicId
+      };
+      return this.create(modifiedDto);
     }
   }
 }

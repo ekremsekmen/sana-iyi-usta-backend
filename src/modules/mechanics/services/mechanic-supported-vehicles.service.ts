@@ -1,7 +1,7 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { randomUUID } from 'crypto';
-import { CreateMechanicSupportedVehicleDto } from '../dto/create-mechanic-supported-vehicle.dto';
+import { MechanicSupportedVehicleDto } from '../dto/mechanic-supported-vehicle.dto';
 
 @Injectable()
 export class MechanicSupportedVehiclesService {
@@ -18,40 +18,67 @@ export class MechanicSupportedVehiclesService {
     return supportedVehicles;
   }
 
-  async create(dto: CreateMechanicSupportedVehicleDto) {
+  async create(dto: MechanicSupportedVehicleDto | MechanicSupportedVehicleDto[]) {
     try {
-      const existingRecord = await this.prisma.mechanic_supported_vehicles.findFirst({
-        where: {
-          mechanic_id: dto.mechanic_id,
-          brand_id: dto.brand_id,
-        },
-        include: {
-          brands: true,
+      // Dizi (çoklu) araç işlemi
+      if (Array.isArray(dto)) {
+        if (dto.length === 0) {
+          return []; // Boş dizi durumunda boş dizi döndür
         }
-      });
-  
-      if (existingRecord) {
-        return existingRecord; // Eğer kayıt zaten varsa, mevcut kaydı döndür
-      }
-  
-      const brand = await this.prisma.brands.findUnique({
-        where: { id: dto.brand_id },
-      });
-  
-      if (!brand) {
-        throw new NotFoundException(`${dto.brand_id} ID'li marka bulunamadı.`);
-      }
-  
-      return await this.prisma.mechanic_supported_vehicles.create({
-        data: {
-          id: randomUUID(),
-          mechanic_id: dto.mechanic_id,
-          brand_id: dto.brand_id,
-        },
-        include: {
-          brands: true,
+        
+        // Tüm öğelerin aynı mechanic_id'ye sahip olduğundan emin ol
+        const mechanicId = dto[0].mechanic_id;
+        const hasInconsistentMechanicId = dto.some(item => item.mechanic_id !== mechanicId);
+        
+        if (hasInconsistentMechanicId) {
+          throw new BadRequestException('Tüm desteklenen araç kayıtları aynı tamirciye ait olmalıdır.');
         }
-      });
+        
+        return this.createMultiple(dto[0].mechanic_id, dto.map(item => item.brand_id));
+      }
+      // Tekil araç işlemi
+      else {
+        const existingRecord = await this.prisma.mechanic_supported_vehicles.findFirst({
+          where: {
+            mechanic_id: dto.mechanic_id,
+            brand_id: dto.brand_id,
+          },
+        });
+    
+        // Marka varlığını kontrol et
+        const brand = await this.prisma.brands.findUnique({
+          where: { id: dto.brand_id },
+        });
+    
+        if (!brand) {
+          throw new NotFoundException(`${dto.brand_id} ID'li marka bulunamadı.`);
+        }
+    
+        if (existingRecord) {
+          // Mevcut kaydı güncelle - tutarlılık için eklenmiştir
+          return await this.prisma.mechanic_supported_vehicles.update({
+            where: { id: existingRecord.id },
+            data: {
+              brand_id: dto.brand_id,
+            },
+            include: {
+              brands: true,
+            }
+          });
+        } else {
+          // Yeni kayıt oluştur
+          return await this.prisma.mechanic_supported_vehicles.create({
+            data: {
+              id: randomUUID(),
+              mechanic_id: dto.mechanic_id,
+              brand_id: dto.brand_id,
+            },
+            include: {
+              brands: true,
+            }
+          });
+        }
+      }
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
@@ -90,22 +117,25 @@ export class MechanicSupportedVehiclesService {
 
   async updateBulkSupportedVehicles(mechanicId: string, brandIds: string[]) {
     try {
+      // Boş dizi kontrolü - eğer boş dizi gönderilirse hata fırlat
+      if (!brandIds || brandIds.length === 0) {
+        throw new BadRequestException('En az bir desteklenen marka belirtilmelidir. Tüm markaları kaldırmak istiyorsanız, silme işlemini özel olarak gerçekleştirin.');
+      }
+
       return await this.prisma.$transaction(async (tx) => {
         // Tüm marka ID'lerinin geçerli olduğunu kontrol et
-        if (brandIds.length > 0) {
-          const brands = await tx.brands.findMany({
-            where: {
-              id: { in: brandIds }
-            },
-            select: { id: true }
-          });
+        const brands = await tx.brands.findMany({
+          where: {
+            id: { in: brandIds }
+          },
+          select: { id: true }
+        });
 
-          const foundBrandIds = brands.map(b => b.id);
-          const notFoundBrandIds = brandIds.filter(id => !foundBrandIds.includes(id));
+        const foundBrandIds = brands.map(b => b.id);
+        const notFoundBrandIds = brandIds.filter(id => !foundBrandIds.includes(id));
 
-          if (notFoundBrandIds.length > 0) {
-            throw new NotFoundException(`Bu ID'lere sahip markalar bulunamadı: ${notFoundBrandIds.join(', ')}`);
-          }
+        if (notFoundBrandIds.length > 0) {
+          throw new NotFoundException(`Bu ID'lere sahip markalar bulunamadı: ${notFoundBrandIds.join(', ')}`);
         }
 
         const existingRecords = await tx.mechanic_supported_vehicles.findMany({
@@ -146,7 +176,7 @@ export class MechanicSupportedVehiclesService {
         });
       });
     } catch (error) {
-      if (error instanceof NotFoundException) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
       }
       throw new Error(`Desteklenen araçları güncellerken hata: ${error.message}`);
@@ -155,6 +185,11 @@ export class MechanicSupportedVehiclesService {
 
   async createMultiple(mechanicId: string, brandIds: string[]) {
     try {
+      // Boş dizi kontrolü
+      if (!brandIds || brandIds.length === 0) {
+        throw new BadRequestException('En az bir desteklenen marka belirtilmelidir.');
+      }
+
       return await this.prisma.$transaction(async (tx) => {
         // Tüm marka ID'lerinin geçerli olduğunu kontrol et
         const brands = await tx.brands.findMany({
@@ -209,25 +244,30 @@ export class MechanicSupportedVehiclesService {
         });
       });
     } catch (error) {
-      if (error instanceof NotFoundException) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
       }
       throw new Error(`Desteklenen araçları eklerken hata: ${error.message}`);
     }
   }
 
-  async addSupportedVehicle(dto: CreateMechanicSupportedVehicleDto) {
-    if (dto.brand_ids && dto.brand_ids.length > 0) {
-      return this.createMultiple(dto.mechanic_id, dto.brand_ids);
-    } 
-    else if (dto.brand_id) {
-      return this.create({
-        mechanic_id: dto.mechanic_id,
-        brand_id: dto.brand_id
-      });
-    }
-    else {
-      throw new Error('En az bir marka ID\'si (brand_id veya brand_ids) belirtilmelidir.');
+  async addSupportedVehicle(dto: MechanicSupportedVehicleDto | MechanicSupportedVehicleDto[]) {
+    return this.create(dto);
+  }
+
+  async createForMechanic(mechanicId: string, dto: MechanicSupportedVehicleDto | MechanicSupportedVehicleDto[]) {
+    if (Array.isArray(dto)) {
+      const modifiedDto = dto.map(item => ({
+        ...item,
+        mechanic_id: mechanicId
+      }));
+      return this.create(modifiedDto);
+    } else {
+      const modifiedDto = {
+        ...dto,
+        mechanic_id: mechanicId
+      };
+      return this.create(modifiedDto);
     }
   }
 }

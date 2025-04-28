@@ -1,6 +1,6 @@
 import { IsBoolean, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
 
-export class CreateMechanicDto {
+export class MechanicProfileDto {
   @IsUUID()
   @IsOptional()
   user_id?: string;

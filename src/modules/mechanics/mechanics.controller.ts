@@ -1,15 +1,11 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, HttpCode, HttpStatus, ForbiddenException, UsePipes, ValidationPipe, ParseUUIDPipe } from '@nestjs/common';
 import { MechanicsService } from './mechanics.service';
-import { CreateMechanicDto } from './dto/create-mechanic.dto';
-import { UpdateMechanicDto } from './dto/update-mechanic.dto';
+import { MechanicProfileDto } from './dto/mechanic-profile.dto';
 import { JwtGuard } from '../../common/guards';
 import { RequestWithUser } from '../../common/interfaces/request-with-user.interface';
-import { BulkUpdateSupportedVehiclesDto } from './dto/bulk-update-supported-vehicles.dto';
-import { CreateMechanicSupportedVehicleDto } from './dto/create-mechanic-supported-vehicle.dto';
-import { CreateMechanicWorkingHoursDto } from './dto/create-mechanic-working-hours.dto';
-import { UpdateMechanicWorkingHoursDto } from './dto/update-mechanic-working-hours.dto';
-import { CreateMechanicCategoryDto } from './dto/create-mechanic-category.dto';
-import { BulkUpdateCategoriesDto } from './dto/bulk-update-categories.dto';
+import { MechanicSupportedVehicleDto } from './dto/mechanic-supported-vehicle.dto';
+import { MechanicWorkingHoursDto } from './dto/mechanic-working-hours.dto';
+import { MechanicCategoryDto } from './dto/mechanic-category.dto';
 
 @Controller('mechanics')
 export class MechanicsController {
@@ -21,11 +17,11 @@ export class MechanicsController {
   @Post()
   @UsePipes(new ValidationPipe({ whitelist: true }))
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() createMechanicDto: CreateMechanicDto, @Req() request: RequestWithUser) {
-    createMechanicDto.user_id = request.user.id;
-    return this.mechanicsService.create(createMechanicDto);
+  create(@Body() MechanicProfileDto: MechanicProfileDto, @Req() request: RequestWithUser) {
+    MechanicProfileDto.user_id = request.user.id;
+    return this.mechanicsService.create(MechanicProfileDto);
   }
-
+  @UseGuards(JwtGuard)
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   findOne(@Param('id', new ParseUUIDPipe()) id: string) {
@@ -38,15 +34,15 @@ export class MechanicsController {
   @HttpCode(HttpStatus.OK)
   async update(
     @Param('id', new ParseUUIDPipe()) id: string, 
-    @Body() updateMechanicDto: UpdateMechanicDto,
+    @Body()  MechanicProfileDto:MechanicProfileDto,
     @Req() request: RequestWithUser
   ) {
-    updateMechanicDto.user_id = request.user.id;
+    MechanicProfileDto.user_id = request.user.id;
     const mechanic = await this.mechanicsService.findOne(id);
     if (mechanic.user_id !== request.user.id) {
       throw new ForbiddenException('Bu kaydı güncelleme yetkiniz yok.');
     }
-    return this.mechanicsService.update(id, updateMechanicDto);
+    return this.mechanicsService.update(id, MechanicProfileDto);
   }
 
   @UseGuards(JwtGuard)
@@ -77,7 +73,7 @@ export class MechanicsController {
   @HttpCode(HttpStatus.CREATED)
   async addSupportedVehicle(
     @Param('id', new ParseUUIDPipe()) id: string,
-    @Body() body: { brand_id?: string, brand_ids?: string[] },
+    @Body() body: MechanicSupportedVehicleDto | MechanicSupportedVehicleDto[],
     @Req() request: RequestWithUser
   ) {
     const mechanic = await this.mechanicsService.findOne(id);
@@ -85,13 +81,13 @@ export class MechanicsController {
       throw new ForbiddenException('Bu işlemi gerçekleştirme yetkiniz yok.');
     }
 
-    const dto: CreateMechanicSupportedVehicleDto = {
-      mechanic_id: id,
-      brand_id: body.brand_id,
-      brand_ids: body.brand_ids
-    };
+    if (Array.isArray(body)) {
+      body.forEach(item => item.mechanic_id = id);
+    } else {
+      body.mechanic_id = id;
+    }
 
-    return this.mechanicsService.addSupportedVehicle(dto);
+    return this.mechanicsService.addSupportedVehicle(body);
   }
 
   @UseGuards(JwtGuard)
@@ -116,7 +112,7 @@ export class MechanicsController {
   @HttpCode(HttpStatus.OK)
   async updateSupportedVehicles(
     @Param('id', new ParseUUIDPipe()) id: string, 
-    @Body() dto: BulkUpdateSupportedVehiclesDto,
+    @Body() dto: MechanicSupportedVehicleDto[],
     @Req() request: RequestWithUser
   ) {
     const mechanic = await this.mechanicsService.findOne(id);
@@ -124,7 +120,11 @@ export class MechanicsController {
       throw new ForbiddenException('Bu işlemi gerçekleştirme yetkiniz yok.');
     }
     
-    return this.mechanicsService.updateBulkSupportedVehicles(id, dto.brand_ids);
+    // Tüm dto'ların mechanic_id'sini parametre olarak verilen id ile ayarla
+    dto.forEach(item => item.mechanic_id = id);
+    
+    // updateBulkSupportedVehicles metoduna brand_ids yerine direkt dto dizisi gönder
+    return this.mechanicsService.updateBulkSupportedVehicles(id, dto.map(item => item.brand_id));
   }
 
   @UseGuards(JwtGuard)
@@ -144,7 +144,7 @@ export class MechanicsController {
   @HttpCode(HttpStatus.CREATED)
   async createWorkingHours(
     @Param('id', new ParseUUIDPipe()) id: string, 
-    @Body() createWorkingHoursDto: CreateMechanicWorkingHoursDto | CreateMechanicWorkingHoursDto[],
+    @Body() MechanicWorkingHoursDto: MechanicWorkingHoursDto | MechanicWorkingHoursDto[],
     @Req() request: RequestWithUser
   ) {
     const mechanic = await this.mechanicsService.findOne(id);
@@ -152,7 +152,7 @@ export class MechanicsController {
       throw new ForbiddenException('Bu işlemi gerçekleştirme yetkiniz yok.');
     }
     
-    return this.mechanicsService.createWorkingHours(id, createWorkingHoursDto);
+    return this.mechanicsService.createWorkingHours(id, MechanicWorkingHoursDto);
   }
 
   @UseGuards(JwtGuard)
@@ -162,7 +162,7 @@ export class MechanicsController {
   async updateWorkingHours(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Param('hourId', new ParseUUIDPipe()) hourId: string,
-    @Body() updateWorkingHoursDto: UpdateMechanicWorkingHoursDto,
+    @Body()  MechanicWorkingHoursDto: MechanicWorkingHoursDto,
     @Req() request: RequestWithUser
   ) {
     const mechanic = await this.mechanicsService.findOne(id);
@@ -170,7 +170,7 @@ export class MechanicsController {
       throw new ForbiddenException('Bu işlemi gerçekleştirme yetkiniz yok.');
     }
     
-    return this.mechanicsService.updateWorkingHours(hourId, updateWorkingHoursDto);
+    return this.mechanicsService.updateWorkingHours(hourId,MechanicWorkingHoursDto );
   }
 
   @UseGuards(JwtGuard)
@@ -207,7 +207,7 @@ export class MechanicsController {
   @HttpCode(HttpStatus.CREATED)
   async addCategory(
     @Param('id', new ParseUUIDPipe()) id: string,
-    @Body() body: { category_id?: string, category_ids?: string[] },
+    @Body() body: MechanicCategoryDto | MechanicCategoryDto[],
     @Req() request: RequestWithUser
   ) {
     const mechanic = await this.mechanicsService.findOne(id);
@@ -215,13 +215,13 @@ export class MechanicsController {
       throw new ForbiddenException('Bu işlemi gerçekleştirme yetkiniz yok.');
     }
 
-    const dto: CreateMechanicCategoryDto = {
-      mechanic_id: id,
-      category_id: body.category_id,
-      category_ids: body.category_ids
-    };
+    if (Array.isArray(body)) {
+      body.forEach(item => item.mechanic_id = id);
+    } else {
+      body.mechanic_id = id;
+    }
 
-    return this.mechanicsService.addCategory(dto);
+    return this.mechanicsService.addCategory(body);
   }
 
   @UseGuards(JwtGuard)
@@ -246,7 +246,7 @@ export class MechanicsController {
   @HttpCode(HttpStatus.OK)
   async updateCategories(
     @Param('id', new ParseUUIDPipe()) id: string, 
-    @Body() dto: BulkUpdateCategoriesDto,
+    @Body() dto: MechanicCategoryDto[],
     @Req() request: RequestWithUser
   ) {
     const mechanic = await this.mechanicsService.findOne(id);
@@ -254,6 +254,8 @@ export class MechanicsController {
       throw new ForbiddenException('Bu işlemi gerçekleştirme yetkiniz yok.');
     }
     
-    return this.mechanicsService.updateBulkCategories(id, dto.category_ids);
+    dto.forEach(item => item.mechanic_id = id);
+    
+    return this.mechanicsService.updateBulkCategories(id, dto.map(item => item.category_id));
   }
 }

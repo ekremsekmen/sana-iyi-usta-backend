@@ -3,12 +3,10 @@ import { MechanicProfileService } from './services/mechanic-profile.service';
 import { MechanicWorkingHoursService } from './services/mechanic-working-hours.service';
 import { MechanicSupportedVehiclesService } from './services/mechanic-supported-vehicles.service';
 import { MechanicCategoriesService } from './services/mechanic-categories.service';
-import { CreateMechanicDto } from './dto/create-mechanic.dto';
-import { UpdateMechanicDto } from './dto/update-mechanic.dto';
-import { CreateMechanicWorkingHoursDto } from './dto/create-mechanic-working-hours.dto';
-import { UpdateMechanicWorkingHoursDto } from './dto/update-mechanic-working-hours.dto';
-import { CreateMechanicSupportedVehicleDto } from './dto/create-mechanic-supported-vehicle.dto';
-import { CreateMechanicCategoryDto } from './dto/create-mechanic-category.dto';
+import { MechanicProfileDto } from './dto/mechanic-profile.dto';
+import { MechanicWorkingHoursDto } from './dto/mechanic-working-hours.dto';
+import { MechanicSupportedVehicleDto } from './dto/mechanic-supported-vehicle.dto';
+import { MechanicCategoryDto } from './dto/mechanic-category.dto';
 
 @Injectable()
 export class MechanicsService {
@@ -19,7 +17,7 @@ export class MechanicsService {
     private readonly mechanicCategoriesService: MechanicCategoriesService
   ) {}
 
-  create(createMechanicDto: CreateMechanicDto) {
+  create(createMechanicDto: MechanicProfileDto) {
     return this.mechanicProfileService.create(createMechanicDto);
   }
 
@@ -27,7 +25,7 @@ export class MechanicsService {
     return this.mechanicProfileService.findOne(id);
   }
 
-  update(id: string, updateMechanicDto: UpdateMechanicDto) {
+  update(id: string, updateMechanicDto: MechanicProfileDto) {
     return this.mechanicProfileService.update(id, updateMechanicDto);
   }
 
@@ -35,7 +33,7 @@ export class MechanicsService {
     return this.mechanicProfileService.remove(id);
   }
 
-  createWorkingHours(mechanicId: string, dto: CreateMechanicWorkingHoursDto | CreateMechanicWorkingHoursDto[]) {
+  createWorkingHours(mechanicId: string, dto: MechanicWorkingHoursDto | MechanicWorkingHoursDto[]) {
     return this.mechanicWorkingHoursService.createForMechanic(mechanicId, dto);
   }
 
@@ -43,7 +41,7 @@ export class MechanicsService {
     return this.mechanicWorkingHoursService.findByMechanic(mechanicId);
   }
 
-  updateWorkingHours(id: string, dto: UpdateMechanicWorkingHoursDto) {
+  updateWorkingHours(id: string, dto: MechanicWorkingHoursDto) {
     return this.mechanicWorkingHoursService.update(id, dto);
   }
 
@@ -51,7 +49,7 @@ export class MechanicsService {
     return this.mechanicWorkingHoursService.remove(id);
   }
 
-  updateBulkWorkingHours(mechanicId: string, dtoList: CreateMechanicWorkingHoursDto[]) {
+  updateBulkWorkingHours(mechanicId: string, dtoList: MechanicWorkingHoursDto[]) {
     return this.mechanicWorkingHoursService.createOrUpdateBulk(mechanicId, dtoList);
   }
 
@@ -59,7 +57,7 @@ export class MechanicsService {
     return this.mechanicSupportedVehiclesService.findByMechanic(mechanicId);
   }
 
-  addSupportedVehicle(dto: CreateMechanicSupportedVehicleDto) {
+  addSupportedVehicle(dto: MechanicSupportedVehicleDto | MechanicSupportedVehicleDto[]) {
     return this.mechanicSupportedVehiclesService.addSupportedVehicle(dto);
   }
 
@@ -79,7 +77,7 @@ export class MechanicsService {
     return this.mechanicCategoriesService.findByMechanic(mechanicId);
   }
 
-  addCategory(dto: CreateMechanicCategoryDto) {
+  addCategory(dto: MechanicCategoryDto | MechanicCategoryDto[]) {
     return this.mechanicCategoriesService.create(dto);
   }
 
