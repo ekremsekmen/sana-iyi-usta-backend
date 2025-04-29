@@ -22,7 +22,73 @@ Kimlik doğrulama ve kullanıcı yönetimi için gerekli tüm API'ler.
 | POST   | `/auth/verify-reset-code` | Şifre sıfırlama kodu doğrulama    |
 | POST   | `/auth/reset-password`    | Şifre sıfırlama (yeni şifre)      |
 | POST   | `/auth/change-password`   | Şifre değiştirme (giriş sonrası)  |
+| POST   | `/auth/update-fcm-token`  | Fcm Token Ekleme|Güncelleme       |
 
+### FCM Token Güncelleme
+
+Kullanıcı bildirimlerini alabilmek için FCM (Firebase Cloud Messaging) tokenini günceller. Bu endpoint, kullanıcı cihazında FCM token değiştiğinde veya yeni bir cihazda oturum açıldığında kullanılır.
+
+- **URL**: `/auth/update-fcm-token`
+- **Method**: `POST`
+- **Content-Type**: `application/json`
+- **Authorization**: `Bearer [access_token]` (JWT Guard korumalı)
+
+**İstek (Request)**
+
+```json
+{
+  "fcm_token": "fIQp5-GTRziRdvP3pE6iuU:APA91bGsJ2..."
+}
+```
+
+**Başarılı Yanıt - İlk Kayıt/Değişiklik Durumunda (200 OK)**
+
+```json
+{
+  "message": "FCM token updated successfully"
+}
+```
+
+**Başarılı Yanıt - Token Aynı Kaldıysa (200 OK)**
+
+```json
+{
+  "message": "FCM token already up to date"
+}
+```
+
+**Hata Yanıtı - Oturum Bulunamadı (400 Bad Request)**
+
+```json
+{
+  "statusCode": 400,
+  "message": "Session not found"
+}
+```
+
+**Hata Yanıtı - Yetkilendirme Hatası (401 Unauthorized)**
+
+```json
+{
+  "statusCode": 401,
+  "message": "Unauthorized"
+}
+```
+
+> **Not**: Bu endpoint, kullanıcının aktif bir oturumu olmalı ve geçerli bir JWT token ile çağrılmalıdır. FCM token güncellemesi kullanıcıya özeldir ve sadece o kullanıcının aktif oturumunu etkiler. Aynı token değeri zaten kayıtlıysa, gereksiz güncellemelerden kaçınmak için "already up to date" mesajı döner.
+
+## FCM Token Kullanımı
+
+FCM token, mobil uygulamaya bildirim (push notification) göndermek için kullanılır. Bu token'ın doğru şekilde güncellendiğinden emin olmak için aşağıdaki senaryolarda güncellenmesi önerilir:
+
+- Kullanıcı uygulamaya her giriş yaptığında
+- Firebase'den FCM token yenilendiğinde (token değişim olaylarını dinleyerek)
+- Kullanıcı bildirimleri açıp kapattığında
+
+FCM token saklama ve güncelleme işlemi kullanıcıya özeldir ve JWT token ile korunan bu endpoint sayesinde güvenli bir şekilde gerçekleştirilir.
+
+--
+--
 ### Kullanıcı Kaydı
 
 Yeni bir kullanıcı hesabı oluşturur.

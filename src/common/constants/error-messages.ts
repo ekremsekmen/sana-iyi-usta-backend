@@ -30,4 +30,6 @@ export const ERROR_MESSAGES = {
   TERMS_APPROVAL_REQUIRED: 'Kullanım şartlarının onaylanması zorunludur',
   PASSWORD_CHANGE_SUCCESS: 'Şifreniz başarıyla değiştirildi',
   PASSWORDS_DO_NOT_MATCH: 'Yeni şifreler eşleşmiyor',
+  SESSION_NOT_FOUND: 'User session not found',
+  FCM_TOKEN_UPDATE_ERROR: 'Failed to update FCM token',
 };

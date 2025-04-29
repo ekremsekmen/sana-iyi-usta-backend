@@ -17,6 +17,7 @@ import {
 import { RequestWithUser } from '../../common/interfaces/request-with-user.interface';
 import { Request } from 'express';
 import { RegistrationResult } from './services/user-registration.service';
+import { UpdateFcmTokenDto } from './dto/fcm-token.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -102,5 +103,15 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async changePassword(@Req() request: RequestWithUser, @Body() dto: ChangePasswordDto) {
     return this.authService.changePassword(request.user.id, dto);
+  }
+
+  @UseGuards(JwtGuard)
+  @Post('update-fcm-token')
+  @HttpCode(HttpStatus.OK)
+  async updateFcmToken(
+    @Req() request: RequestWithUser,
+    @Body() updateFcmTokenDto: UpdateFcmTokenDto
+  ) {
+    return this.authService.updateFcmToken(request.user.id, updateFcmTokenDto.fcm_token);
   }
 }

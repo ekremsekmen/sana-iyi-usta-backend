@@ -91,4 +91,15 @@ export class SessionManagerService {
     
     return sessionCount > 0;
   }
+
+  async findUserSession(userId: string) {
+    try {
+      return await this.prisma.user_sessions.findFirst({
+        where: { user_id: userId }
+      });
+    } catch (error) {
+      this.logger.error(`Failed to find session for user ${userId}: ${error.message}`);
+      throw new InternalServerErrorException(ERROR_MESSAGES.SESSION_NOT_FOUND);
+    }
+  }
 }

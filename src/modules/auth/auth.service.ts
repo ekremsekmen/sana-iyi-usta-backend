@@ -87,4 +87,8 @@ export class AuthService {
   async verifyEmail(verifyEmailDto: VerifyEmailDto): Promise<EmailVerificationResponseDto> {
     return this.emailService.verifyEmail(verifyEmailDto);
   }
+
+  async updateFcmToken(userId: string, fcmToken: string) {
+    return this.userSessionService.updateFcmToken(userId, fcmToken);
+  }
 }

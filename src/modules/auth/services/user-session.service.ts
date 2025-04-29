@@ -11,20 +11,12 @@ export class UserSessionService {
     private tokenManager: TokenManagerService,
   ) {}
 
-
   async createUserSession(user: any, request: Request) {
     try {
       const session = await this.sessionManager.createUserSession(user.id, request);
       
       const tokenData = await this.tokenManager.generateTokens(user.id, user.role);
       
-      if (request.headers['fcm-token']) {
-        await this.sessionManager.updateFcmToken(
-          user.id, 
-          session.device_id, 
-          request.headers['fcm-token'] as string
-        );
-      }
   
       return {
         ...tokenData,
@@ -40,6 +32,30 @@ export class UserSessionService {
     }
   }
 
+  async updateFcmToken(userId: string, fcmToken: string) {
+    // Boş token kontrolü ekleyelim
+    if (!fcmToken) {
+      return { message: 'No FCM token provided' };
+    }
+
+    try {
+      const session = await this.sessionManager.findUserSession(userId);
+      
+      if (!session) {
+        throw new BadRequestException(ERROR_MESSAGES.SESSION_NOT_FOUND);
+      }
+      
+      // FCM token kontrolü - eğer token aynıysa güncelleme yapma
+      if (session.fcm_token === fcmToken) {
+        return { message: 'FCM token already up to date' };
+      }
+      
+      await this.sessionManager.updateFcmToken(userId, session.device_id, fcmToken);
+      return { message: 'FCM token updated successfully' };
+    } catch (error) {
+      throw new BadRequestException(error.message || ERROR_MESSAGES.FCM_TOKEN_UPDATE_ERROR);
+    }
+  }
 
   async logout(userId: string, refreshToken: string) {
     const parts = refreshToken.split(':');
