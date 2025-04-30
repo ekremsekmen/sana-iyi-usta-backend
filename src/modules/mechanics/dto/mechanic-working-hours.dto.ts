@@ -2,7 +2,6 @@ import { IsBoolean, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Max, Min } 
 
 export class MechanicWorkingHoursDto {
   @IsUUID()
-  @IsOptional()
   mechanic_id?: string;
 
   @IsInt()

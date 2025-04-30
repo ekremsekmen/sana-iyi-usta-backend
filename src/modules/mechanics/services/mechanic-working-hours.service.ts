@@ -11,7 +11,7 @@ export class MechanicWorkingHoursService {
   async createForMechanic(mechanicId: string, dto: MechanicWorkingHoursDto | MechanicWorkingHoursDto[]) {
     if (Array.isArray(dto)) {
       if (dto.length === 0) {
-        return []; // Boş dizi durumunda boş dizi döndür
+        return []; 
       }
       const modifiedDto = dto.map(item => ({
         ...item,
@@ -98,7 +98,15 @@ export class MechanicWorkingHoursService {
         });
   
         if (existingHours) {
-          return existingHours; // Eğer kayıt zaten varsa, mevcut kaydı döndür
+          return await this.prisma.mechanic_working_hours.update({
+            where: { id: existingHours.id },
+            data: {
+              start_time: dto.start_time,
+              end_time: dto.end_time,
+              slot_duration: dto.slot_duration,
+              is_day_off: dto.is_day_off || false,
+            },
+          });
         }
   
         return await this.prisma.mechanic_working_hours.create({

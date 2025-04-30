@@ -28,20 +28,21 @@ export class MechanicProfileService {
 
   async update(id: string, dto: MechanicProfileDto) {
     try {
-      // Güncellenecek verileri içeren nesneyi oluştur
       const updateData: any = {
         business_name: dto.business_name,
         on_site_service: dto.on_site_service,
       };
       
-      // Eğer mevcut mechanic'in user_id'si farklıysa, yeni bağlantı ekle
       const currentMechanic = await this.prisma.mechanics.findUnique({
         where: { id },
         select: { user_id: true }
       });
       
       if (currentMechanic && currentMechanic.user_id !== dto.user_id && dto.user_id) {
-        updateData.users = { connect: { id: dto.user_id } };
+        updateData.users = { 
+          disconnect: { id: currentMechanic.user_id }, 
+          connect: { id: dto.user_id }                
+        };
       }
       
       return await this.prisma.mechanics.update({
