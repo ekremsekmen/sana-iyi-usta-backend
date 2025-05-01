@@ -129,7 +129,6 @@ export class MechanicsController {
     return this.mechanicsService.deleteWorkingHours(hourId);
   }
 
-  // Categories Endpoints
   @UseGuards(JwtGuard, MechanicOwnerGuard)
   @Get(':id/categories')
   @HttpCode(HttpStatus.OK)
