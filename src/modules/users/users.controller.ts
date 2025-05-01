@@ -30,6 +30,23 @@ export class UsersController {
   }
 
   @UseGuards(JwtGuard)
+  @Get('default-location')
+  @HttpCode(HttpStatus.OK)
+  getMyDefaultLocation(@Request() req: RequestWithUser) {
+    return this.usersService.getDefaultLocation(req.user.id);
+  }
+  
+  @UseGuards(JwtGuard)
+  @Patch('default-location/:locationId')
+  @HttpCode(HttpStatus.OK)
+  setDefaultLocation(
+    @Param('locationId') locationId: string,
+    @Request() req: RequestWithUser,
+  ) {
+    return this.usersService.setDefaultLocation(req.user.id, locationId);
+  }
+
+  @UseGuards(JwtGuard)
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   getUserProfile(@Param('id') id: string) {

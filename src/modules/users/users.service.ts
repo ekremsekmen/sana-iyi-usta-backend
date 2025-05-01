@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UpdateUserDto } from './dto/user-profile.dto';
+import { DefaultLocationResponseDto } from './dto/default-location.dto';
 
 @Injectable()
 export class UsersService {
@@ -46,6 +47,77 @@ export class UsersService {
     });
 
     return user;
+  }
+
+  async setDefaultLocation(userId: string, locationId: string) {
+    // İlk olarak lokasyonun kullanıcıya ait olduğunu doğrulayalım
+    const location = await this.prisma.locations.findFirst({
+      where: {
+        id: locationId,
+        user_id: userId,
+      },
+    });
+
+    if (!location) {
+      throw new NotFoundException('Konum bulunamadı veya bu konuma erişim yetkiniz yok');
+    }
+
+    return this.prisma.users.update({
+      where: { id: userId },
+      data: { default_location_id: locationId },
+      select: {
+        id: true,
+        default_location_id: true,
+        locations_users_default_location_idTolocations: {
+          select: {
+            id: true,
+            address: true,
+            city: true,
+            district: true,
+            label: true,
+            latitude: true,
+            longitude: true,
+          },
+        },
+      },
+    });
+  }
+
+  async getDefaultLocation(userId: string): Promise<DefaultLocationResponseDto> {
+    const user = await this.prisma.users.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        default_location_id: true,
+        locations_users_default_location_idTolocations: {
+          select: {
+            id: true,
+            address: true,
+            city: true,
+            district: true,
+            label: true,
+            latitude: true,
+            longitude: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`Kullanıcı #${userId} bulunamadı`);
+    }
+
+    if (!user.default_location_id) {
+      return { 
+        id: user.id,
+        default_location: null 
+      };
+    }
+
+    return {
+      id: user.id,
+      default_location: user.locations_users_default_location_idTolocations
+    };
   }
 
   async remove(id: string) {

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { LocationDto } from './dto/location.dto';
 
@@ -7,6 +7,18 @@ export class LocationsService {
   constructor(private prisma: PrismaService) {}
 
   async create(userId: string, createLocationDto: LocationDto) {
+    const existingLocation = await this.prisma.locations.findFirst({
+      where: {
+        user_id: userId,
+        latitude: createLocationDto.latitude,
+        longitude: createLocationDto.longitude,
+      },
+    });
+
+    if (existingLocation) {
+       throw new ConflictException('Bu konuma ait kayıt zaten mevcut');
+    }
+
     return this.prisma.locations.create({
       data: {
         user_id: userId,

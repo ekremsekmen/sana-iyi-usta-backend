@@ -49,6 +49,7 @@ Kullanıcı için yeni bir konum kaydı oluşturur.
 **Hata Yanıtları:**
 - `401 Unauthorized`: Geçersiz veya eksik yetkilendirme
 - `400 Bad Request`: Geçersiz istek gövdesi (örn: zorunlu alanların eksik olması)
+- `409 Conflict`: Bu konuma ait kayıt zaten mevcut
 - `500 Internal Server Error`: Sunucu hatası
 
 ### 2. Kullanıcının Tüm Konumlarını Listeleme
