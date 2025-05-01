@@ -61,6 +61,14 @@ export class MechanicsService {
     return this.mechanicSupportedVehiclesService.addSupportedVehicle(dto);
   }
 
+  addSupportedVehicleForMechanic(mechanicId: string, dto: MechanicSupportedVehicleDto | MechanicSupportedVehicleDto[]) {
+    return this.mechanicSupportedVehiclesService.addSupportedVehicleForMechanic(mechanicId, dto);
+  }
+
+  updateSupportedVehiclesForMechanic(mechanicId: string, dtoList: MechanicSupportedVehicleDto[]) {
+    return this.mechanicSupportedVehiclesService.updateSupportedVehiclesForMechanic(mechanicId, dtoList);
+  }
+
   removeSupportedVehicle(id: string) {
     return this.mechanicSupportedVehiclesService.remove(id);
   }
@@ -81,6 +89,10 @@ export class MechanicsService {
     return this.mechanicCategoriesService.create(dto);
   }
 
+  addCategoryForMechanic(mechanicId: string, dto: MechanicCategoryDto | MechanicCategoryDto[]) {
+    return this.mechanicCategoriesService.createForMechanic(mechanicId, dto);
+  }
+
   removeCategory(id: string) {
     return this.mechanicCategoriesService.remove(id);
   }
@@ -91,5 +103,10 @@ export class MechanicsService {
 
   updateBulkCategories(mechanicId: string, categoryIds: string[]) {
     return this.mechanicCategoriesService.updateBulkCategories(mechanicId, categoryIds);
+  }
+
+  updateCategoriesForMechanic(mechanicId: string, dto: MechanicCategoryDto[]) {
+    dto.forEach(item => item.mechanic_id = mechanicId);
+    return this.updateBulkCategories(mechanicId, dto.map(item => item.category_id));
   }
 }

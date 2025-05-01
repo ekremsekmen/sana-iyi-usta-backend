@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { randomUUID } from 'crypto';
 import { MechanicCategoryDto } from '../dto/mechanic-category.dto';
@@ -38,13 +38,6 @@ export class MechanicCategoriesService {
       } 
       // Tekil kategori işlemi
       else {
-        const existingRecord = await this.prisma.mechanic_categories.findFirst({
-          where: {
-            mechanic_id: dto.mechanic_id,
-            category_id: dto.category_id,
-          },
-        });
-
         // Kategori varlığını kontrol et
         const category = await this.prisma.categories.findUnique({
           where: { id: dto.category_id },
@@ -54,36 +47,32 @@ export class MechanicCategoriesService {
           throw new NotFoundException(`${dto.category_id} ID'li kategori bulunamadı.`);
         }
 
-        if (existingRecord) {
-          // Mevcut kaydı güncelle - tutarlılık için eklenmiştir
-          return await this.prisma.mechanic_categories.update({
-            where: { id: existingRecord.id },
-            data: {
-              category_id: dto.category_id,
-            },
-            include: {
-              categories: true,
-            }
-          });
-        } else {
-          // Yeni kayıt oluştur
-          return await this.prisma.mechanic_categories.create({
-            data: {
-              id: randomUUID(),
+        // Upsert işlemi ile varsa güncelle, yoksa oluştur
+        return await this.prisma.mechanic_categories.upsert({
+          where: {
+            mechanic_id_category_id: {
               mechanic_id: dto.mechanic_id,
               category_id: dto.category_id,
             },
-            include: {
-              categories: true,
-            }
-          });
-        }
+          },
+          update: {}, // Sadece varlığını korumak için güncelleme yapmıyoruz
+          create: {
+            id: randomUUID(),
+            mechanic_id: dto.mechanic_id,
+            category_id: dto.category_id,
+          },
+          include: {
+            categories: true,
+          }
+        });
       }
     } catch (error) {
-      if (error instanceof NotFoundException) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
       }
-      throw new Error(`Kategori kaydı oluşturulurken hata: ${error.message}`);
+      // Genel Error yerine InternalServerErrorException kullanıldı
+      console.error(`Kategori kaydı oluşturulurken hata: ${error.message}`, error.stack);
+      throw new InternalServerErrorException(`Kategori kaydı oluşturulurken bir sunucu hatası oluştu: ${error.message}`);
     }
   }
 
@@ -185,7 +174,9 @@ export class MechanicCategoriesService {
       if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
       }
-      throw new Error(`Kategorileri güncellerken hata: ${error.message}`);
+      // Genel Error yerine InternalServerErrorException kullanıldı
+      console.error(`Kategorileri güncellerken hata: ${error.message}`, error.stack);
+      throw new InternalServerErrorException(`Kategorileri güncellerken bir sunucu hatası oluştu: ${error.message}`);
     }
   }
 
@@ -213,48 +204,40 @@ export class MechanicCategoriesService {
           throw new NotFoundException(`Bu ID'lere sahip kategoriler bulunamadı: ${notFoundCategoryIds.join(', ')}`);
         }
   
-        // Mevcut kategorileri al
-        const existingRecords = await tx.mechanic_categories.findMany({
-          where: { mechanic_id: mechanicId },
-          select: { category_id: true }
-        });
+        const results = [];
         
-        const existingCategoryIds = existingRecords.map(record => record.category_id);
-        
-        // Sadece yeni eklenecek kategorileri filtreleyerek işlemleri optimize edelim
-        const newCategoryIds = categoryIds.filter(id => !existingCategoryIds.includes(id));
-        
-        // Yeni kayıtları ekle
-        const newRecords = newCategoryIds.map(categoryId => ({
-          id: randomUUID(),
-          mechanic_id: mechanicId,
-          category_id: categoryId
-        }));
-        
-        // Eğer eklenecek yeni kayıt yoksa boş dizi döndür
-        if (newRecords.length === 0) {
-          return [];
+        for (const categoryId of categoryIds) {
+          // Upsert işlemi ile her bir kategori için kayıt oluştur veya güncelle
+          const result = await tx.mechanic_categories.upsert({
+            where: {
+              mechanic_id_category_id: {
+                mechanic_id: mechanicId,
+                category_id: categoryId,
+              },
+            },
+            update: {}, // Sadece varlığını korumak için güncelleme yapmıyoruz
+            create: {
+              id: randomUUID(),
+              mechanic_id: mechanicId,
+              category_id: categoryId,
+            },
+            include: {
+              categories: true,
+            }
+          });
+          
+          results.push(result);
         }
         
-        // Yeni kayıtları ekle
-        await tx.mechanic_categories.createMany({
-          data: newRecords
-        });
-        
-        // Sadece yeni eklenen kayıtları döndür
-        return await tx.mechanic_categories.findMany({
-          where: { 
-            mechanic_id: mechanicId,
-            category_id: { in: newCategoryIds }
-          },
-          include: { categories: true }
-        });
+        return results;
       });
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
       }
-      throw new Error(`Kategorileri eklerken hata: ${error.message}`);
+      // Genel Error yerine InternalServerErrorException kullanıldı
+      console.error(`Kategorileri eklerken hata: ${error.message}`, error.stack);
+      throw new InternalServerErrorException(`Kategorileri eklerken bir sunucu hatası oluştu: ${error.message}`);
     }
   }
 

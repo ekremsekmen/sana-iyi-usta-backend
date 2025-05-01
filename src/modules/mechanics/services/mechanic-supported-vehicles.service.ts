@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { randomUUID } from 'crypto';
 import { MechanicSupportedVehicleDto } from '../dto/mechanic-supported-vehicle.dto';
@@ -26,7 +26,6 @@ export class MechanicSupportedVehiclesService {
           return []; // Boş dizi durumunda boş dizi döndür
         }
         
-        // Tüm öğelerin aynı mechanic_id'ye sahip olduğundan emin ol
         const mechanicId = dto[0].mechanic_id;
         const hasInconsistentMechanicId = dto.some(item => item.mechanic_id !== mechanicId);
         
@@ -36,15 +35,8 @@ export class MechanicSupportedVehiclesService {
         
         return this.createMultiple(dto[0].mechanic_id, dto.map(item => item.brand_id));
       }
-      // Tekil araç işlemi
+      // Tekil araç işlemi - upsert kullanarak optimize edildi
       else {
-        const existingRecord = await this.prisma.mechanic_supported_vehicles.findFirst({
-          where: {
-            mechanic_id: dto.mechanic_id,
-            brand_id: dto.brand_id,
-          },
-        });
-    
         // Marka varlığını kontrol et
         const brand = await this.prisma.brands.findUnique({
           where: { id: dto.brand_id },
@@ -54,36 +46,32 @@ export class MechanicSupportedVehiclesService {
           throw new NotFoundException(`${dto.brand_id} ID'li marka bulunamadı.`);
         }
     
-        if (existingRecord) {
-          // Mevcut kaydı güncelle - tutarlılık için eklenmiştir
-          return await this.prisma.mechanic_supported_vehicles.update({
-            where: { id: existingRecord.id },
-            data: {
-              brand_id: dto.brand_id,
-            },
-            include: {
-              brands: true,
-            }
-          });
-        } else {
-          // Yeni kayıt oluştur
-          return await this.prisma.mechanic_supported_vehicles.create({
-            data: {
-              id: randomUUID(),
+        // Upsert: Kayıt varsa güncelle, yoksa oluştur (tek sorguda)
+        return await this.prisma.mechanic_supported_vehicles.upsert({
+          where: {
+            mechanic_id_brand_id: {  // Düzeltildi: unique_mechanic_brand yerine Prisma'nın desteklediği format kullanıldı
               mechanic_id: dto.mechanic_id,
-              brand_id: dto.brand_id,
-            },
-            include: {
-              brands: true,
+              brand_id: dto.brand_id
             }
-          });
-        }
+          },
+          update: {}, // Kayıt zaten varsa hiçbir şey değiştirmiyoruz
+          create: {
+            id: randomUUID(),
+            mechanic_id: dto.mechanic_id,
+            brand_id: dto.brand_id,
+          },
+          include: {
+            brands: true,
+          }
+        });
       }
     } catch (error) {
-      if (error instanceof NotFoundException) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
       }
-      throw new Error(`Desteklenen araç kaydı oluşturulurken hata: ${error.message}`);
+      // Genel Error yerine InternalServerErrorException kullanıldı
+      console.error(`Desteklenen araç kaydı oluşturulurken hata: ${error.message}`, error.stack);
+      throw new InternalServerErrorException(`Desteklenen araç kaydı oluşturulurken bir sunucu hatası oluştu: ${error.message}`);
     }
   }
 
@@ -179,7 +167,9 @@ export class MechanicSupportedVehiclesService {
       if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
       }
-      throw new Error(`Desteklenen araçları güncellerken hata: ${error.message}`);
+      // Genel Error yerine InternalServerErrorException kullanıldı
+      console.error(`Desteklenen araçları güncellerken hata: ${error.message}`, error.stack);
+      throw new InternalServerErrorException(`Desteklenen araçları güncellerken bir sunucu hatası oluştu: ${error.message}`);
     }
   }
 
@@ -206,48 +196,36 @@ export class MechanicSupportedVehiclesService {
           throw new NotFoundException(`Bu ID'lere sahip markalar bulunamadı: ${notFoundBrandIds.join(', ')}`);
         }
   
-        // Mevcut desteklenen markaları al
-        const existingRecords = await tx.mechanic_supported_vehicles.findMany({
-          where: { mechanic_id: mechanicId },
-          select: { brand_id: true }
-        });
+        // Upsert kullanarak tüm markalar için tek bir döngüde işlem yapma
+        const results = await Promise.all(
+          brandIds.map(brandId => 
+            tx.mechanic_supported_vehicles.upsert({
+              where: {
+                mechanic_id_brand_id: {  // Düzeltildi: unique_mechanic_brand yerine doğru format
+                  mechanic_id: mechanicId,
+                  brand_id: brandId
+                }
+              },
+              update: {}, // Eğer varsa, hiçbir şey değiştirme
+              create: {
+                id: randomUUID(),
+                mechanic_id: mechanicId,
+                brand_id: brandId
+              },
+              include: { brands: true }
+            })
+          )
+        );
         
-        const existingBrandIds = existingRecords.map(record => record.brand_id);
-        
-        // Sadece yeni eklenecek markaları filtreleyerek işlemleri optimize edelim
-        const newBrandIds = brandIds.filter(id => !existingBrandIds.includes(id));
-        
-        // Yeni kayıtları ekle
-        const newRecords = newBrandIds.map(brandId => ({
-          id: randomUUID(),
-          mechanic_id: mechanicId,
-          brand_id: brandId
-        }));
-        
-        // Eğer eklenecek yeni kayıt yoksa boş dizi döndür
-        if (newRecords.length === 0) {
-          return [];
-        }
-        
-        // Yeni kayıtları ekle
-        await tx.mechanic_supported_vehicles.createMany({
-          data: newRecords
-        });
-        
-        // Sadece yeni eklenen kayıtları döndür
-        return await tx.mechanic_supported_vehicles.findMany({
-          where: { 
-            mechanic_id: mechanicId,
-            brand_id: { in: newBrandIds }
-          },
-          include: { brands: true }
-        });
+        return results;
       });
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
       }
-      throw new Error(`Desteklenen araçları eklerken hata: ${error.message}`);
+      // Genel Error yerine InternalServerErrorException kullanıldı
+      console.error(`Desteklenen araçları eklerken hata: ${error.message}`, error.stack);
+      throw new InternalServerErrorException(`Desteklenen araçları eklerken bir sunucu hatası oluştu: ${error.message}`);
     }
   }
 
@@ -269,5 +247,25 @@ export class MechanicSupportedVehiclesService {
       };
       return this.create(modifiedDto);
     }
+  }
+
+  // Controllerdan taşınan iş mantığı için yeni metod
+  async addSupportedVehicleForMechanic(mechanicId: string, body: MechanicSupportedVehicleDto | MechanicSupportedVehicleDto[]) {
+    if (Array.isArray(body)) {
+      body.forEach(item => item.mechanic_id = mechanicId);
+    } else {
+      body.mechanic_id = mechanicId;
+    }
+
+    return this.addSupportedVehicle(body);
+  }
+
+  // Controllerdan taşınan iş mantığı için yeni metod
+  async updateSupportedVehiclesForMechanic(mechanicId: string, dtoList: MechanicSupportedVehicleDto[]) {
+    // Tüm dto'ların mechanic_id'sini parametre olarak verilen id ile ayarla
+    dtoList.forEach(item => item.mechanic_id = mechanicId);
+    
+    // Brand ID'leri map ederek bulk update metoduna gönder
+    return this.updateBulkSupportedVehicles(mechanicId, dtoList.map(item => item.brand_id));
   }
 }

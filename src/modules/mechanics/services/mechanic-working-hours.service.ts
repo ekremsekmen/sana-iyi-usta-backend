@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { MechanicWorkingHoursDto } from '../dto/mechanic-working-hours.dto';
 import { randomUUID } from 'crypto';
@@ -28,13 +28,11 @@ export class MechanicWorkingHoursService {
   }
 
   async create(dto: MechanicWorkingHoursDto | MechanicWorkingHoursDto[]) {
-    // Eğer girdi bir dizi ise, çoklu işlem yap
     if (Array.isArray(dto)) {
       if (dto.length === 0) {
-        return []; // Boş dizi durumunda boş dizi döndür
+        return []; 
       }
       
-      // Tüm öğelerin aynı mechanic_id'ye sahip olduğundan emin ol
       const mechanicId = dto[0].mechanic_id;
       const hasInconsistentMechanicId = dto.some(item => item.mechanic_id !== mechanicId);
       
@@ -43,85 +41,74 @@ export class MechanicWorkingHoursService {
       }
       
       try {
-        const results: mechanic_working_hours[] = [];
-        
-        for (const item of dto) {
-          const existingHours = await this.prisma.mechanic_working_hours.findFirst({
-            where: {
-              mechanic_id: item.mechanic_id,
-              day_of_week: item.day_of_week,
-            },
-          });
-          
-          if (existingHours) {
-            // Eğer kayıt zaten varsa, güncelle
-            const updated = await this.prisma.mechanic_working_hours.update({
-              where: { id: existingHours.id },
-              data: {
-                start_time: item.start_time,
-                end_time: item.end_time,
-                slot_duration: item.slot_duration,
-                is_day_off: item.is_day_off || false,
-              },
-            });
-            results.push(updated);
-          } else {
-            // Yeni kayıt oluştur
-            const created = await this.prisma.mechanic_working_hours.create({
-              data: {
-                id: randomUUID(),
-                mechanic_id: item.mechanic_id,
-                day_of_week: item.day_of_week,
-                start_time: item.start_time,
-                end_time: item.end_time,
-                slot_duration: item.slot_duration,
-                is_day_off: item.is_day_off || false,
-              },
-            });
-            results.push(created);
-          }
-        }
-        
-        return results;
+        // Prisma transaction kullanarak tüm işlemleri atomik olarak gerçekleştir
+        return await this.prisma.$transaction(async (tx) => {
+          const results = await Promise.all(
+            dto.map(item => 
+              tx.mechanic_working_hours.upsert({ // tx kullanıldı
+                where: {
+                  mechanic_id_day_of_week: {
+                    mechanic_id: item.mechanic_id,
+                    day_of_week: item.day_of_week,
+                  },
+                },
+                update: {
+                  start_time: item.start_time,
+                  end_time: item.end_time,
+                  slot_duration: item.slot_duration,
+                  is_day_off: item.is_day_off ?? false, // ?? operatörü kullanıldı
+                },
+                create: {
+                  id: randomUUID(),
+                  mechanic_id: item.mechanic_id,
+                  day_of_week: item.day_of_week,
+                  start_time: item.start_time,
+                  end_time: item.end_time,
+                  slot_duration: item.slot_duration,
+                  is_day_off: item.is_day_off ?? false, // ?? operatörü kullanıldı
+                },
+              })
+            )
+          );
+          return results;
+        });
       } catch (error) {
-        throw new Error(`Error creating multiple working hours: ${error.message}`);
+        // Hata yönetimi: Genel hata yerine InternalServerErrorException kullanıldı
+        console.error(`Toplu çalışma saati oluşturulurken hata: ${error.message}`, error.stack); // Orijinal hatayı loglama
+        throw new InternalServerErrorException('Toplu çalışma saatleri oluşturulurken bir sunucu hatası oluştu.');
       }
     } 
     // Tekil DTO işlemi
     else {
       try {
-        const existingHours = await this.prisma.mechanic_working_hours.findFirst({
+        // Upsert işlemi ile varsa güncelle, yoksa oluştur
+        return await this.prisma.mechanic_working_hours.upsert({
           where: {
-            mechanic_id: dto.mechanic_id,
-            day_of_week: dto.day_of_week,
-          },
-        });
-  
-        if (existingHours) {
-          return await this.prisma.mechanic_working_hours.update({
-            where: { id: existingHours.id },
-            data: {
-              start_time: dto.start_time,
-              end_time: dto.end_time,
-              slot_duration: dto.slot_duration,
-              is_day_off: dto.is_day_off || false,
+            mechanic_id_day_of_week: {
+              mechanic_id: dto.mechanic_id,
+              day_of_week: dto.day_of_week,
             },
-          });
-        }
-  
-        return await this.prisma.mechanic_working_hours.create({
-          data: {
+          },
+          update: {
+            start_time: dto.start_time,
+            end_time: dto.end_time,
+            slot_duration: dto.slot_duration,
+            is_day_off: dto.is_day_off ?? false, // ?? operatörü kullanıldı
+          },
+          create: {
             id: randomUUID(),
             mechanic_id: dto.mechanic_id,
             day_of_week: dto.day_of_week,
             start_time: dto.start_time,
             end_time: dto.end_time,
             slot_duration: dto.slot_duration,
-            is_day_off: dto.is_day_off || false,
+            is_day_off: dto.is_day_off ?? false, // ?? operatörü kullanıldı
           },
         });
       } catch (error) {
-        throw new Error(`Error creating working hours: ${error.message}`);
+         // Hata yönetimi: Genel hata yerine InternalServerErrorException kullanıldı
+        console.error(`Çalışma saati oluşturulurken hata: ${error.message}`, error.stack); // Orijinal hatayı loglama
+        throw new InternalServerErrorException('Çalışma saati oluşturulurken bir sunucu hatası oluştu.');
       }
     }
   }
@@ -181,42 +168,35 @@ export class MechanicWorkingHoursService {
       return await this.prisma.$transaction(async (tx) => {
         const results: mechanic_working_hours[] = [];
         
-        const existingHours = await tx.mechanic_working_hours.findMany({
-          where: {
-            mechanic_id: mechanicId,
-          },
-        });
-        
         for (const dto of dtoList) {
           dto.mechanic_id = mechanicId;
           
-          const existing = existingHours.find(hour => hour.day_of_week === dto.day_of_week);
-          
-          if (existing) {
-            const result = await tx.mechanic_working_hours.update({
-              where: { id: existing.id },
-              data: {
-                start_time: dto.start_time,
-                end_time: dto.end_time,
-                slot_duration: dto.slot_duration,
-                is_day_off: dto.is_day_off || false,
-              },
-            });
-            results.push(result);
-          } else {
-            const created = await tx.mechanic_working_hours.create({
-              data: {
-                id: randomUUID(),
-                mechanic_id: dto.mechanic_id,
+          // Upsert işlemi ile varsa güncelle, yoksa oluştur
+          const result = await tx.mechanic_working_hours.upsert({
+            where: {
+              mechanic_id_day_of_week: {
+                mechanic_id: mechanicId,
                 day_of_week: dto.day_of_week,
-                start_time: dto.start_time,
-                end_time: dto.end_time,
-                slot_duration: dto.slot_duration,
-                is_day_off: dto.is_day_off || false,
               },
-            });
-            results.push(created);
-          }
+            },
+            update: {
+              start_time: dto.start_time,
+              end_time: dto.end_time,
+              slot_duration: dto.slot_duration,
+              is_day_off: dto.is_day_off ?? false, // ?? operatörü kullanıldı
+            },
+            create: {
+              id: randomUUID(),
+              mechanic_id: mechanicId,
+              day_of_week: dto.day_of_week,
+              start_time: dto.start_time,
+              end_time: dto.end_time,
+              slot_duration: dto.slot_duration,
+              is_day_off: dto.is_day_off ?? false, // ?? operatörü kullanıldı
+            },
+          });
+          
+          results.push(result);
         }
         
         return results;
@@ -225,7 +205,9 @@ export class MechanicWorkingHoursService {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      throw new Error(`Çalışma saatlerini güncellerken hata: ${error.message}`);
+      // Hata yönetimi: Genel hata yerine InternalServerErrorException kullanıldı
+      console.error(`Çalışma saatlerini güncellerken hata: ${error.message}`, error.stack); // Orijinal hatayı loglama
+      throw new InternalServerErrorException('Çalışma saatleri güncellenirken bir sunucu hatası oluştu.');
     }
   }
 }

@@ -65,13 +65,7 @@ export class MechanicsController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: MechanicSupportedVehicleDto | MechanicSupportedVehicleDto[]
   ) {
-    if (Array.isArray(body)) {
-      body.forEach(item => item.mechanic_id = id);
-    } else {
-      body.mechanic_id = id;
-    }
-
-    return this.mechanicsService.addSupportedVehicle(body);
+    return this.mechanicsService.addSupportedVehicleForMechanic(id, body);
   }
 
   @UseGuards(JwtGuard, MechanicOwnerGuard)
@@ -92,11 +86,7 @@ export class MechanicsController {
     @Param('id', new ParseUUIDPipe()) id: string, 
     @Body() dto: MechanicSupportedVehicleDto[]
   ) {
-    // Tüm dto'ların mechanic_id'sini parametre olarak verilen id ile ayarla
-    dto.forEach(item => item.mechanic_id = id);
-    
-    // updateBulkSupportedVehicles metoduna brand_ids yerine direkt dto dizisi gönder
-    return this.mechanicsService.updateBulkSupportedVehicles(id, dto.map(item => item.brand_id));
+    return this.mechanicsService.updateSupportedVehiclesForMechanic(id, dto);
   }
 
   @UseGuards(JwtGuard, MechanicOwnerGuard)
@@ -155,13 +145,7 @@ export class MechanicsController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: MechanicCategoryDto | MechanicCategoryDto[]
   ) {
-    if (Array.isArray(body)) {
-      body.forEach(item => item.mechanic_id = id);
-    } else {
-      body.mechanic_id = id;
-    }
-
-    return this.mechanicsService.addCategory(body);
+    return this.mechanicsService.addCategoryForMechanic(id, body);
   }
 
   @UseGuards(JwtGuard, MechanicOwnerGuard)
@@ -182,8 +166,6 @@ export class MechanicsController {
     @Param('id', new ParseUUIDPipe()) id: string, 
     @Body() dto: MechanicCategoryDto[]
   ) {
-    dto.forEach(item => item.mechanic_id = id);
-    
-    return this.mechanicsService.updateBulkCategories(id, dto.map(item => item.category_id));
+    return this.mechanicsService.updateCategoriesForMechanic(id, dto);
   }
 }
