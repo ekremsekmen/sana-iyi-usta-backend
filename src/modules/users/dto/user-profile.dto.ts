@@ -8,4 +8,8 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   profile_image?: string;
+
+  @IsOptional()
+  @IsString()
+  full_name?: string;
 }

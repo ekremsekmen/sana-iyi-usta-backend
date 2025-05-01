@@ -34,6 +34,7 @@ export class UsersService {
       data: {
         phone_number: updateUserDto.phone_number,
         profile_image: updateUserDto.profile_image,
+        full_name: updateUserDto.full_name,
       },
       select: {
         id: true,

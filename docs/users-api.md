@@ -38,16 +38,40 @@ Oturum açmış olan kullanıcının kendi profil bilgilerini getirir.
 
 ### 2. Mevcut Kullanıcı Bilgilerini Güncelleme
 
-Oturum açmış olan kullanıcının kendi profil bilgilerini günceller.
+Oturum açmış olan kullanıcının kendi profil bilgilerini günceller. Telefon numarası, profil resmi ve tam ad bilgilerinden birini, ikisini veya üçünü birden güncelleyebilirsiniz.
 
 **URL:** `PATCH /users/me`
 
 **Yetkilendirme:** JWT Token gerekli
 
-**İstek Gövdesi:**
+**İstek Gövdesi Örnekleri:**
+
+Sadece telefon numarası güncellenirse:
+```json
+{
+  "phone_number": "5559876543"
+}
+```
+
+Sadece tam ad güncellenirse:
+```json
+{
+  "full_name": "Mehmet Yılmaz"
+}
+```
+
+Sadece profil resmi güncellenirse:
+```json
+{
+  "profile_image": "https://example.com/new/profile.jpg"
+}
+```
+
+Birden fazla alan aynı anda güncellenirse:
 ```json
 {
   "phone_number": "5559876543",
+  "full_name": "Mehmet Yılmaz",
   "profile_image": "https://example.com/new/profile.jpg"
 }
 ```
@@ -56,7 +80,7 @@ Oturum açmış olan kullanıcının kendi profil bilgilerini günceller.
 ```json
 {
   "id": "u1s2e3r4-5678-90ab-cdef-ghijklmnopqr",
-  "full_name": "Ahmet Yılmaz",
+  "full_name": "Mehmet Yılmaz",
   "phone_number": "5559876543",
   "profile_image": "https://example.com/new/profile.jpg",
   "e_mail": "kullanici@example.com",
@@ -197,6 +221,7 @@ Kullanıcının mevcut lokasyonlarından birini varsayılan konum olarak ayarlar
 {
   phone_number?: string;       // İsteğe bağlı (telefon numarası)
   profile_image?: string;      // İsteğe bağlı (profil resmi URL'si)
+  full_name?: string;          // İsteğe bağlı (kullanıcının tam adı)
 }
 ```
 
@@ -237,7 +262,7 @@ Kullanıcının mevcut lokasyonlarından birini varsayılan konum olarak ayarlar
 ## Önemli Notlar
 
 1. Tüm API istekleri JWT token gerektirmektedir ve `Authorization: Bearer {token}` header'ı ile gönderilmelidir.
-2. Kullanıcı bilgisi güncellenirken sadece `phone_number` ve `profile_image` alanları değiştirilebilir. Diğer bilgiler (örn: e-mail, role) bu endpoint üzerinden değiştirilemez.
+2. Kullanıcı bilgisi güncellenirken `phone_number`, `profile_image` ve `full_name` alanları değiştirilebilir. Bu alanların hepsini birden güncellemek zorunda değilsiniz, sadece değiştirmek istediğiniz alanları gönderebilirsiniz. Örneğin, sadece tam adı güncellemek istiyorsanız, request body'de sadece `full_name` alanını gönderebilirsiniz. Diğer bilgiler (örn: e-mail, role) bu endpoint üzerinden değiştirilemez.
 3. Kullanıcı hesabı silindiğinde, bu işlem geri alınamaz ve kullanıcının tüm ilişkili verileri de silinebilir.
 4. ID ile kullanıcı getirme endpointi, diğer kullanıcıların temel bilgilerini görüntülemek için kullanılabilir. Bu, özellikle mekanik-müşteri ilişkisi için kullanışlıdır.
 5. Tüm tarih değerleri ISO 8601 formatında döndürülür (örn: "2023-10-27T10:00:00.000Z").
