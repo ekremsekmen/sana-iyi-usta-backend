@@ -1,7 +1,7 @@
 import { IsString, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
 import { Decimal } from '@prisma/client/runtime/library';
 
-export class CreateLocationDto {
+export class LocationDto {
   @IsString()
   @IsNotEmpty()
   address: string;

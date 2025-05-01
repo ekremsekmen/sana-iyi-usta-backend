@@ -1,7 +1,6 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, HttpCode, HttpStatus } from '@nestjs/common';
 import { LocationsService } from './locations.service';
-import { CreateLocationDto } from './dto/create-location.dto';
-import { UpdateLocationDto } from './dto/update-location.dto';
+import { LocationDto } from './dto/location.dto';
 import { JwtGuard } from '../../common/guards/jwt/jwt.guard';
 import { RequestWithUser } from '../../common/interfaces/request-with-user.interface';
 
@@ -12,7 +11,7 @@ export class LocationsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  create(@Request() req: RequestWithUser, @Body() createLocationDto: CreateLocationDto) {
+  create(@Request() req: RequestWithUser, @Body() createLocationDto: LocationDto) {
     return this.locationsService.create(req.user.id, createLocationDto);
   }
 
@@ -32,7 +31,7 @@ export class LocationsController {
   @HttpCode(HttpStatus.OK)
   update(
     @Param('id') id: string,
-    @Body() updateLocationDto: UpdateLocationDto,
+    @Body() updateLocationDto: LocationDto,
     @Request() req: RequestWithUser,
   ) {
     return this.locationsService.update(id, req.user.id, updateLocationDto);

@@ -50,7 +50,7 @@ export class MechanicsController {
     return this.mechanicsService.remove(id);
   }
 
-  @UseGuards(JwtGuard, MechanicOwnerGuard)
+  @UseGuards(JwtGuard)
   @Get(':id/supported-vehicles')
   @HttpCode(HttpStatus.OK)
   getSupportedVehicles(@Param('id', new ParseUUIDPipe()) id: string) {
@@ -89,7 +89,7 @@ export class MechanicsController {
     return this.mechanicsService.updateSupportedVehiclesForMechanic(id, dto);
   }
 
-  @UseGuards(JwtGuard, MechanicOwnerGuard)
+  @UseGuards(JwtGuard)
   @Get(':id/working-hours')
   @HttpCode(HttpStatus.OK)
   getWorkingHours(@Param('id', new ParseUUIDPipe()) id: string) {
@@ -129,7 +129,7 @@ export class MechanicsController {
     return this.mechanicsService.deleteWorkingHours(hourId);
   }
 
-  @UseGuards(JwtGuard, MechanicOwnerGuard)
+  @UseGuards(JwtGuard)
   @Get(':id/categories')
   @HttpCode(HttpStatus.OK)
   getCategories(@Param('id', new ParseUUIDPipe()) id: string) {

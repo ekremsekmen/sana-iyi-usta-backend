@@ -1,13 +1,12 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateLocationDto } from './dto/create-location.dto';
-import { UpdateLocationDto } from './dto/update-location.dto';
+import { LocationDto } from './dto/location.dto';
 
 @Injectable()
 export class LocationsService {
   constructor(private prisma: PrismaService) {}
 
-  async create(userId: string, createLocationDto: CreateLocationDto) {
+  async create(userId: string, createLocationDto: LocationDto) {
     return this.prisma.locations.create({
       data: {
         user_id: userId,
@@ -43,7 +42,7 @@ export class LocationsService {
     return location;
   }
 
-  async update(id: string, userId: string, updateLocationDto: UpdateLocationDto) {
+  async update(id: string, userId: string, updateLocationDto: LocationDto) {
     await this.findOne(id, userId);
 
     return this.prisma.locations.update({
