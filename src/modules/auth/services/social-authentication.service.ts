@@ -205,7 +205,6 @@ export class SocialAuthenticationService {
       throw new BadRequestException(ERROR_MESSAGES.INVALID_CREDENTIALS);
     }
 
-    // KVKK ve kullanım şartları onay kontrolü
     if (!userInfo.kvkk_approved) {
       throw new BadRequestException(ERROR_MESSAGES.KVKK_APPROVAL_REQUIRED);
     }
@@ -254,24 +253,40 @@ export class SocialAuthenticationService {
       if (!userInfo.role) {
         throw new BadRequestException('Role is required for new users');
       }
-      user = await this.prisma.users.create({
-        data: {
-          full_name: userInfo.full_name,
-          e_mail: userInfo.e_mail,
-          role: userInfo.role,
-          profile_image: null,
-          created_at: new Date(),
-          user_auth: {
-            create: {
-              auth_provider: provider,
-              provider_id: userInfo.provider_id,
-              e_mail_verified: true,
-              kvkk_approved: userInfo.kvkk_approved,
-              terms_approved: userInfo.terms_approved,
+      
+      // Transaction kullanarak kullanıcı oluştur ve customer rolüyse customer tablosuna da ekle
+      user = await this.prisma.$transaction(async (prisma) => {
+        const newUser = await prisma.users.create({
+          data: {
+            full_name: userInfo.full_name,
+            e_mail: userInfo.e_mail,
+            role: userInfo.role,
+            profile_image: null,
+            created_at: new Date(),
+            user_auth: {
+              create: {
+                auth_provider: provider,
+                provider_id: userInfo.provider_id,
+                e_mail_verified: true,
+                kvkk_approved: userInfo.kvkk_approved,
+                terms_approved: userInfo.terms_approved,
+              },
             },
           },
-        },
-        include: { user_auth: true },
+          include: { user_auth: true },
+        });
+        
+        // Kullanıcı customer rolüyle kaydolduysa, customers tablosuna kayıt ekle
+        if (userInfo.role === 'customer') {
+          await prisma.customers.create({
+            data: {
+              user_id: newUser.id,
+              created_at: new Date(),
+            },
+          });
+        }
+        
+        return newUser;
       });
     }
 

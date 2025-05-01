@@ -1,6 +1,6 @@
 import { Injectable, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { RegisterDto, AuthProvider } from '../dto/register.dto';
+import { RegisterDto, AuthProvider, UserRole } from '../dto/register.dto';
 import { EmailService } from './email.service';
 import * as bcrypt from 'bcrypt';
 import { ERROR_MESSAGES } from '../../../common/constants/error-messages';
@@ -98,7 +98,6 @@ export class UserRegistrationService {
         registerDto.e_mail,
       );
       
-      // Transaction dışında e-posta gönderimi
       verificationEmailSent = await this.emailService.sendVerificationEmailByToken(
         registerDto.e_mail,
         verificationToken
@@ -141,11 +140,21 @@ export class UserRegistrationService {
         created_at: new Date(),
       },
     });
-
+  
     await prisma.user_auth.create({
       data: this.createUserAuthData(user.id, registerDto, hashedPassword),
     });
-
+  
+    // Customer rolüne sahip kullanıcıysa customers tablosuna da ekle
+    if (registerDto.role === UserRole.CUSTOMER) {
+      await prisma.customers.create({
+        data: {
+          user_id: user.id,
+          created_at: new Date(),
+        },
+      });
+    }
+  
     return { userId: user.id };
   }
 }
