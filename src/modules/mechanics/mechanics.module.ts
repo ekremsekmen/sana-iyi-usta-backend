@@ -16,6 +16,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
     MechanicSupportedVehiclesService,
     MechanicCategoriesService,
     PrismaService
-  ]
+  ],
+  exports: [MechanicsService]
 })
 export class MechanicsModule {}

@@ -73,6 +73,14 @@ export class LocationsService {
   async remove(id: string, userId: string) {
     await this.findOne(id, userId);
 
+    await this.prisma.users.update({
+      where: { 
+        id: userId,
+        default_location_id: id 
+      },
+      data: { default_location_id: null },
+    });
+
     await this.prisma.locations.delete({
       where: { id },
     });
