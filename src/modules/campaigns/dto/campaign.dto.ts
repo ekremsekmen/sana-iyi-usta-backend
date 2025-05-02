@@ -41,4 +41,8 @@ export class CampaignDto {
   @IsUUID()
   @IsNotEmpty()
   category_id: string;
+  
+  @IsUUID()
+  @IsNotEmpty()
+  mechanic_id: string;
 }

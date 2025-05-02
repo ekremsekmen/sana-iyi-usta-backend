@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { CampaignsController, MechanicCampaignsController } from './campaigns.controller';
+import { CampaignsController } from './campaigns.controller';
 import { CampaignsService } from './campaigns.service';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { MechanicsModule } from '../mechanics/mechanics.module';
@@ -11,7 +11,7 @@ import { CampaignValidationService } from './services/campaign-validation.servic
 
 @Module({
   imports: [PrismaModule, MechanicsModule], 
-  controllers: [CampaignsController, MechanicCampaignsController],
+  controllers: [CampaignsController],
   providers: [
     CampaignsService,
     CampaignValidationService,
