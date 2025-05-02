@@ -11,14 +11,13 @@ export class CampaignCreateService {
     private readonly validationService: CampaignValidationService
   ) {}
 
-  async create(mechanicId: string, createCampaignDto: CampaignDto, userId: string = null) {
+  async create(mechanicId: string, createCampaignDto: CampaignDto, userId: string) {
     try {
-      const { category_id, brand_ids, ...campaignData } = createCampaignDto;
+      const { category_ids, brand_ids, ...campaignData } = createCampaignDto;
 
       await this.validationService.validateMechanicOwnership(mechanicId, userId);
       await this.validationService.validateBrands(mechanicId, brand_ids);
-      await this.validationService.validateCategory(mechanicId, category_id);
-      await this.validationService.validateDuplicateTitle(mechanicId, campaignData.title);
+      await this.validationService.validateCategories(mechanicId, category_ids);
       const validUntilDate = this.validationService.validateDate(campaignData.valid_until);
 
       return await this.prisma.$transaction(async (tx) => {
@@ -34,12 +33,12 @@ export class CampaignCreateService {
           }
         });
 
-        // Kampanya kategorisini oluştur
-        await tx.campaign_categories.create({
-          data: {
+        // Kampanya kategorilerini oluştur
+        await tx.campaign_categories.createMany({
+          data: category_ids.map(categoryId => ({
             campaign_id: campaign.id,
-            category_id: category_id
-          }
+            category_id: categoryId
+          }))
         });
 
         // Kampanya markalarını oluştur

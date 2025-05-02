@@ -26,8 +26,8 @@ export class CampaignDto {
   @IsNotEmpty()
   brand_ids: string[];
 
-  @IsUUID()
+  @IsArray()
+  @IsUUID(undefined, { each: true })
   @IsNotEmpty()
-  category_id: string;
-  
+  category_ids: string[];
 }

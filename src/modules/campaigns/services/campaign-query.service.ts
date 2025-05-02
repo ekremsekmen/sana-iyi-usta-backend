@@ -31,7 +31,6 @@ export class CampaignQueryService {
         };
       }
 
-      // Aktif kampanyaları filtreleme
       if (active === 'true') {
         where.valid_until = {
           gte: new Date(),

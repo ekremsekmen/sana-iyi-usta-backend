@@ -8,6 +8,7 @@ import { CampaignQueryService } from './services/campaign-query.service';
 import { CampaignUpdateService } from './services/campaign-update.service';
 import { CampaignDeleteService } from './services/campaign-delete.service';
 import { CampaignValidationService } from './services/campaign-validation.service';
+import { CampaignOwnerGuard } from './guards/campaign-owner.guard';
 
 @Module({
   imports: [PrismaModule, MechanicsModule], 
@@ -18,10 +19,10 @@ import { CampaignValidationService } from './services/campaign-validation.servic
     CampaignCreateService,
     CampaignQueryService,
     CampaignUpdateService,
-    CampaignDeleteService
+    CampaignDeleteService,
+    CampaignOwnerGuard, 
   ],
   exports: [CampaignsService]
 })
 export class CampaignsModule {}
 
-// Zaten MechanicsModule import edilmiş, bu sayede MechanicOwnerGuard'ı kullanabiliriz

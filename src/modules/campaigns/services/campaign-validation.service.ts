@@ -5,9 +5,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 export class CampaignValidationService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async validateMechanicOwnership(mechanicId: string, userId: string | null) {
-    if (!userId) return;
-    
+  async validateMechanicOwnership(mechanicId: string, userId: string) {
     const mechanic = await this.prisma.mechanics.findUnique({
       where: { id: mechanicId }
     });
@@ -52,27 +50,33 @@ export class CampaignValidationService {
     }
   }
 
-  async validateCategory(mechanicId: string, categoryId: string) {
-    const category = await this.prisma.categories.findUnique({
-      where: { id: categoryId }
-    });
-
-    if (!category) {
-      throw new NotFoundException(`Bu ID'ye sahip kategori bulunamadı: ${categoryId}`);
+  async validateCategories(mechanicId: string, categoryIds: string[]) {
+    if (!categoryIds || categoryIds.length === 0) {
+      throw new BadRequestException('En az bir kategori seçmelisiniz');
     }
 
-    const supportedCategory = await this.prisma.mechanic_categories.findFirst({
-      where: {
-        mechanic_id: mechanicId,
-        category_id: categoryId
+    for (const categoryId of categoryIds) {
+      const category = await this.prisma.categories.findUnique({
+        where: { id: categoryId }
+      });
+
+      if (!category) {
+        throw new NotFoundException(`Bu ID'ye sahip kategori bulunamadı: ${categoryId}`);
       }
-    });
 
-    if (!supportedCategory) {
-      throw new BadRequestException(`Bu kategori için hizmet vermiyorsunuz. Lütfen desteklediğiniz bir kategori seçin.`);
+      const supportedCategory = await this.prisma.mechanic_categories.findFirst({
+        where: {
+          mechanic_id: mechanicId,
+          category_id: categoryId
+        }
+      });
+
+      if (!supportedCategory) {
+        throw new BadRequestException(`${category.name} kategorisi için hizmet vermiyorsunuz. Lütfen desteklediğiniz kategorileri seçin.`);
+      }
     }
 
-    return category;
+    return true;
   }
 
   validateDate(dateString: string) {
@@ -88,20 +92,5 @@ export class CampaignValidationService {
     return validUntilDate;
   }
 
-  async validateDuplicateTitle(mechanicId: string, title: string, excludeCampaignId?: string) {
-    const where: any = {
-      mechanic_id: mechanicId,
-      title: title
-    };
-
-    if (excludeCampaignId) {
-      where.id = { not: excludeCampaignId };
-    }
-
-    const existingCampaign = await this.prisma.campaigns.findFirst({ where });
-
-    if (existingCampaign) {
-      throw new BadRequestException(`"${title}" başlıklı bir kampanyanız zaten mevcut`);
-    }
-  }
+ 
 }

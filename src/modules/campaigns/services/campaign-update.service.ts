@@ -13,21 +13,14 @@ export class CampaignUpdateService {
 
   async update(id: string, mechanicId: string, updateCampaignDto: CampaignDto) {
     try {
-      const { category_id, brand_ids, ...campaignData } = updateCampaignDto;
-
-
-      await this.validationService.validateCampaignOwnership(id, mechanicId);
-      
-      if (campaignData.title) {
-        await this.validationService.validateDuplicateTitle(mechanicId, campaignData.title, id);
-      }
+      const { category_ids, brand_ids, ...campaignData } = updateCampaignDto;
 
       if (brand_ids && brand_ids.length > 0) {
         await this.validationService.validateBrands(mechanicId, brand_ids);
       }
 
-      if (category_id) {
-        await this.validationService.validateCategory(mechanicId, category_id);
+      if (category_ids && category_ids.length > 0) {
+        await this.validationService.validateCategories(mechanicId, category_ids);
       }
 
       let validUntilDate: Date | undefined;
@@ -36,7 +29,6 @@ export class CampaignUpdateService {
       }
 
       return await this.prisma.$transaction(async (tx) => {
-        // Ana kampanya kaydını güncelle
         const updateData: Prisma.campaignsUpdateInput = {};
 
         if (campaignData.title !== undefined) updateData.title = campaignData.title;
@@ -44,7 +36,6 @@ export class CampaignUpdateService {
         if (campaignData.discount_rate !== undefined) updateData.discount_rate = campaignData.discount_rate;
         if (validUntilDate) updateData.valid_until = validUntilDate;
         
-        // Ana kampanya kaydını güncelle
         if (Object.keys(updateData).length > 0) {
           await tx.campaigns.update({
             where: { id },
@@ -52,30 +43,26 @@ export class CampaignUpdateService {
           });
         }
 
-        // Kategori ilişkilerini güncelle
-        if (category_id) {
-          // Önce mevcut kategorileri temizle
+        if (category_ids !== undefined) {
           await tx.campaign_categories.deleteMany({
             where: { campaign_id: id },
           });
 
-          // Sonra yeni kategoriyi oluştur
-          await tx.campaign_categories.create({
-            data: {
-              campaign_id: id,
-              category_id: category_id,
-            },
-          });
+          if (category_ids.length > 0) {
+            await tx.campaign_categories.createMany({
+              data: category_ids.map(categoryId => ({
+                campaign_id: id,
+                category_id: categoryId,
+              })),
+            });
+          }
         }
 
-        // Marka ilişkilerini güncelle
         if (brand_ids !== undefined) {
-          // Önce mevcut markaları temizle
           await tx.campaign_brands.deleteMany({
             where: { campaign_id: id },
           });
 
-          // Eğer yeni markalar varsa ekle
           if (brand_ids.length > 0) {
             await tx.campaign_brands.createMany({
               data: brand_ids.map(brandId => ({
@@ -87,7 +74,6 @@ export class CampaignUpdateService {
           }
         }
 
-        // Güncellenmiş kampanya bilgisini tüm ilişkileriyle döndür
         return await tx.campaigns.findUnique({
           where: { id },
           include: {

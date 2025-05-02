@@ -12,21 +12,15 @@ export class CampaignDeleteService {
 
   async remove(id: string, mechanicId: string) {
     try {
-      // Validasyonlar - artık userId gerekmiyor
-      await this.validationService.validateCampaignOwnership(id, mechanicId);
-
       return await this.prisma.$transaction(async (tx) => {
-        // İlgili campaign_brands kayıtlarını sil
         await tx.campaign_brands.deleteMany({
           where: { campaign_id: id },
         });
         
-        // İlgili campaign_categories kayıtlarını sil
         await tx.campaign_categories.deleteMany({
           where: { campaign_id: id },
         });
 
-        // Kampanyayı sil
         await tx.campaigns.delete({
           where: { id },
         });

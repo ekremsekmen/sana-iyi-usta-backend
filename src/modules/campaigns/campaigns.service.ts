@@ -14,7 +14,7 @@ export class CampaignsService {
     private readonly deleteService: CampaignDeleteService
   ) {}
 
-  async create(mechanicId: string, createCampaignDto: CampaignDto, userId: string = null) {
+  async create(mechanicId: string, createCampaignDto: CampaignDto, userId: string) {
     return this.createService.create(mechanicId, createCampaignDto, userId);
   }
 

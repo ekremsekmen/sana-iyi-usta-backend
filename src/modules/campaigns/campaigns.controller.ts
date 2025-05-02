@@ -19,7 +19,7 @@ import { CampaignsService } from './campaigns.service';
 import { CampaignDto } from './dto/campaign.dto';
 import { JwtGuard } from '../../common/guards/jwt/jwt.guard';
 import { RequestWithUser } from '../../common/interfaces/request-with-user.interface';
-import { MechanicOwnerGuard } from '../mechanics/guards/mechanic-owner.guard';
+import { CampaignOwnerGuard } from './guards/campaign-owner.guard';
 
 @Controller('campaigns')
 export class CampaignsController {
@@ -56,7 +56,7 @@ export class CampaignsController {
   }
 
   @Post('mechanic/:mechanicId')
-  @UseGuards(JwtGuard, MechanicOwnerGuard)
+  @UseGuards(JwtGuard)
   @UsePipes(new ValidationPipe({ whitelist: true }))
   @HttpCode(HttpStatus.CREATED)
   create(
@@ -68,7 +68,7 @@ export class CampaignsController {
   }
 
   @Patch(':id/mechanic/:mechanicId')
-  @UseGuards(JwtGuard, MechanicOwnerGuard)
+  @UseGuards(JwtGuard, CampaignOwnerGuard)
   @UsePipes(new ValidationPipe({ whitelist: true }))
   @HttpCode(HttpStatus.OK)
   update(
@@ -80,7 +80,7 @@ export class CampaignsController {
   }
 
   @Delete(':id/mechanic/:mechanicId')
-  @UseGuards(JwtGuard, MechanicOwnerGuard)
+  @UseGuards(JwtGuard, CampaignOwnerGuard)
   @HttpCode(HttpStatus.OK)
   remove(
     @Param('id', new ParseUUIDPipe()) id: string,
