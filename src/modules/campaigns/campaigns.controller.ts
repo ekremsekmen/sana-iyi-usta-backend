@@ -19,6 +19,7 @@ import { CampaignsService } from './campaigns.service';
 import { CampaignDto } from './dto/campaign.dto';
 import { JwtGuard } from '../../common/guards/jwt/jwt.guard';
 import { RequestWithUser } from '../../common/interfaces/request-with-user.interface';
+import { MechanicOwnerGuard } from '../mechanics/guards/mechanic-owner.guard';
 
 @Controller('campaigns')
 export class CampaignsController {
@@ -70,7 +71,7 @@ export class CampaignsController {
   }
 
   @Patch(':id')
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard, MechanicOwnerGuard)
   @UsePipes(new ValidationPipe({ whitelist: true }))
   @HttpCode(HttpStatus.OK)
   update(
@@ -81,19 +82,19 @@ export class CampaignsController {
     return this.campaignsService.update(
       id, 
       updateCampaignDto.mechanic_id, 
-      updateCampaignDto, 
-      request.user.id
+      updateCampaignDto
     );
   }
 
   @Delete(':id')
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard, MechanicOwnerGuard)
   @HttpCode(HttpStatus.OK)
   remove(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body('mechanic_id', new ParseUUIDPipe()) mechanicId: string,
     @Req() request: RequestWithUser
   ) {
-    return this.campaignsService.remove(id, mechanicId, request.user.id);
+
+    return this.campaignsService.remove(id, mechanicId);
   }
 }

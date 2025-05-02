@@ -63,15 +63,9 @@ model campaigns {
   discount_rate       Decimal               @db.Decimal(5, 2)
   valid_until         DateTime              @db.Timestamptz(6)
   created_at          DateTime              @db.Timestamptz(6)
-  model_year_id       String?               @db.Uuid
-  variant_id          String?               @db.Uuid
-  model_id            String?               @db.Uuid
   campaign_brands     campaign_brands[]
   campaign_categories campaign_categories[]
   mechanics           mechanics             @relation(fields: [mechanic_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  models              models?               @relation(fields: [model_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  model_years         model_years?          @relation(fields: [model_year_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  variants            variants?             @relation(fields: [variant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model customer_vehicles {
@@ -147,7 +141,6 @@ model model_years {
   id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   model_id          String              @db.Uuid
   year              Int
-  campaigns         campaigns[]
   customer_vehicles customer_vehicles[]
   models            models              @relation(fields: [model_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   variants          variants[]
@@ -157,7 +150,6 @@ model models {
   id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   brand_id          String              @db.Uuid
   name              String
-  campaigns         campaigns[]
   customer_vehicles customer_vehicles[]
   model_years       model_years[]
   brands            brands              @relation(fields: [brand_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -262,7 +254,6 @@ model variants {
   id                String              @id(map: "engines_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   model_year_id     String              @db.Uuid
   name              String
-  campaigns         campaigns[]
   customer_vehicles customer_vehicles[]
   model_years       model_years         @relation(fields: [model_year_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "engines_model_year_id_fkey")
 }

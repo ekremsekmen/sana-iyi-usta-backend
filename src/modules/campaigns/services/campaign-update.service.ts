@@ -11,12 +11,11 @@ export class CampaignUpdateService {
     private readonly validationService: CampaignValidationService
   ) {}
 
-  async update(id: string, mechanicId: string, updateCampaignDto: CampaignDto, userId: string = null) {
+  async update(id: string, mechanicId: string, updateCampaignDto: CampaignDto) {
     try {
-      const { category_id, brand_ids, model_id, model_year_id, variant_id, ...campaignData } = updateCampaignDto;
+      const { category_id, brand_ids, ...campaignData } = updateCampaignDto;
 
-      // Validasyonlar
-      await this.validationService.validateMechanicOwnership(mechanicId, userId);
+
       await this.validationService.validateCampaignOwnership(id, mechanicId);
       
       if (campaignData.title) {
@@ -31,7 +30,7 @@ export class CampaignUpdateService {
         await this.validationService.validateCategory(mechanicId, category_id);
       }
 
-      let validUntilDate;
+      let validUntilDate: Date | undefined;
       if (campaignData.valid_until) {
         validUntilDate = this.validationService.validateDate(campaignData.valid_until);
       }
@@ -45,18 +44,6 @@ export class CampaignUpdateService {
         if (campaignData.discount_rate !== undefined) updateData.discount_rate = campaignData.discount_rate;
         if (validUntilDate) updateData.valid_until = validUntilDate;
         
-        if (model_id !== undefined) {
-          updateData.models = model_id ? { connect: { id: model_id } } : { disconnect: true };
-        }
-        
-        if (model_year_id !== undefined) {
-          updateData.model_years = model_year_id ? { connect: { id: model_year_id } } : { disconnect: true };
-        }
-        
-        if (variant_id !== undefined) {
-          updateData.variants = variant_id ? { connect: { id: variant_id } } : { disconnect: true };
-        }
-
         // Ana kampanya kaydını güncelle
         if (Object.keys(updateData).length > 0) {
           await tx.campaigns.update({
@@ -114,9 +101,6 @@ export class CampaignUpdateService {
                 brands: true,
               },
             },
-            models: true,
-            model_years: true,
-            variants: true,
             mechanics: {
               select: {
                 id: true,

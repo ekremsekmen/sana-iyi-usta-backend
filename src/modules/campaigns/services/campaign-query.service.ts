@@ -55,9 +55,6 @@ export class CampaignQueryService {
               brands: true,
             },
           },
-          models: true,
-          model_years: true,
-          variants: true,
           mechanics: {
             select: {
               id: true,
@@ -90,9 +87,6 @@ export class CampaignQueryService {
               brands: true,
             },
           },
-          models: true,
-          model_years: true,
-          variants: true,
           mechanics: {
             select: {
               id: true,

@@ -23,3 +23,5 @@ import { CampaignValidationService } from './services/campaign-validation.servic
   exports: [CampaignsService]
 })
 export class CampaignsModule {}
+
+// Zaten MechanicsModule import edilmiş, bu sayede MechanicOwnerGuard'ı kullanabiliriz

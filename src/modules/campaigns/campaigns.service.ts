@@ -26,12 +26,12 @@ export class CampaignsService {
     return this.queryService.findOne(id);
   }
 
-  async update(id: string, mechanicId: string, updateCampaignDto: CampaignDto, userId: string = null) {
-    return this.updateService.update(id, mechanicId, updateCampaignDto, userId);
+  async update(id: string, mechanicId: string, updateCampaignDto: CampaignDto) {
+    return this.updateService.update(id, mechanicId, updateCampaignDto);
   }
 
-  async remove(id: string, mechanicId: string, userId: string = null) {
-    return this.deleteService.remove(id, mechanicId, userId);
+  async remove(id: string, mechanicId: string) {
+    return this.deleteService.remove(id, mechanicId);
   }
 
   async findByMechanic(mechanicId: string) {

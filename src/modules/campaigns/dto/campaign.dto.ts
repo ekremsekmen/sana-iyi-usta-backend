@@ -27,18 +27,6 @@ export class CampaignDto {
   brand_ids: string[];
 
   @IsUUID()
-  @IsOptional()
-  model_id?: string;
-
-  @IsUUID()
-  @IsOptional()
-  model_year_id?: string;
-
-  @IsUUID()
-  @IsOptional()
-  variant_id?: string;
-
-  @IsUUID()
   @IsNotEmpty()
   category_id: string;
   

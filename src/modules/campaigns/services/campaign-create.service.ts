@@ -13,9 +13,8 @@ export class CampaignCreateService {
 
   async create(mechanicId: string, createCampaignDto: CampaignDto, userId: string = null) {
     try {
-      const { category_id, brand_ids, model_id, model_year_id, variant_id, ...campaignData } = createCampaignDto;
+      const { category_id, brand_ids, ...campaignData } = createCampaignDto;
 
-      // Validasyonlar
       await this.validationService.validateMechanicOwnership(mechanicId, userId);
       await this.validationService.validateBrands(mechanicId, brand_ids);
       await this.validationService.validateCategory(mechanicId, category_id);
@@ -32,9 +31,6 @@ export class CampaignCreateService {
             valid_until: validUntilDate,
             created_at: new Date(),
             mechanic_id: mechanicId,
-            model_id: model_id || null,
-            model_year_id: model_year_id || null,
-            variant_id: variant_id || null,
           }
         });
 
@@ -69,9 +65,6 @@ export class CampaignCreateService {
                 brands: true,
               },
             },
-            models: true,
-            model_years: true,
-            variants: true,
             mechanics: {
               select: {
                 id: true,

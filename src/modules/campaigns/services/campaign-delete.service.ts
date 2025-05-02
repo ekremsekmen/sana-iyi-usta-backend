@@ -10,10 +10,9 @@ export class CampaignDeleteService {
     private readonly validationService: CampaignValidationService
   ) {}
 
-  async remove(id: string, mechanicId: string, userId: string = null) {
+  async remove(id: string, mechanicId: string) {
     try {
-      // Validasyonlar
-      await this.validationService.validateMechanicOwnership(mechanicId, userId);
+      // Validasyonlar - artık userId gerekmiyor
       await this.validationService.validateCampaignOwnership(id, mechanicId);
 
       return await this.prisma.$transaction(async (tx) => {
