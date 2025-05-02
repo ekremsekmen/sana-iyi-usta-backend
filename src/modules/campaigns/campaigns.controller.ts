@@ -25,21 +25,6 @@ import { MechanicOwnerGuard } from '../mechanics/guards/mechanic-owner.guard';
 export class CampaignsController {
   constructor(private readonly campaignsService: CampaignsService) {}
 
-  @Post()
-  @UseGuards(JwtGuard)
-  @UsePipes(new ValidationPipe({ whitelist: true }))
-  @HttpCode(HttpStatus.CREATED)
-  create(
-    @Body() createCampaignDto: CampaignDto,
-    @Req() request: RequestWithUser
-  ) {
-    return this.campaignsService.create(
-      createCampaignDto.mechanic_id, 
-      createCampaignDto, 
-      request.user.id
-    );
-  }
-
   @Get()
   @UseGuards(JwtGuard)
   @HttpCode(HttpStatus.OK)
@@ -70,31 +55,37 @@ export class CampaignsController {
     return this.campaignsService.findOne(id);
   }
 
-  @Patch(':id')
+  @Post('mechanic/:mechanicId')
+  @UseGuards(JwtGuard, MechanicOwnerGuard)
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  @HttpCode(HttpStatus.CREATED)
+  create(
+    @Param('mechanicId', new ParseUUIDPipe()) mechanicId: string,
+    @Body() createCampaignDto: CampaignDto,
+    @Req() request: RequestWithUser
+  ) {
+    return this.campaignsService.create(mechanicId, createCampaignDto, request.user.id);
+  }
+
+  @Patch(':id/mechanic/:mechanicId')
   @UseGuards(JwtGuard, MechanicOwnerGuard)
   @UsePipes(new ValidationPipe({ whitelist: true }))
   @HttpCode(HttpStatus.OK)
   update(
     @Param('id', new ParseUUIDPipe()) id: string,
-    @Body() updateCampaignDto: CampaignDto,
-    @Req() request: RequestWithUser
+    @Param('mechanicId', new ParseUUIDPipe()) mechanicId: string,
+    @Body() updateCampaignDto: CampaignDto
   ) {
-    return this.campaignsService.update(
-      id, 
-      updateCampaignDto.mechanic_id, 
-      updateCampaignDto
-    );
+    return this.campaignsService.update(id, mechanicId, updateCampaignDto);
   }
 
-  @Delete(':id')
+  @Delete(':id/mechanic/:mechanicId')
   @UseGuards(JwtGuard, MechanicOwnerGuard)
   @HttpCode(HttpStatus.OK)
   remove(
     @Param('id', new ParseUUIDPipe()) id: string,
-    @Body('mechanic_id', new ParseUUIDPipe()) mechanicId: string,
-    @Req() request: RequestWithUser
+    @Param('mechanicId', new ParseUUIDPipe()) mechanicId: string
   ) {
-
     return this.campaignsService.remove(id, mechanicId);
   }
 }

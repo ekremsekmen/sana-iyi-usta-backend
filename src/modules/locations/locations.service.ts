@@ -73,13 +73,19 @@ export class LocationsService {
   async remove(id: string, userId: string) {
     await this.findOne(id, userId);
 
-    await this.prisma.users.update({
-      where: { 
-        id: userId,
-        default_location_id: id 
-      },
-      data: { default_location_id: null },
+    // First, check if this location is the user's default location
+    const user = await this.prisma.users.findUnique({
+      where: { id: userId },
+      select: { default_location_id: true }
     });
+
+    // Only update if this is the default location
+    if (user && user.default_location_id === id) {
+      await this.prisma.users.update({
+        where: { id: userId },
+        data: { default_location_id: null },
+      });
+    }
 
     await this.prisma.locations.delete({
       where: { id },
