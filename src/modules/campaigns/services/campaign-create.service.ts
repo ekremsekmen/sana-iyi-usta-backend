@@ -15,9 +15,13 @@ export class CampaignCreateService {
     try {
       const { category_ids, brand_ids, ...campaignData } = createCampaignDto;
 
-      await this.validationService.validateMechanicOwnership(mechanicId, userId);
-      await this.validationService.validateBrands(mechanicId, brand_ids);
-      await this.validationService.validateCategories(mechanicId, category_ids);
+      // Validasyon işlemlerini paralel olarak çalıştıralım
+      await Promise.all([
+        this.validationService.validateMechanicOwnership(mechanicId, userId),
+        this.validationService.validateBrands(mechanicId, brand_ids),
+        this.validationService.validateCategories(mechanicId, category_ids)
+      ]);
+      
       const validUntilDate = this.validationService.validateDate(campaignData.valid_until);
 
       return await this.prisma.$transaction(async (tx) => {
@@ -33,7 +37,6 @@ export class CampaignCreateService {
           }
         });
 
-        // Kampanya kategorilerini oluştur
         await tx.campaign_categories.createMany({
           data: category_ids.map(categoryId => ({
             campaign_id: campaign.id,
@@ -41,7 +44,6 @@ export class CampaignCreateService {
           }))
         });
 
-        // Kampanya markalarını oluştur
         await tx.campaign_brands.createMany({
           data: brand_ids.map(brandId => ({
             campaign_id: campaign.id,
@@ -50,29 +52,50 @@ export class CampaignCreateService {
           }))
         });
 
-        // Tüm ilişkileri içeren kampanyayı getir
-        return await tx.campaigns.findUnique({
+        const campaignWithRelations = await tx.campaigns.findUnique({
           where: { id: campaign.id },
           include: {
             campaign_categories: {
               include: {
-                categories: true,
+                categories: {
+                  select: {
+                    id: true,
+                    name: true
+                  }
+                },
               },
             },
             campaign_brands: {
               include: {
-                brands: true,
+                brands: {
+                  select: {
+                    id: true,
+                    name: true
+                  }
+                },
               },
-            },
-            mechanics: {
-              select: {
-                id: true,
-                business_name: true,
-                average_rating: true,
-              },
-            },
+            }
           },
         });
+
+        // Sadeleştirilmiş yanıt oluştur
+        return {
+          id: campaignWithRelations.id,
+          mechanic_id: campaignWithRelations.mechanic_id,
+          title: campaignWithRelations.title,
+          description: campaignWithRelations.description,
+          discount_rate: campaignWithRelations.discount_rate,
+          valid_until: campaignWithRelations.valid_until,
+          created_at: campaignWithRelations.created_at,
+          categories: campaignWithRelations.campaign_categories.map(cc => ({
+            id: cc.categories.id,
+            name: cc.categories.name
+          })),
+          brands: campaignWithRelations.campaign_brands.map(cb => ({
+            id: cb.brands.id,
+            name: cb.brands.name
+          }))
+        };
       });
     } catch (error) {
       this.handleErrors(error, 'Kampanya oluşturma');

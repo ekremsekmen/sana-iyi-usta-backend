@@ -18,9 +18,8 @@ export class MechanicsController {
   @Post()
   @UsePipes(new ValidationPipe({ whitelist: true }))
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() MechanicProfileDto: MechanicProfileDto, @Req() request: RequestWithUser) {
-    MechanicProfileDto.user_id = request.user.id;
-    return this.mechanicsService.create(MechanicProfileDto);
+  create(@Body() mechanicProfileDto: MechanicProfileDto, @Req() request: RequestWithUser) {
+    return this.mechanicsService.create(request.user.id, mechanicProfileDto);
   }
   
   @UseGuards(JwtGuard)
@@ -36,11 +35,11 @@ export class MechanicsController {
   @HttpCode(HttpStatus.OK)
   update(
     @Param('id', new ParseUUIDPipe()) id: string, 
-    @Body() MechanicProfileDto: MechanicProfileDto,
+    @Body() mechanicProfileDto: MechanicProfileDto,
     @Req() request: RequestWithUser
   ) {
-    MechanicProfileDto.user_id = request.user.id;
-    return this.mechanicsService.update(id, MechanicProfileDto);
+    // DTO'ya user_id eklemek yerine, controller metoduna doğrudan parametre olarak geçiyoruz
+    return this.mechanicsService.update(id, request.user.id, mechanicProfileDto);
   }
 
   @UseGuards(JwtGuard, MechanicOwnerGuard)

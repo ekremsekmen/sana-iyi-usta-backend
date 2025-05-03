@@ -11,17 +11,17 @@ export class CampaignUpdateService {
     private readonly validationService: CampaignValidationService
   ) {}
 
-  async update(id: string, mechanicId: string, updateCampaignDto: CampaignDto) {
+  async update(id: string, mechanicId: string, updateCampaignDto: CampaignDto, userId: string) {
     try {
       const { category_ids, brand_ids, ...campaignData } = updateCampaignDto;
 
-      if (brand_ids && brand_ids.length > 0) {
-        await this.validationService.validateBrands(mechanicId, brand_ids);
-      }
-
-      if (category_ids && category_ids.length > 0) {
-        await this.validationService.validateCategories(mechanicId, category_ids);
-      }
+      // Validasyon işlemlerini paralel olarak çalıştıralım
+      await Promise.all([
+        this.validationService.validateMechanicOwnership(mechanicId, userId),
+        this.validationService.validateCampaignOwnership(id, mechanicId),
+        brand_ids && brand_ids.length > 0 ? this.validationService.validateBrands(mechanicId, brand_ids) : Promise.resolve(),
+        category_ids && category_ids.length > 0 ? this.validationService.validateCategories(mechanicId, category_ids) : Promise.resolve()
+      ]);
 
       let validUntilDate: Date | undefined;
       if (campaignData.valid_until) {
@@ -74,28 +74,51 @@ export class CampaignUpdateService {
           }
         }
 
-        return await tx.campaigns.findUnique({
+        // İlişkisel verileri al
+        const campaignWithRelations = await tx.campaigns.findUnique({
           where: { id },
           include: {
             campaign_categories: {
               include: {
-                categories: true,
+                categories: {
+                  select: {
+                    id: true,
+                    name: true
+                  }
+                },
               },
             },
             campaign_brands: {
               include: {
-                brands: true,
+                brands: {
+                  select: {
+                    id: true,
+                    name: true
+                  }
+                },
               },
-            },
-            mechanics: {
-              select: {
-                id: true,
-                business_name: true,
-                average_rating: true,
-              },
-            },
+            }
           },
         });
+
+        // Sadeleştirilmiş yanıt oluştur
+        return {
+          id: campaignWithRelations.id,
+          mechanic_id: campaignWithRelations.mechanic_id,
+          title: campaignWithRelations.title,
+          description: campaignWithRelations.description,
+          discount_rate: campaignWithRelations.discount_rate,
+          valid_until: campaignWithRelations.valid_until,
+          created_at: campaignWithRelations.created_at,
+          categories: campaignWithRelations.campaign_categories.map(cc => ({
+            id: cc.categories.id,
+            name: cc.categories.name
+          })),
+          brands: campaignWithRelations.campaign_brands.map(cb => ({
+            id: cb.brands.id,
+            name: cb.brands.name
+          }))
+        };
       });
     } catch (error) {
       this.handleErrors(error, 'Kampanya güncelleme');

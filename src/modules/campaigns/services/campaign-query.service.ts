@@ -1,64 +1,41 @@
-import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
+import { CampaignValidationService } from './campaign-validation.service';
 
 @Injectable()
 export class CampaignQueryService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly validationService: CampaignValidationService
+  ) {}
 
-  async findAll(query: { mechanicId?: string, categoryId?: string, brandId?: string, active?: string } = {}) {
+  async findByMechanic(mechanicId: string, userId: string) {
     try {
-      const { mechanicId, categoryId, brandId, active } = query;
-      const where: Prisma.campaignsWhereInput = {}; 
+      await this.validationService.validateMechanicOwnership(mechanicId, userId);
 
-      if (mechanicId) {
-        where.mechanic_id = mechanicId;
-      }
-
-      if (categoryId) {
-        where.campaign_categories = {
-          some: {
-            category_id: categoryId,
-          },
-        };
-      }
-
-      if (brandId) {
-        where.campaign_brands = {
-          some: {
-            brand_id: brandId,
-          },
-        };
-      }
-
-      if (active === 'true') {
-        where.valid_until = {
-          gte: new Date(),
-        };
-      } else if (active === 'false') {
-        where.valid_until = {
-          lt: new Date(),
-        };
-      }
-
-      return await this.prisma.campaigns.findMany({
-        where,
+      // Sorguyu daha verimli hale getirelim - ilişkiler için dataloader benzeri yaklaşım
+      const campaigns = await this.prisma.campaigns.findMany({
+        where: { mechanic_id: mechanicId },
         include: {
           campaign_categories: {
             include: {
-              categories: true,
+              categories: {
+                select: {
+                  id: true,
+                  name: true
+                }
+              },
             },
           },
           campaign_brands: {
             include: {
-              brands: true,
-            },
-          },
-          mechanics: {
-            select: {
-              id: true,
-              business_name: true,
-              average_rating: true,
+              brands: {
+                select: {
+                  id: true,
+                  name: true
+                }
+              },
             },
           },
         },
@@ -66,52 +43,35 @@ export class CampaignQueryService {
           created_at: 'desc',
         },
       });
+
+      // Sadeleştirilmiş yanıt oluştur
+      return campaigns.map(campaign => ({
+        id: campaign.id,
+        mechanic_id: campaign.mechanic_id,
+        title: campaign.title,
+        description: campaign.description,
+        discount_rate: campaign.discount_rate,
+        valid_until: campaign.valid_until,
+        created_at: campaign.created_at,
+        categories: campaign.campaign_categories.map(cc => ({
+          id: cc.categories.id,
+          name: cc.categories.name
+        })),
+        brands: campaign.campaign_brands.map(cb => ({
+          id: cb.brands.id,
+          name: cb.brands.name
+        }))
+      }));
     } catch (error) {
       this.handleErrors(error, 'Kampanya sorgulama');
     }
   }
 
-  async findOne(id: string) {
-    try {
-      const campaign = await this.prisma.campaigns.findUnique({
-        where: { id },
-        include: {
-          campaign_categories: {
-            include: {
-              categories: true,
-            },
-          },
-          campaign_brands: {
-            include: {
-              brands: true,
-            },
-          },
-          mechanics: {
-            select: {
-              id: true,
-              business_name: true,
-              average_rating: true,
-            },
-          },
-        },
-      });
-
-      if (!campaign) {
-        throw new NotFoundException(`ID'si ${id} olan kampanya bulunamadı`);
-      }
-
-      return campaign;
-    } catch (error) {
-      this.handleErrors(error, 'Kampanya detayı getirme');
-    }
-  }
-
-  async findByMechanic(mechanicId: string) {
-    return this.findAll({ mechanicId });
-  }
-
   private handleErrors(error: any, operation: string) {
     if (error instanceof NotFoundException) {
+      throw error;
+    }
+    if (error instanceof ForbiddenException) {
       throw error;
     }
     console.error(`${operation} sırasında hata: ${error.message}`, error.stack);

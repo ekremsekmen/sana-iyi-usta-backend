@@ -7,13 +7,13 @@ import { randomUUID } from 'crypto';
 export class MechanicProfileService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(dto: MechanicProfileDto) {
+  async create(userId: string, dto: MechanicProfileDto) {
     return this.prisma.mechanics.create({
       data: {
         id: randomUUID(), 
         business_name: dto.business_name,
         on_site_service: dto.on_site_service,
-        users: { connect: { id: dto.user_id } },
+        users: { connect: { id: userId } },
       },
     });
   }
@@ -26,7 +26,7 @@ export class MechanicProfileService {
     return mechanic;
   }
 
-  async update(id: string, dto: MechanicProfileDto) {
+  async update(id: string, userId: string, dto: MechanicProfileDto) {
     try {
       const updateData: any = {
         business_name: dto.business_name,
@@ -38,10 +38,11 @@ export class MechanicProfileService {
         select: { user_id: true }
       });
       
-      if (currentMechanic && currentMechanic.user_id !== dto.user_id && dto.user_id) {
+      // Sadece kullanıcı değişiyorsa ilişkiyi güncelle
+      if (currentMechanic && currentMechanic.user_id !== userId) {
         updateData.users = { 
           disconnect: { id: currentMechanic.user_id }, 
-          connect: { id: dto.user_id }                
+          connect: { id: userId }                
         };
       }
       

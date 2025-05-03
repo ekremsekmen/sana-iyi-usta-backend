@@ -17,16 +17,16 @@ export class MechanicsService {
     private readonly mechanicCategoriesService: MechanicCategoriesService
   ) {}
 
-  create(createMechanicDto: MechanicProfileDto) {
-    return this.mechanicProfileService.create(createMechanicDto);
+  create(userId: string, createMechanicDto: MechanicProfileDto) {
+    return this.mechanicProfileService.create(userId, createMechanicDto);
   }
 
   findOne(id: string) {
     return this.mechanicProfileService.findOne(id);
   }
 
-  update(id: string, updateMechanicDto: MechanicProfileDto) {
-    return this.mechanicProfileService.update(id, updateMechanicDto);
+  update(id: string, userId: string, updateMechanicDto: MechanicProfileDto) {
+    return this.mechanicProfileService.update(id, userId, updateMechanicDto);
   }
 
   remove(id: string) {

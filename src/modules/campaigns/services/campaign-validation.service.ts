@@ -36,17 +36,25 @@ export class CampaignValidationService {
       throw new BadRequestException('En az bir marka seçmelisiniz');
     }
 
-    for (const brandId of brandIds) {
-      const supportedBrand = await this.prisma.mechanic_supported_vehicles.findFirst({
-        where: {
-          mechanic_id: mechanicId,
-          brand_id: brandId
-        }
-      });
-
-      if (!supportedBrand) {
-        throw new BadRequestException(`Bir veya daha fazla marka için hizmet vermiyorsunuz. Lütfen desteklediğiniz markalar seçin.`);
+    // Döngü yerine tek bir sorgu ile desteklenen markaları alalım
+    const supportedBrands = await this.prisma.mechanic_supported_vehicles.findMany({
+      where: {
+        mechanic_id: mechanicId,
+        brand_id: { in: brandIds }
+      },
+      select: {
+        brand_id: true
       }
+    });
+
+    // Set veri yapısı kullanarak kontrol edelim
+    const supportedBrandIds = new Set(supportedBrands.map(sb => sb.brand_id));
+    
+    // Desteklenmeyen markaları bulalım
+    const unsupportedBrandIds = brandIds.filter(id => !supportedBrandIds.has(id));
+    
+    if (unsupportedBrandIds.length > 0) {
+      throw new BadRequestException(`Bir veya daha fazla marka için hizmet vermiyorsunuz. Lütfen desteklediğiniz markalar seçin.`);
     }
   }
 
@@ -55,25 +63,39 @@ export class CampaignValidationService {
       throw new BadRequestException('En az bir kategori seçmelisiniz');
     }
 
-    for (const categoryId of categoryIds) {
-      const category = await this.prisma.categories.findUnique({
-        where: { id: categoryId }
-      });
+    // Önce kategori varlığını kontrol edelim
+    const existingCategories = await this.prisma.categories.findMany({
+      where: { id: { in: categoryIds } },
+      select: { id: true, name: true }
+    });
 
-      if (!category) {
-        throw new NotFoundException(`Bu ID'ye sahip kategori bulunamadı: ${categoryId}`);
+    if (existingCategories.length !== categoryIds.length) {
+      const existingCategoryIds = new Set(existingCategories.map(c => c.id));
+      const nonExistentCategoryIds = categoryIds.filter(id => !existingCategoryIds.has(id));
+      throw new NotFoundException(`Bu ID'lere sahip kategoriler bulunamadı: ${nonExistentCategoryIds.join(', ')}`);
+    }
+
+    // Tamircinin desteklediği kategorileri tek sorguda alalım
+    const supportedCategories = await this.prisma.mechanic_categories.findMany({
+      where: {
+        mechanic_id: mechanicId,
+        category_id: { in: categoryIds }
+      },
+      select: {
+        category_id: true
       }
+    });
 
-      const supportedCategory = await this.prisma.mechanic_categories.findFirst({
-        where: {
-          mechanic_id: mechanicId,
-          category_id: categoryId
-        }
-      });
-
-      if (!supportedCategory) {
-        throw new BadRequestException(`${category.name} kategorisi için hizmet vermiyorsunuz. Lütfen desteklediğiniz kategorileri seçin.`);
-      }
+    const supportedCategoryIds = new Set(supportedCategories.map(sc => sc.category_id));
+    
+    // Desteklenmeyen kategorileri bulup hata mesajı oluşturalım
+    const unsupportedCategories = existingCategories.filter(category => 
+      !supportedCategoryIds.has(category.id)
+    );
+    
+    if (unsupportedCategories.length > 0) {
+      const categoryNames = unsupportedCategories.map(c => c.name).join(', ');
+      throw new BadRequestException(`${categoryNames} ${unsupportedCategories.length > 1 ? 'kategorileri' : 'kategorisi'} için hizmet vermiyorsunuz. Lütfen desteklediğiniz kategorileri seçin.`);
     }
 
     return true;
@@ -91,6 +113,4 @@ export class CampaignValidationService {
 
     return validUntilDate;
   }
-
- 
 }

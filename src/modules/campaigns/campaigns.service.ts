@@ -18,23 +18,15 @@ export class CampaignsService {
     return this.createService.create(mechanicId, createCampaignDto, userId);
   }
 
-  async findAll(query: { mechanicId?: string, categoryId?: string, brandId?: string, active?: string } = {}) {
-    return this.queryService.findAll(query);
+  async findByMechanic(mechanicId: string, userId: string) {
+    return this.queryService.findByMechanic(mechanicId, userId);
   }
 
-  async findOne(id: string) {
-    return this.queryService.findOne(id);
+  async update(id: string, mechanicId: string, updateCampaignDto: CampaignDto, userId: string) {
+    return this.updateService.update(id, mechanicId, updateCampaignDto, userId);
   }
 
-  async update(id: string, mechanicId: string, updateCampaignDto: CampaignDto) {
-    return this.updateService.update(id, mechanicId, updateCampaignDto);
-  }
-
-  async remove(id: string, mechanicId: string) {
-    return this.deleteService.remove(id, mechanicId);
-  }
-
-  async findByMechanic(mechanicId: string) {
-    return this.queryService.findByMechanic(mechanicId);
+  async remove(id: string, mechanicId: string, userId: string) {
+    return this.deleteService.remove(id, mechanicId, userId);
   }
 }
