@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { MechanicProfileDto } from '../dto/mechanic-profile.dto';
 import { randomUUID } from 'crypto';
@@ -8,6 +8,15 @@ export class MechanicProfileService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(userId: string, dto: MechanicProfileDto) {
+    // Kullanıcının zaten bir mechanic profili olup olmadığını kontrol et
+    const existingMechanic = await this.prisma.mechanics.findFirst({
+      where: { user_id: userId }
+    });
+
+    if (existingMechanic) {
+      throw new ConflictException('Bu kullanıcı için zaten bir tamirci profili bulunmaktadır. Bir kullanıcı yalnızca bir tamirci profiline sahip olabilir.');
+    }
+
     return this.prisma.mechanics.create({
       data: {
         id: randomUUID(), 
