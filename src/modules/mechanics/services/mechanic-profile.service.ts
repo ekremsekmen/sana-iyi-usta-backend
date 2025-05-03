@@ -67,4 +67,17 @@ export class MechanicProfileService {
   async remove(id: string) {
     return this.prisma.mechanics.delete({ where: { id } });
   }
+
+  async findByUserId(userId: string) {
+    const mechanic = await this.prisma.mechanics.findFirst({
+      where: { user_id: userId }
+    });
+    
+    // Eğer kullanıcının tamirci profili yoksa, null döndüreceğiz 
+    // Bu sayede frontend tarafında profil varlığı kontrol edilebilir
+    return {
+      hasMechanicProfile: !!mechanic,
+      profile: mechanic || null
+    };
+  }
 }

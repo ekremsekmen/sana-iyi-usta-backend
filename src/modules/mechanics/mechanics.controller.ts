@@ -166,4 +166,11 @@ export class MechanicsController {
   ) {
     return this.mechanicsService.updateCategoriesForMechanic(id, dto);
   }
+
+  @UseGuards(JwtGuard)
+  @Get('profile/check')
+  @HttpCode(HttpStatus.OK)
+  async checkMechanicProfile(@Req() request: RequestWithUser) {
+    return this.mechanicsService.findByUserId(request.user.id);
+  }
 }

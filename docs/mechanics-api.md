@@ -2,6 +2,33 @@
 
 Bu dokümantasyon, tamirci (mekanik) yönetimi için API endpointlerini detaylandırır. Tüm isteklerde JWT yetkilendirmesi gereklidir.
 
+
+### 17. Kullanıcının Tamirci Profilini Kontrol Etme
+
+Giriş yapmış olan kullanıcının bir tamirci profili olup olmadığını kontrol eder.
+
+**URL:** `GET /mechanics/profile/check`
+
+**Yetkilendirme:** JWT Token gerekli
+
+**Başarılı Yanıt:**
+```json
+{
+  "hasMechanicProfile": true,  // Kullanıcının tamirci profili varsa true, yoksa false
+  "profile": {                 // Tamirci profili varsa detaylar, yoksa null
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "business_name": "Ahmet Usta Oto Servis",
+    "on_site_service": true,
+    "user_id": "u1s2e3r4-5678-90ab-cdef-ghijklmnopqr"
+  }
+}
+
+PROFİLİ YOKSA:
+{
+  "hasMechanicProfile": false,  // Kullanıcının tamirci profili yoksa false
+  "profile": null               // Profil yoksa null olarak döner
+}
+
 ## Temel URL
 
 ```

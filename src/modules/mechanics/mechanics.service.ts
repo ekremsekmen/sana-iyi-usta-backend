@@ -109,4 +109,8 @@ export class MechanicsService {
     dto.forEach(item => item.mechanic_id = mechanicId);
     return this.updateBulkCategories(mechanicId, dto.map(item => item.category_id));
   }
+
+  findByUserId(userId: string) {
+    return this.mechanicProfileService.findByUserId(userId);
+  }
 }
