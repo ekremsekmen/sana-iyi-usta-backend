@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, HttpCode, HttpStatus, ForbiddenException, UsePipes, ValidationPipe, ParseUUIDPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, HttpCode, HttpStatus, ForbiddenException, UsePipes, ValidationPipe, ParseUUIDPipe, NotFoundException } from '@nestjs/common';
 import { MechanicsService } from './mechanics.service';
 import { MechanicProfileDto } from './dto/mechanic-profile.dto';
 import { JwtGuard } from '../../common/guards';
@@ -6,7 +6,6 @@ import { RequestWithUser } from '../../common/interfaces/request-with-user.inter
 import { MechanicSupportedVehicleDto } from './dto/mechanic-supported-vehicle.dto';
 import { MechanicWorkingHoursDto } from './dto/mechanic-working-hours.dto';
 import { MechanicCategoryDto } from './dto/mechanic-category.dto';
-import { MechanicOwnerGuard } from './guards/mechanic-owner.guard';
 
 @Controller('mechanics')
 export class MechanicsController {
@@ -23,148 +22,219 @@ export class MechanicsController {
   }
   
   @UseGuards(JwtGuard)
-  @Get(':id')
+  @Get()
   @HttpCode(HttpStatus.OK)
-  findOne(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.mechanicsService.findOne(id);
+  async findOne(@Req() request: RequestWithUser) {
+    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
+    if (!mechanic.hasMechanicProfile) {
+      throw new NotFoundException('Tamirci profili bulunamadı.');
+    }
+    return mechanic.profile;
   }
 
-  @UseGuards(JwtGuard, MechanicOwnerGuard)
-  @Patch(':id')
+  @UseGuards(JwtGuard)
+  @Patch()
   @UsePipes(new ValidationPipe({ whitelist: true }))
   @HttpCode(HttpStatus.OK)
-  update(
-    @Param('id', new ParseUUIDPipe()) id: string, 
+  async update(
     @Body() mechanicProfileDto: MechanicProfileDto,
     @Req() request: RequestWithUser
   ) {
-    // DTO'ya user_id eklemek yerine, controller metoduna doğrudan parametre olarak geçiyoruz
-    return this.mechanicsService.update(id, request.user.id, mechanicProfileDto);
-  }
-
-  @UseGuards(JwtGuard, MechanicOwnerGuard)
-  @Delete(':id')
-  @HttpCode(HttpStatus.OK)
-  remove(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.mechanicsService.remove(id);
+    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
+    if (!mechanic.hasMechanicProfile) {
+      throw new NotFoundException('Tamirci profili bulunamadı.');
+    }
+    return this.mechanicsService.update(mechanic.profile.id, request.user.id, mechanicProfileDto);
   }
 
   @UseGuards(JwtGuard)
-  @Get(':id/supported-vehicles')
+  @Delete()
   @HttpCode(HttpStatus.OK)
-  getSupportedVehicles(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.mechanicsService.getSupportedVehicles(id);
-  }
-
-  @UseGuards(JwtGuard, MechanicOwnerGuard)
-  @Post(':id/supported-vehicles')
-  @UsePipes(new ValidationPipe({ whitelist: true }))
-  @HttpCode(HttpStatus.CREATED)
-  addSupportedVehicle(
-    @Param('id', new ParseUUIDPipe()) id: string,
-    @Body() body: MechanicSupportedVehicleDto | MechanicSupportedVehicleDto[]
-  ) {
-    return this.mechanicsService.addSupportedVehicleForMechanic(id, body);
-  }
-
-  @UseGuards(JwtGuard, MechanicOwnerGuard)
-  @Delete(':id/supported-vehicles/:brandId')
-  @HttpCode(HttpStatus.OK)
-  removeSupportedVehicle(
-    @Param('id', new ParseUUIDPipe()) id: string, 
-    @Param('brandId', new ParseUUIDPipe()) brandId: string
-  ) {
-    return this.mechanicsService.removeSupportedVehicleByBrand(id, brandId);
-  }
-
-  @UseGuards(JwtGuard, MechanicOwnerGuard)
-  @Patch(':id/supported-vehicles')
-  @UsePipes(new ValidationPipe({ whitelist: true }))
-  @HttpCode(HttpStatus.OK)
-  updateSupportedVehicles(
-    @Param('id', new ParseUUIDPipe()) id: string, 
-    @Body() dto: MechanicSupportedVehicleDto[]
-  ) {
-    return this.mechanicsService.updateSupportedVehiclesForMechanic(id, dto);
+  async remove(@Req() request: RequestWithUser) {
+    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
+    if (!mechanic.hasMechanicProfile) {
+      throw new NotFoundException('Tamirci profili bulunamadı.');
+    }
+    return this.mechanicsService.remove(mechanic.profile.id);
   }
 
   @UseGuards(JwtGuard)
-  @Get(':id/working-hours')
+  @Get('supported-vehicles')
   @HttpCode(HttpStatus.OK)
-  getWorkingHours(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.mechanicsService.getWorkingHours(id);
+  async getSupportedVehicles(@Req() request: RequestWithUser) {
+    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
+    if (!mechanic.hasMechanicProfile) {
+      throw new NotFoundException('Tamirci profili bulunamadı.');
+    }
+    return this.mechanicsService.getSupportedVehicles(mechanic.profile.id);
   }
 
-  @UseGuards(JwtGuard, MechanicOwnerGuard)
-  @Post(':id/working-hours')
+  @UseGuards(JwtGuard)
+  @Post('supported-vehicles')
   @UsePipes(new ValidationPipe({ whitelist: true }))
   @HttpCode(HttpStatus.CREATED)
-  createWorkingHours(
-    @Param('id', new ParseUUIDPipe()) id: string, 
-    @Body() MechanicWorkingHoursDto: MechanicWorkingHoursDto | MechanicWorkingHoursDto[]
+  async addSupportedVehicle(
+    @Body() body: MechanicSupportedVehicleDto | MechanicSupportedVehicleDto[],
+    @Req() request: RequestWithUser
   ) {
-    return this.mechanicsService.createWorkingHours(id, MechanicWorkingHoursDto);
+    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
+    if (!mechanic.hasMechanicProfile) {
+      throw new NotFoundException('Tamirci profili bulunamadı.');
+    }
+    return this.mechanicsService.addSupportedVehicleForMechanic(mechanic.profile.id, body);
   }
 
-  @UseGuards(JwtGuard, MechanicOwnerGuard)
-  @Patch(':id/working-hours/:hourId')
+  @UseGuards(JwtGuard)
+  @Delete('supported-vehicles/:brandId')
+  @HttpCode(HttpStatus.OK)
+  async removeSupportedVehicle(
+    @Param('brandId', new ParseUUIDPipe()) brandId: string,
+    @Req() request: RequestWithUser
+  ) {
+    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
+    if (!mechanic.hasMechanicProfile) {
+      throw new NotFoundException('Tamirci profili bulunamadı.');
+    }
+    return this.mechanicsService.removeSupportedVehicleByBrand(mechanic.profile.id, brandId);
+  }
+
+  @UseGuards(JwtGuard)
+  @Patch('supported-vehicles')
   @UsePipes(new ValidationPipe({ whitelist: true }))
   @HttpCode(HttpStatus.OK)
-  updateWorkingHours(
-    @Param('id', new ParseUUIDPipe()) id: string,
+  async updateSupportedVehicles(
+    @Body() dto: MechanicSupportedVehicleDto[],
+    @Req() request: RequestWithUser
+  ) {
+    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
+    if (!mechanic.hasMechanicProfile) {
+      throw new NotFoundException('Tamirci profili bulunamadı.');
+    }
+    return this.mechanicsService.updateSupportedVehiclesForMechanic(mechanic.profile.id, dto);
+  }
+
+  @UseGuards(JwtGuard)
+  @Get('working-hours')
+  @HttpCode(HttpStatus.OK)
+  async getWorkingHours(@Req() request: RequestWithUser) {
+    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
+    if (!mechanic.hasMechanicProfile) {
+      throw new NotFoundException('Tamirci profili bulunamadı.');
+    }
+    return this.mechanicsService.getWorkingHours(mechanic.profile.id);
+  }
+
+  @UseGuards(JwtGuard)
+  @Post('working-hours')
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  @HttpCode(HttpStatus.CREATED)
+  async createWorkingHours(
+    @Body() mechanicWorkingHoursDto: MechanicWorkingHoursDto | MechanicWorkingHoursDto[],
+    @Req() request: RequestWithUser
+  ) {
+    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
+    if (!mechanic.hasMechanicProfile) {
+      throw new NotFoundException('Tamirci profili bulunamadı.');
+    }
+    return this.mechanicsService.createWorkingHours(mechanic.profile.id, mechanicWorkingHoursDto);
+  }
+
+  @UseGuards(JwtGuard)
+  @Patch('working-hours/:hourId')
+  @HttpCode(HttpStatus.OK)
+  async updateWorkingHours(
     @Param('hourId', new ParseUUIDPipe()) hourId: string,
-    @Body() MechanicWorkingHoursDto: MechanicWorkingHoursDto
+    @Body(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, skipMissingProperties: true })) 
+    mechanicWorkingHoursDto: Partial<MechanicWorkingHoursDto>,
+    @Req() request: RequestWithUser
   ) {
-    return this.mechanicsService.updateWorkingHours(hourId, MechanicWorkingHoursDto);
+    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
+    if (!mechanic.hasMechanicProfile) {
+      throw new NotFoundException('Tamirci profili bulunamadı.');
+    }
+    
+    // Find existing working hours to ensure it belongs to this mechanic
+    const existingHours = await this.mechanicsService.getWorkingHourById(hourId);
+    if (!existingHours || existingHours.mechanic_id !== mechanic.profile.id) {
+      throw new NotFoundException('Belirtilen çalışma saati kaydı bulunamadı veya bu tamirciye ait değil.');
+    }
+    
+    return this.mechanicsService.updateWorkingHours(hourId, mechanicWorkingHoursDto);
   }
 
-  @UseGuards(JwtGuard, MechanicOwnerGuard)
-  @Delete(':id/working-hours/:hourId')
+  @UseGuards(JwtGuard)
+  @Delete('working-hours/:hourId')
   @HttpCode(HttpStatus.OK)
-  deleteWorkingHours(
-    @Param('id', new ParseUUIDPipe()) id: string,
-    @Param('hourId', new ParseUUIDPipe()) hourId: string
+  async deleteWorkingHours(
+    @Param('hourId', new ParseUUIDPipe()) hourId: string,
+    @Req() request: RequestWithUser
   ) {
+    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
+    if (!mechanic.hasMechanicProfile) {
+      throw new NotFoundException('Tamirci profili bulunamadı.');
+    }
+    
+    const existingHours = await this.mechanicsService.getWorkingHourById(hourId);
+    if (!existingHours || existingHours.mechanic_id !== mechanic.profile.id) {
+      throw new NotFoundException('Belirtilen çalışma saati kaydı bulunamadı veya bu tamirciye ait değil.');
+    }
+    
     return this.mechanicsService.deleteWorkingHours(hourId);
   }
 
   @UseGuards(JwtGuard)
-  @Get(':id/categories')
+  @Get('categories')
   @HttpCode(HttpStatus.OK)
-  getCategories(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.mechanicsService.getCategories(id);
+  async getCategories(@Req() request: RequestWithUser) {
+    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
+    if (!mechanic.hasMechanicProfile) {
+      throw new NotFoundException('Tamirci profili bulunamadı.');
+    }
+    return this.mechanicsService.getCategories(mechanic.profile.id);
   }
 
-  @UseGuards(JwtGuard, MechanicOwnerGuard)
-  @Post(':id/categories')
+  @UseGuards(JwtGuard)
+  @Post('categories')
   @UsePipes(new ValidationPipe({ whitelist: true }))
   @HttpCode(HttpStatus.CREATED)
-  addCategory(
-    @Param('id', new ParseUUIDPipe()) id: string,
-    @Body() body: MechanicCategoryDto | MechanicCategoryDto[]
+  async addCategory(
+    @Body() body: MechanicCategoryDto | MechanicCategoryDto[],
+    @Req() request: RequestWithUser
   ) {
-    return this.mechanicsService.addCategoryForMechanic(id, body);
+    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
+    if (!mechanic.hasMechanicProfile) {
+      throw new NotFoundException('Tamirci profili bulunamadı.');
+    }
+    return this.mechanicsService.addCategoryForMechanic(mechanic.profile.id, body);
   }
 
-  @UseGuards(JwtGuard, MechanicOwnerGuard)
-  @Delete(':id/categories/:categoryId')
+  @UseGuards(JwtGuard)
+  @Delete('categories/:categoryId')
   @HttpCode(HttpStatus.OK)
-  removeCategory(
-    @Param('id', new ParseUUIDPipe()) id: string, 
-    @Param('categoryId', new ParseUUIDPipe()) categoryId: string
+  async removeCategory(
+    @Param('categoryId', new ParseUUIDPipe()) categoryId: string,
+    @Req() request: RequestWithUser
   ) {
-    return this.mechanicsService.removeCategoryByMechanicAndCategory(id, categoryId);
+    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
+    if (!mechanic.hasMechanicProfile) {
+      throw new NotFoundException('Tamirci profili bulunamadı.');
+    }
+    return this.mechanicsService.removeCategoryByMechanicAndCategory(mechanic.profile.id, categoryId);
   }
 
-  @UseGuards(JwtGuard, MechanicOwnerGuard)
-  @Patch(':id/categories')
+  @UseGuards(JwtGuard)
+  @Patch('categories')
   @UsePipes(new ValidationPipe({ whitelist: true }))
   @HttpCode(HttpStatus.OK)
-  updateCategories(
-    @Param('id', new ParseUUIDPipe()) id: string, 
-    @Body() dto: MechanicCategoryDto[]
+  async updateCategories(
+    @Body() dto: MechanicCategoryDto[],
+    @Req() request: RequestWithUser
   ) {
-    return this.mechanicsService.updateCategoriesForMechanic(id, dto);
+    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
+    if (!mechanic.hasMechanicProfile) {
+      throw new NotFoundException('Tamirci profili bulunamadı.');
+    }
+    return this.mechanicsService.updateCategoriesForMechanic(mechanic.profile.id, dto);
   }
 
   @UseGuards(JwtGuard)

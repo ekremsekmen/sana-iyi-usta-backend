@@ -2,8 +2,13 @@
 
 Bu dokümantasyon, tamirci (mekanik) yönetimi için API endpointlerini detaylandırır. Tüm isteklerde JWT yetkilendirmesi gereklidir.
 
+## Temel URL
 
-### 17. Kullanıcının Tamirci Profilini Kontrol Etme
+```
+/mechanics
+```
+
+## Kullanıcının Tamirci Profilini Kontrol Etme
 
 Giriş yapmış olan kullanıcının bir tamirci profili olup olmadığını kontrol eder.
 
@@ -22,24 +27,24 @@ Giriş yapmış olan kullanıcının bir tamirci profili olup olmadığını kon
     "user_id": "u1s2e3r4-5678-90ab-cdef-ghijklmnopqr"
   }
 }
+```
 
-PROFİLİ YOKSA:
+**Profili Yoksa:**
+```json
 {
   "hasMechanicProfile": false,  // Kullanıcının tamirci profili yoksa false
   "profile": null               // Profil yoksa null olarak döner
 }
-
-## Temel URL
-
-```
-/mechanics
 ```
 
-## Endpointler
+**Hata Yanıtları:**
+- `401 Unauthorized`: Geçersiz veya eksik yetkilendirme
+
+## Tamirci Profil Endpointleri
 
 ### 1. Tamirci Profili Oluşturma
 
-Sistemde yeni bir tamirci profili oluşturur.
+Giriş yapmış kullanıcı için sistemde yeni bir tamirci profili oluşturur.
 
 **URL:** `POST /mechanics`
 
@@ -53,7 +58,7 @@ Sistemde yeni bir tamirci profili oluşturur.
 }
 ```
 
-**Başarılı Yanıt:**
+**Başarılı Yanıt (201 Created):**
 ```json
 {
   "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
@@ -66,20 +71,18 @@ Sistemde yeni bir tamirci profili oluşturur.
 **Hata Yanıtları:**
 - `401 Unauthorized`: Geçersiz veya eksik yetkilendirme
 - `400 Bad Request`: Geçersiz istek gövdesi
+- `409 Conflict`: Kullanıcının zaten bir tamirci profili var
 - `500 Internal Server Error`: Sunucu hatası
 
 ### 2. Tamirci Bilgilerini Getirme
 
-Belirli bir tamircinin profil bilgilerini getirir.
+Giriş yapmış kullanıcının tamirci profil bilgilerini getirir.
 
-**URL:** `GET /mechanics/:id`
-
-**Parametreler:**
-- `id` (path): Tamirci ID değeri
+**URL:** `GET /mechanics`
 
 **Yetkilendirme:** JWT Token gerekli
 
-**Başarılı Yanıt:**
+**Başarılı Yanıt (200 OK):**
 ```json
 {
   "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
@@ -91,17 +94,14 @@ Belirli bir tamircinin profil bilgilerini getirir.
 
 **Hata Yanıtları:**
 - `401 Unauthorized`: Geçersiz veya eksik yetkilendirme
-- `404 Not Found`: Belirtilen ID'li tamirci bulunamadı
+- `404 Not Found`: Kullanıcının tamirci profili bulunamadı
 - `500 Internal Server Error`: Sunucu hatası
 
 ### 3. Tamirci Bilgilerini Güncelleme
 
-Mevcut bir tamirci profilini günceller. İsteği yapan kullanıcı, tamircinin sahibi olmalıdır.
+Giriş yapmış kullanıcının mevcut tamirci profilini günceller.
 
-**URL:** `PATCH /mechanics/:id`
-
-**Parametreler:**
-- `id` (path): Tamirci ID değeri
+**URL:** `PATCH /mechanics`
 
 **Yetkilendirme:** JWT Token gerekli
 
@@ -113,7 +113,7 @@ Mevcut bir tamirci profilini günceller. İsteği yapan kullanıcı, tamircinin 
 }
 ```
 
-**Başarılı Yanıt:**
+**Başarılı Yanıt (200 OK):**
 ```json
 {
   "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
@@ -125,23 +125,19 @@ Mevcut bir tamirci profilini günceller. İsteği yapan kullanıcı, tamircinin 
 
 **Hata Yanıtları:**
 - `401 Unauthorized`: Geçersiz veya eksik yetkilendirme
-- `403 Forbidden`: Kullanıcı bu tamirciyi güncelleme yetkisine sahip değil
-- `404 Not Found`: Belirtilen ID'li tamirci bulunamadı
+- `404 Not Found`: Kullanıcının tamirci profili bulunamadı
 - `400 Bad Request`: Geçersiz istek gövdesi
 - `500 Internal Server Error`: Sunucu hatası
 
 ### 4. Tamirci Profilini Silme
 
-Bir tamirci profilini sistemden siler. İsteği yapan kullanıcı, tamircinin sahibi olmalıdır.
+Giriş yapmış kullanıcının tamirci profilini sistemden siler.
 
-**URL:** `DELETE /mechanics/:id`
-
-**Parametreler:**
-- `id` (path): Tamirci ID değeri
+**URL:** `DELETE /mechanics`
 
 **Yetkilendirme:** JWT Token gerekli
 
-**Başarılı Yanıt:**
+**Başarılı Yanıt (200 OK):** (Silinen profilin bilgileri döner)
 ```json
 {
   "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
@@ -153,22 +149,20 @@ Bir tamirci profilini sistemden siler. İsteği yapan kullanıcı, tamircinin sa
 
 **Hata Yanıtları:**
 - `401 Unauthorized`: Geçersiz veya eksik yetkilendirme
-- `403 Forbidden`: Kullanıcı bu tamirciyi silme yetkisine sahip değil
-- `404 Not Found`: Belirtilen ID'li tamirci bulunamadı
+- `404 Not Found`: Kullanıcının tamirci profili bulunamadı
 - `500 Internal Server Error`: Sunucu hatası
 
-### 5. Tamircinin Desteklediği Araçları Getirme
+## Desteklenen Araçlar Endpointleri
 
-Bir tamircinin desteklediği araç markalarını listeler. İsteği yapan kullanıcı, tamircinin sahibi olmalıdır.
+### 1. Tamircinin Desteklediği Araçları Getirme
 
-**URL:** `GET /mechanics/:id/supported-vehicles`
+Giriş yapmış kullanıcının tamirci profilinin desteklediği araç markalarını listeler.
 
-**Parametreler:**
-- `id` (path): Tamirci ID değeri
+**URL:** `GET /mechanics/supported-vehicles`
 
-**Yetkilendirme:** JWT Token gerekli, Tamirci Sahibi Olmalı (MechanicOwnerGuard)
+**Yetkilendirme:** JWT Token gerekli
 
-**Başarılı Yanıt:**
+**Başarılı Yanıt (200 OK):**
 ```json
 [
   {
@@ -180,34 +174,22 @@ Bir tamircinin desteklediği araç markalarını listeler. İsteği yapan kullan
       "name": "Audi"
     }
   },
-  {
-    "id": "sv2-uuid-5678",
-    "mechanic_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    "brand_id": "br2-uuid-9012",
-    "brands": {
-      "id": "br2-uuid-9012",
-      "name": "BMW"
-    }
-  }
+  // ... diğer desteklenen araçlar
 ]
 ```
 
 **Hata Yanıtları:**
 - `401 Unauthorized`: Geçersiz veya eksik yetkilendirme
-- `403 Forbidden`: Kullanıcı bu tamircinin bilgilerine erişim yetkisine sahip değil
-- `404 Not Found`: Belirtilen ID'li tamirci bulunamadı
+- `404 Not Found`: Kullanıcının tamirci profili bulunamadı
 - `500 Internal Server Error`: Sunucu hatası
 
-### 6. Tamirciye Desteklenen Araç Ekleme
+### 2. Tamirciye Desteklenen Araç Ekleme
 
-Bir tamirciye desteklediği araç markası ekler. İsteği yapan kullanıcı, tamircinin sahibi olmalıdır. `mechanic_id` URL'deki `:id` parametresinden alınır.
+Giriş yapmış kullanıcının tamirci profiline desteklediği araç markası ekler.
 
-**URL:** `POST /mechanics/:id/supported-vehicles`
+**URL:** `POST /mechanics/supported-vehicles`
 
-**Parametreler:**
-- `id` (path): Tamirci ID değeri
-
-**Yetkilendirme:** JWT Token gerekli, Tamirci Sahibi Olmalı (MechanicOwnerGuard)
+**Yetkilendirme:** JWT Token gerekli
 
 **İstek Gövdesi (Tekil):**
 ```json
@@ -228,7 +210,7 @@ Bir tamirciye desteklediği araç markası ekler. İsteği yapan kullanıcı, ta
 ]
 ```
 
-**Başarılı Yanıt (Tekil):**
+**Başarılı Yanıt (201 Created - Tekil):**
 ```json
 {
   "id": "sv3-uuid-1234",
@@ -241,50 +223,31 @@ Bir tamirciye desteklediği araç markası ekler. İsteği yapan kullanıcı, ta
 }
 ```
 
-**Başarılı Yanıt (Çoklu):**
+**Başarılı Yanıt (201 Created - Çoklu):**
 ```json
 [
-  {
-    "id": "sv3-uuid-1234",
-    "mechanic_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    "brand_id": "br3-uuid-3456",
-    "brands": {
-      "id": "br3-uuid-3456",
-      "name": "Mercedes"
-    }
-  },
-  {
-    "id": "sv4-uuid-5678",
-    "mechanic_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    "brand_id": "br4-uuid-7890",
-    "brands": {
-      "id": "br4-uuid-7890",
-      "name": "Toyota"
-    }
-  }
+  // ... eklenen araçlar
 ]
 ```
 
 **Hata Yanıtları:**
 - `401 Unauthorized`: Geçersiz veya eksik yetkilendirme
-- `403 Forbidden`: Kullanıcı bu tamirciye desteklenen araç ekleme yetkisine sahip değil
-- `404 Not Found`: Belirtilen ID'li tamirci veya marka bulunamadı
-- `400 Bad Request`: Geçersiz istek gövdesi (örn: `brand_id` eksik veya geçersiz)
+- `404 Not Found`: Kullanıcının tamirci profili veya belirtilen marka(lar) bulunamadı
+- `400 Bad Request`: Geçersiz istek gövdesi
 - `500 Internal Server Error`: Sunucu hatası
 
-### 7. Tamircinin Desteklediği Aracı Silme
+### 3. Tamircinin Desteklediği Aracı Silme
 
-Bir tamircinin desteklediği belirli bir araç markasını kaldırır. İsteği yapan kullanıcı, tamircinin sahibi olmalıdır.
+Giriş yapmış kullanıcının tamirci profilinin desteklediği belirli bir araç markasını kaldırır.
 
-**URL:** `DELETE /mechanics/:id/supported-vehicles/:brandId`
+**URL:** `DELETE /mechanics/supported-vehicles/:brandId`
 
 **Parametreler:**
-- `id` (path): Tamirci ID değeri
-- `brandId` (path): Marka ID değeri
+- `brandId` (path): Kaldırılacak Marka ID değeri
 
 **Yetkilendirme:** JWT Token gerekli
 
-**Başarılı Yanıt:**
+**Başarılı Yanıt (200 OK):** (Silinen kaydın bilgileri döner)
 ```json
 {
   "id": "sv1-uuid-1234",
@@ -299,22 +262,18 @@ Bir tamircinin desteklediği belirli bir araç markasını kaldırır. İsteği 
 
 **Hata Yanıtları:**
 - `401 Unauthorized`: Geçersiz veya eksik yetkilendirme
-- `403 Forbidden`: Kullanıcı bu işlemi yapma yetkisine sahip değil
-- `404 Not Found`: Belirtilen ID'li tamirci veya desteklenen araç bulunamadı
+- `404 Not Found`: Kullanıcının tamirci profili veya belirtilen desteklenen araç kaydı bulunamadı
 - `500 Internal Server Error`: Sunucu hatası
 
-### 8. Tamircinin Desteklediği Araçları Toplu Güncelleme
+### 4. Tamircinin Desteklediği Araçları Toplu Güncelleme
 
-Tamircinin desteklediği araç listesini toplu olarak günceller. Mevcut desteklenen araçlar listesi, istek gövdesindeki liste ile değiştirilir. İsteği yapan kullanıcı, tamircinin sahibi olmalıdır. `mechanic_id` URL'deki `:id` parametresinden alınır.
+Giriş yapmış kullanıcının tamirci profilinin desteklediği araç listesini toplu olarak günceller. Mevcut desteklenen araçlar listesi, istek gövdesindeki liste ile değiştirilir.
 
-**URL:** `PATCH /mechanics/:id/supported-vehicles`
+**URL:** `PATCH /mechanics/supported-vehicles`
 
-**Parametreler:**
-- `id` (path): Tamirci ID değeri
+**Yetkilendirme:** JWT Token gerekli
 
-**Yetkilendirme:** JWT Token gerekli, Tamirci Sahibi Olmalı (MechanicOwnerGuard)
-
-**İstek Gövdesi:**
+**İstek Gövdesi:** (Sadece `brand_id` içeren nesnelerden oluşan dizi)
 ```json
 [
   {
@@ -326,49 +285,30 @@ Tamircinin desteklediği araç listesini toplu olarak günceller. Mevcut destekl
 ]
 ```
 
-**Başarılı Yanıt:**
+**Başarılı Yanıt (200 OK):** (Güncellenmiş desteklenen araç listesi döner)
 ```json
 [
-  {
-    "id": "sv1-uuid-1234",
-    "mechanic_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    "brand_id": "br1-uuid-5678",
-    "brands": {
-      "id": "br1-uuid-5678",
-      "name": "Audi"
-    }
-  },
-  {
-    "id": "sv5-uuid-9012",
-    "mechanic_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    "brand_id": "br5-uuid-1234",
-    "brands": {
-      "id": "br5-uuid-1234",
-      "name": "Honda"
-    }
-  }
+  // ... güncellenmiş liste
 ]
 ```
 
 **Hata Yanıtları:**
 - `401 Unauthorized`: Geçersiz veya eksik yetkilendirme
-- `403 Forbidden`: Kullanıcı bu işlemi yapma yetkisine sahip değil
-- `404 Not Found`: Belirtilen ID'li tamirci veya istekteki markalardan biri bulunamadı
-- `400 Bad Request`: Geçersiz istek gövdesi (örn: boş dizi, `brand_id` eksik veya geçersiz)
+- `404 Not Found`: Kullanıcının tamirci profili veya istekteki markalardan biri bulunamadı
+- `400 Bad Request`: Geçersiz istek gövdesi
 - `500 Internal Server Error`: Sunucu hatası
 
-### 9. Tamircinin Çalışma Saatlerini Getirme
+## Çalışma Saatleri Endpointleri
 
-Bir tamircinin çalışma saatlerini listeler. İsteği yapan kullanıcı, tamircinin sahibi olmalıdır.
+### 1. Tamircinin Çalışma Saatlerini Getirme
 
-**URL:** `GET /mechanics/:id/working-hours`
+Giriş yapmış kullanıcının tamirci profilinin çalışma saatlerini listeler.
 
-**Parametreler:**
-- `id` (path): Tamirci ID değeri
+**URL:** `GET /mechanics/working-hours`
 
-**Yetkilendirme:** JWT Token gerekli, Tamirci Sahibi Olmalı (MechanicOwnerGuard)
+**Yetkilendirme:** JWT Token gerekli
 
-**Başarılı Yanıt:**
+**Başarılı Yanıt (200 OK):**
 ```json
 [
   {
@@ -380,34 +320,22 @@ Bir tamircinin çalışma saatlerini listeler. İsteği yapan kullanıcı, tamir
     "slot_duration": 30,
     "is_day_off": false
   },
-  {
-    "id": "wh2-uuid-5678",
-    "mechanic_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    "day_of_week": 2,
-    "start_time": "09:00",
-    "end_time": "18:00",
-    "slot_duration": 30,
-    "is_day_off": false
-  }
+  // ... diğer çalışma saatleri
 ]
 ```
 
 **Hata Yanıtları:**
 - `401 Unauthorized`: Geçersiz veya eksik yetkilendirme
-- `403 Forbidden`: Kullanıcı bu tamircinin bilgilerine erişim yetkisine sahip değil
-- `404 Not Found`: Belirtilen ID'li tamirci bulunamadı
+- `404 Not Found`: Kullanıcının tamirci profili bulunamadı
 - `500 Internal Server Error`: Sunucu hatası
 
-### 10. Tamirciye Çalışma Saati Ekleme
+### 2. Tamirciye Çalışma Saati Ekleme / Güncelleme (Upsert)
 
-Bir tamirciye çalışma saati ekler (veya mevcut günü günceller - upsert). İsteği yapan kullanıcı, tamircinin sahibi olmalıdır. `mechanic_id` URL'deki `:id` parametresinden alınır.
+Giriş yapmış kullanıcının tamirci profiline çalışma saati ekler veya mevcut günü günceller.
 
-**URL:** `POST /mechanics/:id/working-hours`
+**URL:** `POST /mechanics/working-hours`
 
-**Parametreler:**
-- `id` (path): Tamirci ID değeri
-
-**Yetkilendirme:** JWT Token gerekli, Tamirci Sahibi Olmalı (MechanicOwnerGuard)
+**Yetkilendirme:** JWT Token gerekli
 
 **İstek Gövdesi (Tekil):**
 ```json
@@ -423,31 +351,11 @@ Bir tamirciye çalışma saati ekler (veya mevcut günü günceller - upsert). �
 **İstek Gövdesi (Çoklu):**
 ```json
 [
-  {
-    "day_of_week": 3,
-    "start_time": "09:00",
-    "end_time": "18:00",
-    "slot_duration": 30,
-    "is_day_off": false
-  },
-  {
-    "day_of_week": 4,
-    "start_time": "09:00",
-    "end_time": "18:00",
-    "slot_duration": 30,
-    "is_day_off": false
-  },
-  {
-    "day_of_week": 6,         // Örnek: Cumartesi tatil
-    "start_time": "00:00",    // Tatil günü saatler önemsiz
-    "end_time": "00:00",
-    "slot_duration": 60,      // Tatil günü süre önemsiz
-    "is_day_off": true
-  }
+  // ... çalışma saati nesneleri
 ]
 ```
 
-**Başarılı Yanıt (Tekil):**
+**Başarılı Yanıt (201 Created - Tekil):**
 ```json
 {
   "id": "wh3-uuid-1234",
@@ -460,57 +368,29 @@ Bir tamirciye çalışma saati ekler (veya mevcut günü günceller - upsert). �
 }
 ```
 
-**Başarılı Yanıt (Çoklu):**
+**Başarılı Yanıt (201 Created - Çoklu):**
 ```json
 [
-  {
-    "id": "wh3-uuid-1234",
-    "mechanic_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    "day_of_week": 3,
-    "start_time": "09:00",
-    "end_time": "18:00",
-    "slot_duration": 30,
-    "is_day_off": false
-  },
-  {
-    "id": "wh4-uuid-5678",
-    "mechanic_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    "day_of_week": 4,
-    "start_time": "09:00",
-    "end_time": "18:00",
-    "slot_duration": 30,
-    "is_day_off": false
-  },
-  {
-    "id": "wh5-uuid-9012",
-    "mechanic_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    "day_of_week": 6,
-    "start_time": "00:00",
-    "end_time": "00:00",
-    "slot_duration": 60,
-    "is_day_off": true
-  }
+  // ... eklenen/güncellenen çalışma saatleri
 ]
 ```
 
 **Hata Yanıtları:**
 - `401 Unauthorized`: Geçersiz veya eksik yetkilendirme
-- `403 Forbidden`: Kullanıcı bu tamirciye çalışma saati ekleme yetkisine sahip değil
-- `404 Not Found`: Belirtilen ID'li tamirci bulunamadı
-- `400 Bad Request`: Geçersiz istek gövdesi (örn: zorunlu alan eksik, format hatası)
+- `404 Not Found`: Kullanıcının tamirci profili bulunamadı
+- `400 Bad Request`: Geçersiz istek gövdesi
 - `500 Internal Server Error`: Sunucu hatası
 
-### 11. Tamircinin Çalışma Saatini Güncelleme
+### 3. Tamircinin Çalışma Saatini Güncelleme
 
-Bir tamircinin belirli bir çalışma saatini (ID ile belirtilen) günceller. İsteği yapan kullanıcı, tamircinin sahibi olmalıdır.
+Giriş yapmış kullanıcının tamirci profilinin belirli bir çalışma saatini (ID ile belirtilen) günceller.
 
-**URL:** `PATCH /mechanics/:id/working-hours/:hourId`
+**URL:** `PATCH /mechanics/working-hours/:hourId`
 
 **Parametreler:**
-- `id` (path): Tamirci ID değeri
-- `hourId` (path): Çalışma saati ID değeri
+- `hourId` (path): Güncellenecek Çalışma saati ID değeri
 
-**Yetkilendirme:** JWT Token gerekli, Tamirci Sahibi Olmalı (MechanicOwnerGuard)
+**Yetkilendirme:** JWT Token gerekli
 
 **İstek Gövdesi:** (Güncellenmek istenen alanları içerir)
 ```json
@@ -522,7 +402,7 @@ Bir tamircinin belirli bir çalışma saatini (ID ile belirtilen) günceller. İ
 }
 ```
 
-**Başarılı Yanıt:**
+**Başarılı Yanıt (200 OK):**
 ```json
 {
   "id": "wh1-uuid-1234", // Güncellenen kaydın ID'si
@@ -537,24 +417,22 @@ Bir tamircinin belirli bir çalışma saatini (ID ile belirtilen) günceller. İ
 
 **Hata Yanıtları:**
 - `401 Unauthorized`: Geçersiz veya eksik yetkilendirme
-- `403 Forbidden`: Kullanıcı bu işlemi yapma yetkisine sahip değil
-- `404 Not Found`: Belirtilen ID'li tamirci veya çalışma saati (`hourId`) bulunamadı
-- `400 Bad Request`: Geçersiz istek gövdesi (örn: format hatası)
+- `404 Not Found`: Kullanıcının tamirci profili veya belirtilen çalışma saati bulunamadı veya kullanıcıya ait değil
+- `400 Bad Request`: Geçersiz istek gövdesi
 - `500 Internal Server Error`: Sunucu hatası
 
-### 12. Tamircinin Çalışma Saatini Silme
+### 4. Tamircinin Çalışma Saatini Silme
 
-Bir tamircinin belirli bir çalışma saatini siler. İsteği yapan kullanıcı, tamircinin sahibi olmalıdır.
+Giriş yapmış kullanıcının tamirci profilinin belirli bir çalışma saatini siler.
 
-**URL:** `DELETE /mechanics/:id/working-hours/:hourId`
+**URL:** `DELETE /mechanics/working-hours/:hourId`
 
 **Parametreler:**
-- `id` (path): Tamirci ID değeri
-- `hourId` (path): Çalışma saati ID değeri
+- `hourId` (path): Silinecek Çalışma saati ID değeri
 
 **Yetkilendirme:** JWT Token gerekli
 
-**Başarılı Yanıt:**
+**Başarılı Yanıt (200 OK):** (Silinen kaydın bilgileri döner)
 ```json
 {
   "id": "wh1-uuid-1234",
@@ -569,22 +447,20 @@ Bir tamircinin belirli bir çalışma saatini siler. İsteği yapan kullanıcı,
 
 **Hata Yanıtları:**
 - `401 Unauthorized`: Geçersiz veya eksik yetkilendirme
-- `403 Forbidden`: Kullanıcı bu işlemi yapma yetkisine sahip değil
-- `404 Not Found`: Belirtilen ID'li tamirci veya çalışma saati bulunamadı
+- `404 Not Found`: Kullanıcının tamirci profili veya belirtilen çalışma saati bulunamadı veya kullanıcıya ait değil
 - `500 Internal Server Error`: Sunucu hatası
 
-### 13. Tamircinin Kategorilerini Getirme
+## Kategoriler Endpointleri
 
-Bir tamircinin hizmet verdiği kategorileri listeler. İsteği yapan kullanıcı, tamircinin sahibi olmalıdır.
+### 1. Tamircinin Kategorilerini Getirme
 
-**URL:** `GET /mechanics/:id/categories`
+Giriş yapmış kullanıcının tamirci profilinin hizmet verdiği kategorileri listeler.
 
-**Parametreler:**
-- `id` (path): Tamirci ID değeri
+**URL:** `GET /mechanics/categories`
 
-**Yetkilendirme:** JWT Token gerekli, Tamirci Sahibi Olmalı (MechanicOwnerGuard)
+**Yetkilendirme:** JWT Token gerekli
 
-**Başarılı Yanıt:**
+**Başarılı Yanıt (200 OK):**
 ```json
 [
   {
@@ -596,39 +472,27 @@ Bir tamircinin hizmet verdiği kategorileri listeler. İsteği yapan kullanıcı
       "name": "Motor Tamiri"
     }
   },
-  {
-    "id": "mc2-uuid-5678",
-    "mechanic_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    "category_id": "cat2-uuid-9012",
-    "categories": {
-      "id": "cat2-uuid-9012",
-      "name": "Fren Sistemi"
-    }
-  }
+  // ... diğer kategoriler
 ]
 ```
 
 **Hata Yanıtları:**
 - `401 Unauthorized`: Geçersiz veya eksik yetkilendirme
-- `403 Forbidden`: Kullanıcı bu tamircinin bilgilerine erişim yetkisine sahip değil
-- `404 Not Found`: Belirtilen ID'li tamirci bulunamadı
+- `404 Not Found`: Kullanıcının tamirci profili bulunamadı
 - `500 Internal Server Error`: Sunucu hatası
 
-### 14. Tamirciye Kategori Ekleme
+### 2. Tamirciye Kategori Ekleme
 
-Bir tamirciye kategori ekler. İsteği yapan kullanıcı, tamircinin sahibi olmalıdır. `mechanic_id` URL'deki `:id` parametresinden alınır.
+Giriş yapmış kullanıcının tamirci profiline kategori ekler.
 
-**URL:** `POST /mechanics/:id/categories`
+**URL:** `POST /mechanics/categories`
 
-**Parametreler:**
-- `id` (path): Tamirci ID değeri
-
-**Yetkilendirme:** JWT Token gerekli, Tamirci Sahibi Olmalı (MechanicOwnerGuard)
+**Yetkilendirme:** JWT Token gerekli
 
 **İstek Gövdesi (Tekil):**
 ```json
 {
-  "category_id": "cat3-uuid-3456" // Zorunlu
+  "category_id": "cat3-uuid-3456"
 }
 ```
 
@@ -644,7 +508,7 @@ Bir tamirciye kategori ekler. İsteği yapan kullanıcı, tamircinin sahibi olma
 ]
 ```
 
-**Başarılı Yanıt (Tekil):**
+**Başarılı Yanıt (201 Created - Tekil):**
 ```json
 {
   "id": "mc3-uuid-1234",
@@ -657,50 +521,31 @@ Bir tamirciye kategori ekler. İsteği yapan kullanıcı, tamircinin sahibi olma
 }
 ```
 
-**Başarılı Yanıt (Çoklu):**
+**Başarılı Yanıt (201 Created - Çoklu):**
 ```json
 [
-  {
-    "id": "mc3-uuid-1234",
-    "mechanic_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    "category_id": "cat3-uuid-3456",
-    "categories": {
-      "id": "cat3-uuid-3456",
-      "name": "Elektrik Sistemleri"
-    }
-  },
-  {
-    "id": "mc4-uuid-5678",
-    "mechanic_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    "category_id": "cat4-uuid-7890",
-    "categories": {
-      "id": "cat4-uuid-7890",
-      "name": "Klima Sistemleri"
-    }
-  }
+  // ... eklenen kategoriler
 ]
 ```
 
 **Hata Yanıtları:**
 - `401 Unauthorized`: Geçersiz veya eksik yetkilendirme
-- `403 Forbidden`: Kullanıcı bu tamirciye kategori ekleme yetkisine sahip değil
-- `404 Not Found`: Belirtilen ID'li tamirci veya kategori bulunamadı
-- `400 Bad Request`: Geçersiz istek gövdesi (örn: `category_id` eksik veya geçersiz)
+- `404 Not Found`: Kullanıcının tamirci profili veya belirtilen kategori(ler) bulunamadı
+- `400 Bad Request`: Geçersiz istek gövdesi
 - `500 Internal Server Error`: Sunucu hatası
 
-### 15. Tamircinin Kategorisini Silme
+### 3. Tamircinin Kategorisini Silme
 
-Bir tamircinin belirli bir kategorisini siler. İsteği yapan kullanıcı, tamircinin sahibi olmalıdır.
+Giriş yapmış kullanıcının tamirci profilinin belirli bir kategorisini siler.
 
-**URL:** `DELETE /mechanics/:id/categories/:categoryId`
+**URL:** `DELETE /mechanics/categories/:categoryId`
 
 **Parametreler:**
-- `id` (path): Tamirci ID değeri
-- `categoryId` (path): Kategori ID değeri
+- `categoryId` (path): Silinecek Kategori ID değeri
 
-**Yetkilendirme:** JWT Token gerekli, Tamirci Sahibi Olmalı (MechanicOwnerGuard)
+**Yetkilendirme:** JWT Token gerekli
 
-**Başarılı Yanıt:** (Silinen kaydın bilgileri döner)
+**Başarılı Yanıt (200 OK):** (Silinen kaydın bilgileri döner)
 ```json
 {
   "id": "mc1-uuid-1234",
@@ -715,22 +560,18 @@ Bir tamircinin belirli bir kategorisini siler. İsteği yapan kullanıcı, tamir
 
 **Hata Yanıtları:**
 - `401 Unauthorized`: Geçersiz veya eksik yetkilendirme
-- `403 Forbidden`: Kullanıcı bu işlemi yapma yetkisine sahip değil
-- `404 Not Found`: Belirtilen ID'li tamirci veya tamirciye ait belirtilen kategori kaydı bulunamadı
+- `404 Not Found`: Kullanıcının tamirci profili veya tamirciye ait belirtilen kategori kaydı bulunamadı
 - `500 Internal Server Error`: Sunucu hatası
 
-### 16. Tamircinin Kategorilerini Toplu Güncelleme
+### 4. Tamircinin Kategorilerini Toplu Güncelleme
 
-Tamircinin kategorilerini toplu olarak günceller. Mevcut kategoriler listesi, istek gövdesindeki liste ile değiştirilir. İsteği yapan kullanıcı, tamircinin sahibi olmalıdır. `mechanic_id` URL'deki `:id` parametresinden alınır.
+Giriş yapmış kullanıcının tamirci profilinin kategorilerini toplu olarak günceller. Mevcut kategoriler listesi, istek gövdesindeki liste ile değiştirilir.
 
-**URL:** `PATCH /mechanics/:id/categories`
+**URL:** `PATCH /mechanics/categories`
 
-**Parametreler:**
-- `id` (path): Tamirci ID değeri
+**Yetkilendirme:** JWT Token gerekli
 
-**Yetkilendirme:** JWT Token gerekli, Tamirci Sahibi Olmalı (MechanicOwnerGuard)
-
-**İstek Gövdesi:**
+**İstek Gövdesi:** (Sadece `category_id` içeren nesnelerden oluşan dizi)
 ```json
 [
   {
@@ -742,35 +583,17 @@ Tamircinin kategorilerini toplu olarak günceller. Mevcut kategoriler listesi, i
 ]
 ```
 
-**Başarılı Yanıt:** (Güncellenmiş kategori listesi döner)
+**Başarılı Yanıt (200 OK):** (Güncellenmiş kategori listesi döner)
 ```json
 [
-  {
-    "id": "mc1-uuid-1234",
-    "mechanic_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    "category_id": "cat1-uuid-5678",
-    "categories": {
-      "id": "cat1-uuid-5678",
-      "name": "Motor Tamiri"
-    }
-  },
-  {
-    "id": "mc5-uuid-9012",
-    "mechanic_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    "category_id": "cat5-uuid-1234",
-    "categories": {
-      "id": "cat5-uuid-1234",
-      "name": "Şanzıman Tamiri"
-    }
-  }
+  // ... güncellenmiş liste
 ]
 ```
 
 **Hata Yanıtları:**
 - `401 Unauthorized`: Geçersiz veya eksik yetkilendirme
-- `403 Forbidden`: Kullanıcı bu işlemi yapma yetkisine sahip değil
-- `404 Not Found`: Belirtilen ID'li tamirci veya istekteki kategorilerden biri bulunamadı
-- `400 Bad Request`: Geçersiz istek gövdesi (örn: boş dizi, `category_id` eksik veya geçersiz)
+- `404 Not Found`: Kullanıcının tamirci profili veya istekteki kategorilerden biri bulunamadı
+- `400 Bad Request`: Geçersiz istek gövdesi
 - `500 Internal Server Error`: Sunucu hatası
 
 ## Data Modelleri
@@ -778,16 +601,16 @@ Tamircinin kategorilerini toplu olarak günceller. Mevcut kategoriler listesi, i
 ### MechanicProfileDto
 ```typescript
 {
-  user_id?: string;       // İlişkilendirilmiş kullanıcı ID'si (POST işleminde otomatik atanır, PATCH işleminde isteğe bağlı)
+  // user_id JWT token'dan alınır, istek gövdesinde gönderilmez.
   business_name: string;  // Tamirci işletme adı (Zorunlu)
-  on_site_service?: boolean; // Yerinde servis hizmeti sunuyorsa true (İsteğe bağlı)
+  on_site_service?: boolean; // Yerinde servis hizmeti sunuyorsa true (İsteğe bağlı, varsayılan: false)
 }
 ```
 
 ### MechanicWorkingHoursDto
 ```typescript
 {
-  mechanic_id?: string;   // Tamirci ID'si (POST/PATCH işlemlerinde URL'den alınır, istek gövdesinde gönderilmez)
+  // mechanic_id JWT token'dan alınır, istek gövdesinde gönderilmez.
   day_of_week: number;    // Haftanın günü (0-6, 0 = Pazar) (Zorunlu)
   start_time: string;     // Başlangıç saati (örn: "09:00") (Zorunlu)
   end_time: string;       // Bitiş saati (örn: "18:00") (Zorunlu)
@@ -799,17 +622,17 @@ Tamircinin kategorilerini toplu olarak günceller. Mevcut kategoriler listesi, i
 ### MechanicSupportedVehicleDto
 ```typescript
 {
-  mechanic_id: string;    // Tamirci ID'si (POST/PATCH işlemlerinde URL'den alınır, istek gövdesinde gönderilmez)
+  // mechanic_id JWT token'dan alınır, istek gövdesinde gönderilmez.
   brand_id: string;       // Marka ID'si (Zorunlu)
 }
 ```
-**Not:** `POST /mechanics/:id/supported-vehicles` ve `PATCH /mechanics/:id/supported-vehicles` endpointlerinde istek gövdesi sadece `brand_id` içerir. `mechanic_id` URL'den alınır.
 
 ### MechanicCategoryDto
 ```typescript
 {
-  mechanic_id: string;    // Tamirci ID'si (POST/PATCH işlemlerinde URL'den alınır, istek gövdesinde gönderilmez)
+  // mechanic_id JWT token'dan alınır, istek gövdesinde gönderilmez.
   category_id: string;    // Kategori ID'si (Zorunlu)
 }
 ```
-**Not:** `POST /mechanics/:id/categories` ve `PATCH /mechanics/:id/categories` endpointlerinde istek gövdesi sadece `category_id` içerir. `mechanic_id` URL'den alınır.
+
+**Not:** Tüm POST ve PATCH endpointlerinde, mechanic_id kullanıcının tamirci profil ID'si olarak token'dan alınır ve istek gövdesinde gönderilmesine gerek yoktur. Controller, kullanıcının tamirci profilini kontrol eder ve ilgili mechanic_id'yi ilişkilendirir.

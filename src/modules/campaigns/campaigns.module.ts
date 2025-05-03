@@ -8,7 +8,6 @@ import { CampaignQueryService } from './services/campaign-query.service';
 import { CampaignUpdateService } from './services/campaign-update.service';
 import { CampaignDeleteService } from './services/campaign-delete.service';
 import { CampaignValidationService } from './services/campaign-validation.service';
-import { CampaignOwnerGuard } from './guards/campaign-owner.guard';
 
 @Module({
   imports: [PrismaModule, MechanicsModule], 
@@ -20,7 +19,6 @@ import { CampaignOwnerGuard } from './guards/campaign-owner.guard';
     CampaignQueryService,
     CampaignUpdateService,
     CampaignDeleteService,
-    CampaignOwnerGuard, 
   ],
   exports: [CampaignsService]
 })

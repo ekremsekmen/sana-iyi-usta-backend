@@ -41,7 +41,11 @@ export class MechanicsService {
     return this.mechanicWorkingHoursService.findByMechanic(mechanicId);
   }
 
-  updateWorkingHours(id: string, dto: MechanicWorkingHoursDto) {
+  getWorkingHourById(id: string) {
+    return this.mechanicWorkingHoursService.findOne(id);
+  }
+
+  updateWorkingHours(id: string, dto: Partial<MechanicWorkingHoursDto>) {
     return this.mechanicWorkingHoursService.update(id, dto);
   }
 

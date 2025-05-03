@@ -132,16 +132,20 @@ export class MechanicWorkingHoursService {
     return workingHours;
   }
 
-  async update(id: string, dto: MechanicWorkingHoursDto) {
+  async update(id: string, dto: Partial<MechanicWorkingHoursDto>) {
     try {
+      const updateData: any = {};
+      
+      // Only include fields that were provided in the update
+      if (dto.start_time !== undefined) updateData.start_time = dto.start_time;
+      if (dto.end_time !== undefined) updateData.end_time = dto.end_time;
+      if (dto.slot_duration !== undefined) updateData.slot_duration = dto.slot_duration;
+      if (dto.is_day_off !== undefined) updateData.is_day_off = dto.is_day_off;
+      if (dto.day_of_week !== undefined) updateData.day_of_week = dto.day_of_week;
+      
       return await this.prisma.mechanic_working_hours.update({
         where: { id },
-        data: {
-          start_time: dto.start_time,
-          end_time: dto.end_time,
-          slot_duration: dto.slot_duration,
-          is_day_off: dto.is_day_off,
-        },
+        data: updateData,
       });
     } catch (error) {
       throw new NotFoundException(`Working hours with id ${id} not found.`);

@@ -12,16 +12,13 @@ Authorization: Bearer <token>
 
 ## Endpointler
 
-### Tamirciye Ait Kampanyaları Listeleme
+### Tamircinin Kendi Kampanyalarını Listeleme
 
 ```
-GET /campaigns/mechanic/:mechanicId
+GET /campaigns
 ```
 
-**Açıklama:** Belirli bir tamirciye ait tüm kampanyaları listeler.
-
-**URL Parametreleri:**
-- `mechanicId` (UUID): Tamircinin benzersiz ID'si
+**Açıklama:** Giriş yapmış tamirciye ait tüm kampanyaları listeler.
 
 **Başarılı Yanıt (200 OK):**
 ```json
@@ -52,19 +49,17 @@ GET /campaigns/mechanic/:mechanicId
 
 **Hata Yanıtları:**
 - `400 Bad Request`: Bu tamirci için kampanya işlemi yapma yetkiniz yok
+- `404 Not Found`: Tamirci profili bulunamadı
 - `403 Forbidden`: Bu işlemi gerçekleştirme yetkiniz yok
 - `500 Internal Server Error`: Sunucu hatası
 
 ### Kampanya Oluşturma
 
 ```
-POST /campaigns/mechanic/:mechanicId
+POST /campaigns
 ```
 
-**Açıklama:** Belirli bir tamirci için yeni kampanya oluşturur.
-
-**URL Parametreleri:**
-- `mechanicId` (UUID): Tamircinin benzersiz ID'si
+**Açıklama:** Giriş yapmış tamirci için yeni kampanya oluşturur.
 
 **İstek Gövdesi:**
 ```json
@@ -122,6 +117,7 @@ POST /campaigns/mechanic/:mechanicId
   - Bir kategori için hizmet vermiyorsunuz
   - Geçersiz tarih formatı
   - Kampanya bitiş tarihi gelecek bir tarih olmalıdır
+- `404 Not Found`: Tamirci profili bulunamadı 
 - `500 Internal Server Error`: 
   - Veritabanı hatası oluştu
   - Bu kampanya bilgileri ile zaten bir kayıt mevcut
@@ -131,14 +127,13 @@ POST /campaigns/mechanic/:mechanicId
 ### Kampanya Güncelleme
 
 ```
-PATCH /campaigns/:id/mechanic/:mechanicId
+PATCH /campaigns/:id
 ```
 
 **Açıklama:** Var olan bir kampanyayı günceller.
 
 **URL Parametreleri:**
 - `id` (UUID): Kampanyanın benzersiz ID'si
-- `mechanicId` (UUID): Tamircinin benzersiz ID'si
 
 **İstek Gövdesi:**
 ```json
@@ -188,20 +183,21 @@ PATCH /campaigns/:id/mechanic/:mechanicId
   - Geçersiz tarih formatı
   - Kampanya bitiş tarihi gelecek bir tarih olmalıdır
 - `403 Forbidden`: Bu işlemi gerçekleştirme yetkiniz yok
-- `404 Not Found`: ID'si olan kampanya bulunamadı
+- `404 Not Found`: 
+  - ID'si olan kampanya bulunamadı
+  - Tamirci profili bulunamadı
 - `500 Internal Server Error`: Veritabanı hatası oluştu
 
 ### Kampanya Silme
 
 ```
-DELETE /campaigns/:id/mechanic/:mechanicId
+DELETE /campaigns/:id
 ```
 
 **Açıklama:** Var olan bir kampanyayı siler.
 
 **URL Parametreleri:**
 - `id` (UUID): Kampanyanın benzersiz ID'si
-- `mechanicId` (UUID): Tamircinin benzersiz ID'si
 
 **Başarılı Yanıt (200 OK):**
 ```json
@@ -211,9 +207,13 @@ DELETE /campaigns/:id/mechanic/:mechanicId
 ```
 
 **Hata Yanıtları:**
-- `400 Bad Request`: Bu tamirci için kampanya işlemi yapma yetkiniz yok
+- `400 Bad Request`: 
+  - Bu tamirci için kampanya işlemi yapma yetkiniz yok
+  - Bu kampanya üzerinde işlem yapma yetkiniz yok
 - `403 Forbidden`: Bu işlemi gerçekleştirme yetkiniz yok
-- `404 Not Found`: Kampanya bulunamadı veya zaten silinmiş
+- `404 Not Found`: 
+  - Kampanya bulunamadı veya zaten silinmiş
+  - Tamirci profili bulunamadı
 - `500 Internal Server Error`: Veritabanı hatası oluştu
 
 ## Veri Modelleri

@@ -12,61 +12,75 @@ import {
   HttpCode, 
   HttpStatus, 
   ParseUUIDPipe,
-  Req
+  Req,
+  NotFoundException
 } from '@nestjs/common';
 import { CampaignsService } from './campaigns.service';
 import { CampaignDto } from './dto/campaign.dto';
 import { JwtGuard } from '../../common/guards/jwt/jwt.guard';
 import { RequestWithUser } from '../../common/interfaces/request-with-user.interface';
-import { CampaignOwnerGuard } from './guards/campaign-owner.guard';
+import { MechanicsService } from '../mechanics/mechanics.service';
 
 @Controller('campaigns')
 export class CampaignsController {
-  constructor(private readonly campaignsService: CampaignsService) {}
+  constructor(
+    private readonly campaignsService: CampaignsService,
+    private readonly mechanicsService: MechanicsService
+  ) {}
 
-  @Get('mechanic/:mechanicId')
+  @Get()
   @UseGuards(JwtGuard)
   @HttpCode(HttpStatus.OK)
-  findByMechanic(
-    @Param('mechanicId', new ParseUUIDPipe()) mechanicId: string,
-    @Req() request: RequestWithUser
-  ) {
-    return this.campaignsService.findByMechanic(mechanicId, request.user.id);
+  async findByMechanic(@Req() request: RequestWithUser) {
+    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
+    if (!mechanic.hasMechanicProfile) {
+      throw new NotFoundException('Tamirci profili bulunamadı.');
+    }
+    return this.campaignsService.findByMechanic(mechanic.profile.id, request.user.id);
   }
 
-  @Post('mechanic/:mechanicId')
+  @Post()
   @UseGuards(JwtGuard)
   @UsePipes(new ValidationPipe({ whitelist: true }))
   @HttpCode(HttpStatus.CREATED)
-  create(
-    @Param('mechanicId', new ParseUUIDPipe()) mechanicId: string,
+  async create(
     @Body() createCampaignDto: CampaignDto,
     @Req() request: RequestWithUser
   ) {
-    return this.campaignsService.create(mechanicId, createCampaignDto, request.user.id);
+    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
+    if (!mechanic.hasMechanicProfile) {
+      throw new NotFoundException('Tamirci profili bulunamadı.');
+    }
+    return this.campaignsService.create(mechanic.profile.id, createCampaignDto, request.user.id);
   }
 
-  @Patch(':id/mechanic/:mechanicId')
-  @UseGuards(JwtGuard, CampaignOwnerGuard)
+  @Patch(':id')
+  @UseGuards(JwtGuard)
   @UsePipes(new ValidationPipe({ whitelist: true }))
   @HttpCode(HttpStatus.OK)
-  update(
+  async update(
     @Param('id', new ParseUUIDPipe()) id: string,
-    @Param('mechanicId', new ParseUUIDPipe()) mechanicId: string,
     @Body() updateCampaignDto: CampaignDto,
     @Req() request: RequestWithUser
   ) {
-    return this.campaignsService.update(id, mechanicId, updateCampaignDto, request.user.id);
+    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
+    if (!mechanic.hasMechanicProfile) {
+      throw new NotFoundException('Tamirci profili bulunamadı.');
+    }
+    return this.campaignsService.update(id, mechanic.profile.id, updateCampaignDto, request.user.id);
   }
 
-  @Delete(':id/mechanic/:mechanicId')
-  @UseGuards(JwtGuard, CampaignOwnerGuard)
+  @Delete(':id')
+  @UseGuards(JwtGuard)
   @HttpCode(HttpStatus.OK)
-  remove(
+  async remove(
     @Param('id', new ParseUUIDPipe()) id: string,
-    @Param('mechanicId', new ParseUUIDPipe()) mechanicId: string,
     @Req() request: RequestWithUser
   ) {
-    return this.campaignsService.remove(id, mechanicId, request.user.id);
+    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
+    if (!mechanic.hasMechanicProfile) {
+      throw new NotFoundException('Tamirci profili bulunamadı.');
+    }
+    return this.campaignsService.remove(id, mechanic.profile.id, request.user.id);
   }
 }
