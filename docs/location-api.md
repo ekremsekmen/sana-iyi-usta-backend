@@ -8,6 +8,22 @@ Bu dokümantasyon, kullanıcı konumlarının yönetimi için API endpointlerini
 /locations
 ```
 
+## Rol Bazlı Kısıtlamalar ve Davranışlar
+
+### Tamirci (Mechanic) Rolü İçin Özel Davranışlar
+
+Tamirci rolündeki kullanıcılar için aşağıdaki özel kısıtlamalar ve davranışlar geçerlidir:
+
+1. **Tek Konum Kısıtlaması**: Tamirciler aynı anda yalnızca bir konuma sahip olabilirler.
+
+2. **Otomatik Konum Güncelleme**: Tamirci kullanıcılar yeni bir konum eklemek istediklerinde:
+   - Eğer daha önce bir konumları varsa, yeni konum bilgileri otomatik olarak mevcut konumlarını günceller
+   - Hiç konumları yoksa, yeni bir konum oluşturulur
+
+3. **Konum Silme**: Tamirciler konumlarını silebilirler. Böylece daha sonra yeni bir konum ekleyebilirler.
+
+4. **Varsayılan Konum**: Tamircinin konumu, kullanıcı profilinde otomatik olarak varsayılan konum olarak ayarlanır.
+
 ## Endpointler
 
 ### 1. Konum Oluşturma

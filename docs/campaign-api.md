@@ -216,6 +216,59 @@ DELETE /campaigns/:id
   - Tamirci profili bulunamadı
 - `500 Internal Server Error`: Veritabanı hatası oluştu
 
+### Müşteriler İçin Uygun Kampanyaları Listeleme
+
+```
+GET /campaigns/campaign-for-customer
+```
+
+**Açıklama:** Giriş yapmış müşteri için uygun kampanyaları listeler. Müşterinin araç markaları ve varsayılan konum bilgisi kullanılarak kişiselleştirilmiş kampanya önerileri sunar.
+
+**Başarılı Yanıt (200 OK):**
+```json
+[
+  {
+    "id": "uuid",
+    "mechanic_id": "uuid",
+    "mechanic_name": "ABC Oto Servis",
+    "mechanic_location": {
+      "city": "İstanbul",
+      "district": "Kadıköy"
+    },
+    "title": "Kış Bakım Kampanyası",
+    "description": "Aracınız kışa hazır mı?",
+    "discount_rate": 15,
+    "valid_until": "2023-12-31T00:00:00.000Z",
+    "created_at": "2023-09-15T10:30:00.000Z",
+    "categories": [
+      {
+        "id": "uuid",
+        "name": "Motor Bakımı"
+      }
+    ],
+    "brands": [
+      {
+        "id": "uuid",
+        "name": "Toyota"
+      }
+    ]
+  }
+]
+```
+
+**Yanıt Özellikleri:**
+- Standart kampanya bilgilerine ek olarak tamirci adı ve konum bilgilerini içerir
+- Sonuçlar müşterinin araç markalarına ve konumuna göre filtrelenir
+- Sadece geçerlilik süresi dolmamış kampanyalar listelenir
+- Sonuçlar oluşturulma tarihine göre azalan sırada listelenir
+
+**Hata Yanıtları:**
+- `404 Not Found`: 
+  - Kullanıcı bulunamadı
+  - Müşteri profili bulunamadı
+- `403 Forbidden`: Bu işlemi gerçekleştirme yetkiniz yok
+- `500 Internal Server Error`: Sunucu hatası
+
 ## Veri Modelleri
 
 ### Kampanya DTO (Data Transfer Object)

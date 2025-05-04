@@ -596,6 +596,100 @@ Giriş yapmış kullanıcının tamirci profilinin kategorilerini toplu olarak g
 - `400 Bad Request`: Geçersiz istek gövdesi
 - `500 Internal Server Error`: Sunucu hatası
 
+## Tamirci Arama Endpointi
+
+### Tamircileri Arama
+
+Çeşitli kriterlere göre filtrelenmiş tamirci listesi elde etmek için kullanılır.
+
+**URL:** `POST /mechanics/search`
+
+**Yetkilendirme:** JWT Token gerekli
+
+**İstek Gövdesi:**
+```json
+{
+  "city": "İstanbul",               // Aranacak şehir (zorunlu)
+  "brandId": "uuid-123",            // Araç markası ID (zorunlu)
+  "categoryId": "uuid-456",         // Hizmet kategorisi ID (zorunlu)
+  "onSiteService": true,            // Yerinde servis tercihi (isteğe bağlı)
+  "page": 0,                        // Sayfa numarası (0'dan başlar, varsayılan: 0)
+  "limit": 20,                      // Sayfa başına sonuç sayısı (varsayılan: 20, max: 50)
+  "ratingSort": "desc",             // Puan sıralaması ("asc" veya "desc", varsayılan: "desc")
+  "sortBy": "rating"                // Sıralama kriteri ("rating" veya "distance", varsayılan: "rating")
+}
+```
+
+**Başarılı Yanıt (200 OK):**
+```json
+{
+  "mechanics": [
+    {
+      "id": "mech-uuid-123",
+      "business_name": "Ahmet Usta Oto Servis",
+      "on_site_service": true,
+      "average_rating": 4.7,
+      "user_id": "user-uuid-123",
+      "user": {
+        "full_name": "Ahmet Yılmaz",
+        "profile_image": "https://example.com/images/profile.jpg"
+      },
+      "distance": 3.2,              // Kilometre cinsinden uzaklık (kullanıcının konumu biliniyorsa)
+      "categories": [
+        {
+          "id": "cat-uuid-123",
+          "name": "Motor Tamiri"
+        },
+        {
+          "id": "cat-uuid-456",
+          "name": "Elektrik Sistemleri" 
+        }
+      ],
+      "supported_vehicles": [
+        {
+          "id": "brand-uuid-123",
+          "name": "Mercedes"
+        },
+        {
+          "id": "brand-uuid-456",
+          "name": "BMW"
+        }
+      ]
+    },
+    // ... diğer tamirciler
+  ],
+  "total": 42                      // Toplam sonuç sayısı
+}
+```
+
+**Filtreleme Bilgileri:**
+
+1. **Şehir Bazlı Filtreleme**: `city` parametresi ile belirli bir şehirdeki tamirciler listelenir. Eğer şehir belirtilmezse, kullanıcının varsayılan konumundaki şehir kullanılır.
+
+2. **Marka Bazlı Filtreleme**: `brandId` parametresi ile belirli bir araç markasında servis veren tamirciler listelenir.
+
+3. **Kategori Bazlı Filtreleme**: `categoryId` parametresi ile belirli bir hizmet kategorisinde servis veren tamirciler listelenir.
+
+4. **Yerinde Servis Filtresi**: `onSiteService` parametresi `true` olarak belirtilirse, sadece yerinde servis veren tamirciler listelenir.
+
+**Sıralama Seçenekleri:**
+
+- **Değerlendirme Puanına Göre**: `sortBy: "rating"` ile tamirciler ortalama puanlarına göre listelenir. `ratingSort` parametresi ile sıralama yönü belirlenebilir.
+
+- **Mesafeye Göre**: `sortBy: "distance"` ile tamirciler kullanıcıya olan uzaklıklarına göre yakından uzağa doğru listelenir. Bu seçenek yalnızca kullanıcının ve tamircinin konum bilgileri mevcutsa çalışır.
+
+**Sayfalama:**
+
+Sonuçlar `page` ve `limit` parametreleri ile sayfalanabilir. `page` sıfırdan başlar ve `limit` ile her sayfada kaç sonuç gösterileceği belirlenir.
+
+**Hata Yanıtları:**
+- `401 Unauthorized`: Geçersiz veya eksik yetkilendirme
+- `400 Bad Request`: Geçersiz istek gövdesi
+- `404 Not Found`: Kullanıcı bulunamadı
+- `500 Internal Server Error`: Sunucu hatası
+
+**Not:** Kullanıcının varsayılan konum bilgisi mevcut ise, sonuçlarda tamircilerin uzaklığı (`distance`) kilometre cinsinden hesaplanır ve bu değere göre sıralama yapılabilir.
+
 ## Data Modelleri
 
 ### MechanicProfileDto
@@ -635,4 +729,16 @@ Giriş yapmış kullanıcının tamirci profilinin kategorilerini toplu olarak g
 }
 ```
 
-**Not:** Tüm POST ve PATCH endpointlerinde, mechanic_id kullanıcının tamirci profil ID'si olarak token'dan alınır ve istek gövdesinde gönderilmesine gerek yoktur. Controller, kullanıcının tamirci profilini kontrol eder ve ilgili mechanic_id'yi ilişkilendirir.
+### SearchMechanicsDto
+```typescript
+{
+  city: string;                   // Aranacak şehir (Zorunlu)
+  brandId: string;                // Araç markası UUID (Zorunlu)
+  categoryId: string;             // Hizmet kategorisi UUID (Zorunlu)
+  onSiteService?: boolean;        // Yerinde servis filtresi (İsteğe bağlı)
+  page?: number;                  // Sayfa numarası (İsteğe bağlı, varsayılan: 0)
+  limit?: number;                 // Sayfa başına sonuç sayısı (İsteğe bağlı, varsayılan: 20, maximum: 50)
+  ratingSort?: 'asc' | 'desc';    // Puan sıralaması yönü (İsteğe bağlı, varsayılan: 'desc')
+  sortBy?: 'rating' | 'distance'; // Sıralama kriteri (İsteğe bağlı, varsayılan: 'rating')
+}
+```

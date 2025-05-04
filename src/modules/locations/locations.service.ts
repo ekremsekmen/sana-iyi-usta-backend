@@ -57,27 +57,33 @@ export class LocationsService {
 
     // Transaction ile tüm işlemleri atomik olarak gerçekleştir
     return this.prisma.$transaction(async (tx) => {
-      // Eğer tamircinin daha önce eklediği konum varsa
+      // Eğer tamircinin daha önce eklediği konum varsa, güncelleyelim
       if (existingLocations.length > 0) {
-        // Önce bu konumları varsayılan konum olarak kullanan kullanıcıları güncelle
-        // Konumları ID listesine dönüştür
-        const locationIds = existingLocations.map(loc => loc.id);
+        const existingLocation = existingLocations[0]; // İlk konumu alalım
         
-        // Varsayılan konum olarak bu konumları kullanan kullanıcıları güncelle
-        await tx.users.updateMany({
-          where: { 
-            default_location_id: { in: locationIds }
-          },
-          data: { default_location_id: null }
+        // Mevcut konumu güncelle
+        const updatedLocation = await tx.locations.update({
+          where: { id: existingLocation.id },
+          data: {
+            address: locationDto.address,
+            latitude: locationDto.latitude,
+            longitude: locationDto.longitude,
+            label: locationDto.label,
+            city: locationDto.city,
+            district: locationDto.district,
+          }
         });
-        
-        // Şimdi konumları güvenli bir şekilde silebiliriz
-        await tx.locations.deleteMany({
-          where: { user_id: userId }
+
+        // Güncellenmiş konumu varsayılan konum olarak ayarla
+        await tx.users.update({
+          where: { id: userId },
+          data: { default_location_id: updatedLocation.id }
         });
+
+        return updatedLocation;
       }
 
-      // Yeni konumu oluştur
+      // Yeni konumu oluştur (daha önce konum yoksa)
       const newLocation = await tx.locations.create({
         data: {
           user_id: userId,
@@ -168,12 +174,8 @@ export class LocationsService {
       select: { role: true, default_location_id: true }
     });
 
-    // Tamirci rolündeki kullanıcılara konum silme izni verme
-    if (user && user.role === 'mechanic') {
-      throw new ForbiddenException('Tamirci rolündeki kullanıcılar tek konumlarını silemez. Konum bilgilerinizi güncelleyebilirsiniz.');
-    }
-
-    // Only update if this is the default location
+    // Tamirciler de artık konumlarını silebilir
+    // Varsayılan konum olarak ayarlanmışsa, null yap
     if (user && user.default_location_id === id) {
       await this.prisma.users.update({
         where: { id: userId },
