@@ -7,6 +7,22 @@ export class LocationsService {
   constructor(private prisma: PrismaService) {}
 
   async create(userId: string, createLocationDto: LocationDto) {
+    // Kullanıcının rolünü kontrol et
+    const user = await this.prisma.users.findUnique({
+      where: { id: userId },
+      select: { role: true, default_location_id: true }
+    });
+
+    if (!user) {
+      throw new NotFoundException('Kullanıcı bulunamadı');
+    }
+
+    // Tamirci (mechanic) rolündeki kullanıcılar için özel işlem
+    if (user.role === 'mechanic') {
+      return this.handleMechanicLocation(userId, createLocationDto);
+    }
+
+    // Normal kullanıcılar için standart işlem
     const existingLocation = await this.prisma.locations.findFirst({
       where: {
         user_id: userId,
@@ -29,6 +45,58 @@ export class LocationsService {
         city: createLocationDto.city,
         district: createLocationDto.district,
       },
+    });
+  }
+
+  // Tamirci rolündeki kullanıcılar için konum işlemini yöneten yardımcı metod
+  private async handleMechanicLocation(userId: string, locationDto: LocationDto) {
+    // Kullanıcının mevcut tüm konumlarını bul
+    const existingLocations = await this.prisma.locations.findMany({
+      where: { user_id: userId }
+    });
+
+    // Transaction ile tüm işlemleri atomik olarak gerçekleştir
+    return this.prisma.$transaction(async (tx) => {
+      // Eğer tamircinin daha önce eklediği konum varsa
+      if (existingLocations.length > 0) {
+        // Önce bu konumları varsayılan konum olarak kullanan kullanıcıları güncelle
+        // Konumları ID listesine dönüştür
+        const locationIds = existingLocations.map(loc => loc.id);
+        
+        // Varsayılan konum olarak bu konumları kullanan kullanıcıları güncelle
+        await tx.users.updateMany({
+          where: { 
+            default_location_id: { in: locationIds }
+          },
+          data: { default_location_id: null }
+        });
+        
+        // Şimdi konumları güvenli bir şekilde silebiliriz
+        await tx.locations.deleteMany({
+          where: { user_id: userId }
+        });
+      }
+
+      // Yeni konumu oluştur
+      const newLocation = await tx.locations.create({
+        data: {
+          user_id: userId,
+          address: locationDto.address,
+          latitude: locationDto.latitude,
+          longitude: locationDto.longitude,
+          label: locationDto.label,
+          city: locationDto.city,
+          district: locationDto.district,
+        }
+      });
+
+      // Yeni konumu varsayılan konum olarak ayarla
+      await tx.users.update({
+        where: { id: userId },
+        data: { default_location_id: newLocation.id }
+      });
+
+      return newLocation;
     });
   }
 
@@ -57,7 +125,18 @@ export class LocationsService {
   async update(id: string, userId: string, updateLocationDto: LocationDto) {
     await this.findOne(id, userId);
 
-    return this.prisma.locations.update({
+    // Kullanıcının rolünü kontrol et
+    const user = await this.prisma.users.findUnique({
+      where: { id: userId },
+      select: { role: true }
+    });
+
+    if (!user) {
+      throw new NotFoundException('Kullanıcı bulunamadı');
+    }
+
+    // Konum güncellemesi
+    const updatedLocation = await this.prisma.locations.update({
       where: { id },
       data: {
         address: updateLocationDto.address,
@@ -68,16 +147,31 @@ export class LocationsService {
         ...(updateLocationDto.district !== undefined && { district: updateLocationDto.district }),
       },
     });
+
+    // Eğer kullanıcı tamirci rolündeyse, güncellenen konumu varsayılan yap
+    if (user.role === 'mechanic') {
+      await this.prisma.users.update({
+        where: { id: userId },
+        data: { default_location_id: id }
+      });
+    }
+
+    return updatedLocation;
   }
 
   async remove(id: string, userId: string) {
     await this.findOne(id, userId);
 
-    // First, check if this location is the user's default location
+    // Kullanıcı bilgilerini ve rolünü al
     const user = await this.prisma.users.findUnique({
       where: { id: userId },
-      select: { default_location_id: true }
+      select: { role: true, default_location_id: true }
     });
+
+    // Tamirci rolündeki kullanıcılara konum silme izni verme
+    if (user && user.role === 'mechanic') {
+      throw new ForbiddenException('Tamirci rolündeki kullanıcılar tek konumlarını silemez. Konum bilgilerinizi güncelleyebilirsiniz.');
+    }
 
     // Only update if this is the default location
     if (user && user.default_location_id === id) {

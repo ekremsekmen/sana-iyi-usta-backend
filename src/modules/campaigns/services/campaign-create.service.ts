@@ -2,20 +2,21 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CampaignDto } from '../dto/campaign.dto';
 import { CampaignValidationService } from './campaign-validation.service';
+import { NotificationsService } from '../../notifications/notifications.service';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class CampaignCreateService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly validationService: CampaignValidationService
+    private readonly validationService: CampaignValidationService,
+    private readonly notificationsService: NotificationsService
   ) {}
 
   async create(mechanicId: string, createCampaignDto: CampaignDto, userId: string) {
     try {
       const { category_ids, brand_ids, ...campaignData } = createCampaignDto;
 
-      // Validasyon işlemlerini paralel olarak çalıştıralım
       await Promise.all([
         this.validationService.validateMechanicOwnership(mechanicId, userId),
         this.validationService.validateBrands(mechanicId, brand_ids),
@@ -24,8 +25,8 @@ export class CampaignCreateService {
       
       const validUntilDate = this.validationService.validateDate(campaignData.valid_until);
 
-      return await this.prisma.$transaction(async (tx) => {
-        // Kampanyayı oluştur
+      const result = await this.prisma.$transaction(async (tx) => {
+      
         const campaign = await tx.campaigns.create({
           data: {
             title: campaignData.title,
@@ -78,7 +79,6 @@ export class CampaignCreateService {
           },
         });
 
-        // Sadeleştirilmiş yanıt oluştur
         return {
           id: campaignWithRelations.id,
           mechanic_id: campaignWithRelations.mechanic_id,
@@ -97,6 +97,19 @@ export class CampaignCreateService {
           }))
         };
       });
+
+      try {
+        await this.notificationsService.sendCampaignNotifications(
+          mechanicId,
+          result.id,
+          result.title,
+          brand_ids
+        );
+      } catch (notificationError) {
+        console.error('Kampanya bildirimleri gönderilirken hata:', notificationError);
+      }
+
+      return result;
     } catch (error) {
       this.handleErrors(error, 'Kampanya oluşturma');
     }

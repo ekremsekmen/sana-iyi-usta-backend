@@ -8,9 +8,10 @@ import { CampaignQueryService } from './services/campaign-query.service';
 import { CampaignUpdateService } from './services/campaign-update.service';
 import { CampaignDeleteService } from './services/campaign-delete.service';
 import { CampaignValidationService } from './services/campaign-validation.service';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-  imports: [PrismaModule, MechanicsModule], 
+  imports: [PrismaModule, MechanicsModule, NotificationsModule], 
   controllers: [CampaignsController],
   providers: [
     CampaignsService,

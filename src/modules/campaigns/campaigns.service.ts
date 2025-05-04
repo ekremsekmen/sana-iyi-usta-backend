@@ -29,4 +29,8 @@ export class CampaignsService {
   async remove(id: string, mechanicId: string, userId: string) {
     return this.deleteService.remove(id, mechanicId, userId);
   }
+  
+  async findCampaignsForCustomer(userId: string) {
+    return this.queryService.findCampaignsForCustomer(userId);
+  }
 }

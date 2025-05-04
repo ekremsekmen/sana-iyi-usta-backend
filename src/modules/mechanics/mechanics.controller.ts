@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, HttpCode, HttpStatus, ForbiddenException, UsePipes, ValidationPipe, ParseUUIDPipe, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, HttpCode, HttpStatus, ForbiddenException, UsePipes, ValidationPipe, ParseUUIDPipe, NotFoundException, Query } from '@nestjs/common';
 import { MechanicsService } from './mechanics.service';
 import { MechanicProfileDto } from './dto/mechanic-profile.dto';
 import { JwtGuard } from '../../common/guards';
@@ -6,6 +6,7 @@ import { RequestWithUser } from '../../common/interfaces/request-with-user.inter
 import { MechanicSupportedVehicleDto } from './dto/mechanic-supported-vehicle.dto';
 import { MechanicWorkingHoursDto } from './dto/mechanic-working-hours.dto';
 import { MechanicCategoryDto } from './dto/mechanic-category.dto';
+import { SearchMechanicsDto } from './dto/search-mechanics.dto';
 
 @Controller('mechanics')
 export class MechanicsController {
@@ -242,5 +243,17 @@ export class MechanicsController {
   @HttpCode(HttpStatus.OK)
   async checkMechanicProfile(@Req() request: RequestWithUser) {
     return this.mechanicsService.findByUserId(request.user.id);
+  }
+
+  @UseGuards(JwtGuard)
+  @Post('search')  
+  @HttpCode(HttpStatus.OK)
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async searchMechanics(
+    @Body() searchDto: SearchMechanicsDto,
+    @Req() request: RequestWithUser
+  ) {
+    // SearchDto'da ratingSort belirtilmişse, o değeri kullanarak arama yapacak
+    return this.mechanicsService.searchMechanics(request.user.id, searchDto);
   }
 }

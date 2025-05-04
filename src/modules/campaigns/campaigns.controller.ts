@@ -83,4 +83,11 @@ export class CampaignsController {
     }
     return this.campaignsService.remove(id, mechanic.profile.id, request.user.id);
   }
+  
+  @Get('campaign-for-customer')
+  @UseGuards(JwtGuard)
+  @HttpCode(HttpStatus.OK)
+  async findCampaignsForCustomer(@Req() request: RequestWithUser) {
+    return this.campaignsService.findCampaignsForCustomer(request.user.id);
+  }
 }

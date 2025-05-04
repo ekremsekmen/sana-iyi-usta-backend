@@ -3,10 +3,12 @@ import { MechanicProfileService } from './services/mechanic-profile.service';
 import { MechanicWorkingHoursService } from './services/mechanic-working-hours.service';
 import { MechanicSupportedVehiclesService } from './services/mechanic-supported-vehicles.service';
 import { MechanicCategoriesService } from './services/mechanic-categories.service';
+import { MechanicSearchService } from './services/mechanic-search.service';
 import { MechanicProfileDto } from './dto/mechanic-profile.dto';
 import { MechanicWorkingHoursDto } from './dto/mechanic-working-hours.dto';
 import { MechanicSupportedVehicleDto } from './dto/mechanic-supported-vehicle.dto';
 import { MechanicCategoryDto } from './dto/mechanic-category.dto';
+import { SearchMechanicsDto } from './dto/search-mechanics.dto';
 
 @Injectable()
 export class MechanicsService {
@@ -14,7 +16,8 @@ export class MechanicsService {
     private readonly mechanicProfileService: MechanicProfileService,
     private readonly mechanicWorkingHoursService: MechanicWorkingHoursService,
     private readonly mechanicSupportedVehiclesService: MechanicSupportedVehiclesService,
-    private readonly mechanicCategoriesService: MechanicCategoriesService
+    private readonly mechanicCategoriesService: MechanicCategoriesService,
+    private readonly mechanicSearchService: MechanicSearchService
   ) {}
 
   create(userId: string, createMechanicDto: MechanicProfileDto) {
@@ -116,5 +119,9 @@ export class MechanicsService {
 
   findByUserId(userId: string) {
     return this.mechanicProfileService.findByUserId(userId);
+  }
+
+  async searchMechanics(userId: string, searchDto: SearchMechanicsDto) {
+    return this.mechanicSearchService.searchMechanics(userId, searchDto);
   }
 }
