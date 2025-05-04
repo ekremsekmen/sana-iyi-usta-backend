@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { SearchMechanicsDto, MechanicSearchResponseDto, SortOrder, SortBy } from '../dto/search-mechanics.dto';
 import { Decimal } from '@prisma/client/runtime/library';
@@ -23,6 +23,11 @@ export class MechanicSearchService {
 
     if (!user) {
       throw new NotFoundException('Kullanıcı bulunamadı');
+    }
+
+    // Eğer şehir belirtilmemişse ve varsayılan konum ayarlanmamışsa veya şehir bilgisi yoksa hata fırlat
+    if (!searchDto.city && (!user.default_location_id || !user.locations_users_default_location_idTolocations?.city)) {
+      throw new BadRequestException('Bu hizmetten yararlanabilmek için varsayılan konumunuzu ayarlamalısınız veya arama kriterlerinde şehir belirtmelisiniz.');
     }
 
     const where: any = {};

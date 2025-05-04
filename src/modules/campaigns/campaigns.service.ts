@@ -33,4 +33,8 @@ export class CampaignsService {
   async findCampaignsForCustomer(userId: string) {
     return this.queryService.findCampaignsForCustomer(userId);
   }
+
+  async findCampaignDetails(campaignId: string) {
+    return this.queryService.findCampaignDetails(campaignId);
+  }
 }

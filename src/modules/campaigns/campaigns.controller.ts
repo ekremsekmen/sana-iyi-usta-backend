@@ -90,4 +90,13 @@ export class CampaignsController {
   async findCampaignsForCustomer(@Req() request: RequestWithUser) {
     return this.campaignsService.findCampaignsForCustomer(request.user.id);
   }
+
+  @Get(':id/details')
+  @UseGuards(JwtGuard)
+  @HttpCode(HttpStatus.OK)
+  async findCampaignDetails(
+    @Param('id', new ParseUUIDPipe()) id: string
+  ) {
+    return this.campaignsService.findCampaignDetails(id);
+  }
 }

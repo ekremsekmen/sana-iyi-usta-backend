@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { LocationDto } from './dto/location.dto';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class LocationsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private usersService: UsersService
+  ) {}
 
   async create(userId: string, createLocationDto: LocationDto) {
     // Kullanıcının rolünü kontrol et
@@ -57,6 +61,8 @@ export class LocationsService {
 
     // Transaction ile tüm işlemleri atomik olarak gerçekleştir
     return this.prisma.$transaction(async (tx) => {
+      let locationId: string;
+      
       // Eğer tamircinin daha önce eklediği konum varsa, güncelleyelim
       if (existingLocations.length > 0) {
         const existingLocation = existingLocations[0]; // İlk konumu alalım
@@ -74,35 +80,29 @@ export class LocationsService {
           }
         });
 
-        // Güncellenmiş konumu varsayılan konum olarak ayarla
-        await tx.users.update({
-          where: { id: userId },
-          data: { default_location_id: updatedLocation.id }
+        locationId = updatedLocation.id;
+      } else {
+        const newLocation = await tx.locations.create({
+          data: {
+            user_id: userId,
+            address: locationDto.address,
+            latitude: locationDto.latitude,
+            longitude: locationDto.longitude,
+            label: locationDto.label,
+            city: locationDto.city,
+            district: locationDto.district,
+          }
         });
 
-        return updatedLocation;
+        locationId = newLocation.id;
       }
 
-      // Yeni konumu oluştur (daha önce konum yoksa)
-      const newLocation = await tx.locations.create({
-        data: {
-          user_id: userId,
-          address: locationDto.address,
-          latitude: locationDto.latitude,
-          longitude: locationDto.longitude,
-          label: locationDto.label,
-          city: locationDto.city,
-          district: locationDto.district,
-        }
+      await this.usersService.setDefaultLocation(userId, locationId);
+      
+      // Oluşturulan/güncellenen konumu döndür
+      return tx.locations.findUnique({
+        where: { id: locationId }
       });
-
-      // Yeni konumu varsayılan konum olarak ayarla
-      await tx.users.update({
-        where: { id: userId },
-        data: { default_location_id: newLocation.id }
-      });
-
-      return newLocation;
     });
   }
 
@@ -156,10 +156,7 @@ export class LocationsService {
 
     // Eğer kullanıcı tamirci rolündeyse, güncellenen konumu varsayılan yap
     if (user.role === 'mechanic') {
-      await this.prisma.users.update({
-        where: { id: userId },
-        data: { default_location_id: id }
-      });
+      await this.usersService.setDefaultLocation(userId, id);
     }
 
     return updatedLocation;
@@ -174,7 +171,6 @@ export class LocationsService {
       select: { role: true, default_location_id: true }
     });
 
-    // Tamirciler de artık konumlarını silebilir
     // Varsayılan konum olarak ayarlanmışsa, null yap
     if (user && user.default_location_id === id) {
       await this.prisma.users.update({

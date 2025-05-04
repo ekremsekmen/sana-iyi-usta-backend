@@ -231,25 +231,14 @@ GET /campaigns/campaign-for-customer
     "id": "uuid",
     "mechanic_id": "uuid",
     "mechanic_name": "ABC Oto Servis",
-    "mechanic_location": {
-      "city": "İstanbul",
-      "district": "Kadıköy"
-    },
+    "mechanic_image": "https://example.com/images/profile.jpg",
     "title": "Kış Bakım Kampanyası",
-    "description": "Aracınız kışa hazır mı?",
     "discount_rate": 15,
     "valid_until": "2023-12-31T00:00:00.000Z",
-    "created_at": "2023-09-15T10:30:00.000Z",
     "categories": [
       {
         "id": "uuid",
         "name": "Motor Bakımı"
-      }
-    ],
-    "brands": [
-      {
-        "id": "uuid",
-        "name": "Toyota"
       }
     ]
   }
@@ -257,17 +246,76 @@ GET /campaigns/campaign-for-customer
 ```
 
 **Yanıt Özellikleri:**
-- Standart kampanya bilgilerine ek olarak tamirci adı ve konum bilgilerini içerir
-- Sonuçlar müşterinin araç markalarına ve konumuna göre filtrelenir
+- Sadeleştirilmiş kampanya bilgileri (başlık, indirim oranı, geçerlilik tarihi)
+- Tamirci adı ve profil resmi
+- İlgili kategori bilgileri
 - Sadece geçerlilik süresi dolmamış kampanyalar listelenir
 - Sonuçlar oluşturulma tarihine göre azalan sırada listelenir
 
 **Hata Yanıtları:**
+- `400 Bad Request`: Bu hizmetten yararlanabilmek için varsayılan konumunuzu ayarlamanız gerekiyor veya Kampanyaları görebilmek için araç ya da araçlarınızı eklemelisiniz
 - `404 Not Found`: 
   - Kullanıcı bulunamadı
   - Müşteri profili bulunamadı
 - `403 Forbidden`: Bu işlemi gerçekleştirme yetkiniz yok
 - `500 Internal Server Error`: Sunucu hatası
+
+### Kampanya Detaylarını Görüntüleme
+
+```
+GET /campaigns/:id/details
+```
+
+**Açıklama:** Belirli bir kampanyanın tüm detaylarını ve ilgili tamirci bilgilerini gösterir.
+
+**URL Parametreleri:**
+- `id` (UUID): Kampanyanın benzersiz ID'si
+
+**Başarılı Yanıt (200 OK):**
+```json
+{
+  "id": "uuid",
+  "title": "Kış Bakım Kampanyası",
+  "description": "Aracınız kışa hazır mı?",
+  "discount_rate": 15,
+  "valid_until": "2023-12-31T00:00:00.000Z",
+  "created_at": "2023-09-15T10:30:00.000Z",
+  "categories": [
+    {
+      "id": "uuid",
+      "name": "Motor Bakımı"
+    }
+  ],
+  "brands": [
+    {
+      "id": "uuid",
+      "name": "Toyota"
+    }
+  ],
+  "mechanic": {
+    "id": "uuid",
+    "business_name": "ABC Oto Servis",
+    "average_rating": 4.5,
+    "total_reviews": 28,
+    "profile_image": "https://example.com/images/profile.jpg",
+    "full_name": "Ahmet Yılmaz",
+    "locations": [
+      {
+        "id": "uuid",
+        "address": "Bağdat Caddesi No: 123",
+        "city": "İstanbul",
+        "district": "Kadıköy",
+        "latitude": 40.9876,
+        "longitude": 29.1234
+      }
+    ]
+  }
+}
+```
+
+**Hata Yanıtları:**
+- `404 Not Found`: Kampanya bulunamadı
+- `500 Internal Server Error`: Kampanya detayları sorgulanırken bir sunucu hatası oluştu
 
 ## Veri Modelleri
 
