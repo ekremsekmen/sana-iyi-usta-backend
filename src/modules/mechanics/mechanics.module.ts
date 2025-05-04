@@ -7,8 +7,14 @@ import { MechanicSupportedVehiclesService } from './services/mechanic-supported-
 import { MechanicCategoriesService } from './services/mechanic-categories.service';
 import { MechanicSearchService } from './services/mechanic-search.service';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaModule } from '../../prisma/prisma.module';
+import { LocationsModule } from '../locations/locations.module';
 
 @Module({
+  imports: [
+    PrismaModule,
+    LocationsModule
+  ],
   controllers: [MechanicsController],
   providers: [
     MechanicsService, 
