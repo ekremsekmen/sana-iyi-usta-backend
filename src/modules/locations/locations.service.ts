@@ -11,22 +11,28 @@ export class LocationsService {
   ) {}
 
   async create(userId: string, createLocationDto: LocationDto) {
-    // Kullanıcının rolünü kontrol et
     const user = await this.prisma.users.findUnique({
       where: { id: userId },
       select: { role: true, default_location_id: true }
     });
-
+  
     if (!user) {
       throw new NotFoundException('Kullanıcı bulunamadı');
     }
-
-    // Tamirci (mechanic) rolündeki kullanıcılar için özel işlem
+  
     if (user.role === 'mechanic') {
       return this.handleMechanicLocation(userId, createLocationDto);
     }
-
-    // Normal kullanıcılar için standart işlem
+  
+    // Müşteriler için konum sayısı kontrolü
+    const userLocationsCount = await this.prisma.locations.count({
+      where: { user_id: userId }
+    });
+  
+    if (userLocationsCount > 3) {
+      throw new ForbiddenException('En fazla 3 konum ekleyebilirsiniz');
+    }
+  
     const existingLocation = await this.prisma.locations.findFirst({
       where: {
         user_id: userId,
@@ -34,11 +40,11 @@ export class LocationsService {
         longitude: createLocationDto.longitude,
       },
     });
-
+  
     if (existingLocation) {
        throw new ConflictException('Bu konuma ait kayıt zaten mevcut');
     }
-
+  
     return this.prisma.locations.create({
       data: {
         user_id: userId,
@@ -52,22 +58,18 @@ export class LocationsService {
     });
   }
 
-  // Tamirci rolündeki kullanıcılar için konum işlemini yöneten yardımcı metod
   private async handleMechanicLocation(userId: string, locationDto: LocationDto) {
-    // Kullanıcının mevcut tüm konumlarını bul
     const existingLocations = await this.prisma.locations.findMany({
       where: { user_id: userId }
     });
 
-    // Transaction ile tüm işlemleri atomik olarak gerçekleştir
     return this.prisma.$transaction(async (tx) => {
       let locationId: string;
       
-      // Eğer tamircinin daha önce eklediği konum varsa, güncelleyelim
       if (existingLocations.length > 0) {
-        const existingLocation = existingLocations[0]; // İlk konumu alalım
+        const existingLocation = existingLocations[0]; 
         
-        // Mevcut konumu güncelle
+       
         const updatedLocation = await tx.locations.update({
           where: { id: existingLocation.id },
           data: {
@@ -96,10 +98,9 @@ export class LocationsService {
 
         locationId = newLocation.id;
       }
-
-      await this.usersService.setDefaultLocation(userId, locationId);
-      
-      // Oluşturulan/güncellenen konumu döndür
+       
+      await this.usersService.setDefaultLocation(userId, locationId, tx);      
+     
       return tx.locations.findUnique({
         where: { id: locationId }
       });
@@ -131,7 +132,7 @@ export class LocationsService {
   async update(id: string, userId: string, updateLocationDto: LocationDto) {
     await this.findOne(id, userId);
 
-    // Kullanıcının rolünü kontrol et
+   
     const user = await this.prisma.users.findUnique({
       where: { id: userId },
       select: { role: true }
@@ -141,48 +142,61 @@ export class LocationsService {
       throw new NotFoundException('Kullanıcı bulunamadı');
     }
 
-    // Konum güncellemesi
-    const updatedLocation = await this.prisma.locations.update({
-      where: { id },
-      data: {
-        address: updateLocationDto.address,
-        latitude: updateLocationDto.latitude,
-        longitude: updateLocationDto.longitude,
-        label: updateLocationDto.label,
-        ...(updateLocationDto.city !== undefined && { city: updateLocationDto.city }),
-        ...(updateLocationDto.district !== undefined && { district: updateLocationDto.district }),
-      },
-    });
-
-    // Eğer kullanıcı tamirci rolündeyse, güncellenen konumu varsayılan yap
     if (user.role === 'mechanic') {
-      await this.usersService.setDefaultLocation(userId, id);
-    }
+      return this.prisma.$transaction(async (tx) => {
+        
+        const updatedLocation = await tx.locations.update({
+          where: { id },
+          data: {
+            address: updateLocationDto.address,
+            latitude: updateLocationDto.latitude,
+            longitude: updateLocationDto.longitude,
+            label: updateLocationDto.label,
+            ...(updateLocationDto.city !== undefined && { city: updateLocationDto.city }),
+            ...(updateLocationDto.district !== undefined && { district: updateLocationDto.district }),
+          },
+        });
 
-    return updatedLocation;
+        await this.usersService.setDefaultLocation(userId, id, tx);
+
+        return updatedLocation;
+      });
+    } else {
+      return this.prisma.locations.update({
+        where: { id },
+        data: {
+          address: updateLocationDto.address,
+          latitude: updateLocationDto.latitude,
+          longitude: updateLocationDto.longitude,
+          label: updateLocationDto.label,
+          ...(updateLocationDto.city !== undefined && { city: updateLocationDto.city }),
+          ...(updateLocationDto.district !== undefined && { district: updateLocationDto.district }),
+        },
+      });
+    }
   }
 
   async remove(id: string, userId: string) {
     await this.findOne(id, userId);
 
-    // Kullanıcı bilgilerini ve rolünü al
-    const user = await this.prisma.users.findUnique({
-      where: { id: userId },
-      select: { role: true, default_location_id: true }
-    });
-
-    // Varsayılan konum olarak ayarlanmışsa, null yap
-    if (user && user.default_location_id === id) {
-      await this.prisma.users.update({
+    return this.prisma.$transaction(async (tx) => {
+      const user = await tx.users.findUnique({
         where: { id: userId },
-        data: { default_location_id: null },
+        select: { role: true, default_location_id: true }
       });
-    }
 
-    await this.prisma.locations.delete({
-      where: { id },
+      if (user && user.default_location_id === id) {
+        await tx.users.update({
+          where: { id: userId },
+          data: { default_location_id: null },
+        });
+      }
+
+      await tx.locations.delete({
+        where: { id },
+      });
+
+      return { message: 'Konum başarıyla silindi' };
     });
-
-    return { message: 'Konum başarıyla silindi' };
   }
 }

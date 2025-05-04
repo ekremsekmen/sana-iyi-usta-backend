@@ -50,20 +50,23 @@ export class UsersService {
     return user;
   }
 
-  async setDefaultLocation(userId: string, locationId: string) {
+  async setDefaultLocation(userId: string, locationId: string, prismaClient?: any) {
+    // Eğer dışarıdan transaction gönderilmişse onu kullan, yoksa normal prisma kullan
+    const txClient = prismaClient || this.prisma;
+    
     // İlk olarak lokasyonun kullanıcıya ait olduğunu doğrulayalım
-    const location = await this.prisma.locations.findFirst({
+    const location = await txClient.locations.findFirst({
       where: {
         id: locationId,
         user_id: userId,
       },
     });
-
+  
     if (!location) {
       throw new NotFoundException('Konum bulunamadı veya bu konuma erişim yetkiniz yok');
     }
-
-    return this.prisma.users.update({
+  
+    return txClient.users.update({
       where: { id: userId },
       data: { default_location_id: locationId },
       select: {

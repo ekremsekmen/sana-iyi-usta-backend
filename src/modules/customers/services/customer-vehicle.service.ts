@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException,ConflictException} from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateCustomerVehicleDto, CustomerVehicleResponseDto } from '../dto/customer-vehicle.dto';
 import { randomUUID } from 'crypto';
@@ -31,6 +31,18 @@ export class CustomerVehicleService {
 
     if (!customerExists) {
       throw new NotFoundException(`${customerId} ID'li müşteri bulunamadı`);
+    }
+
+    if (createVehicleDto.plate_number) {
+      const existingVehicle = await this.prisma.customer_vehicles.findFirst({
+        where: {
+          plate_number: createVehicleDto.plate_number,
+        },
+      });
+
+      if (existingVehicle) {
+        throw new ConflictException(`${createVehicleDto.plate_number} plakalı araç sistemde zaten kayıtlı`);
+      }
     }
 
     const vehicle = await this.prisma.customer_vehicles.create({
