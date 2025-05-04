@@ -12,72 +12,63 @@ import {
   HttpCode,
   UsePipes,
   ValidationPipe,
-  ParseUUIDPipe
+  ParseUUIDPipe,
+  Patch,
 } from '@nestjs/common';
 import { CustomersService } from './customers.service';
-import { CreateCustomerVehicleDto, UpdateCustomerVehicleDto } from './dto/customer-vehicle.dto';
+import { CreateCustomerVehicleDto} from './dto/customer-vehicle.dto';
 import { JwtGuard } from 'src/common/guards';
-import { CustomerOwnerGuard } from './guards/customer-owner.guard';
 import { RequestWithUser } from 'src/common/interfaces/request-with-user.interface';
 
 @Controller('customers')
 export class CustomersController {
   constructor(private readonly customersService: CustomersService) {}
 
-  @Get('profile')
+  @Get('vehicles')
   @UseGuards(JwtGuard)
   @HttpCode(HttpStatus.OK)
-  async getMyProfile(@Req() request: RequestWithUser) {
-    return this.customersService.findByUserId(request.user.id);
+  async getMyVehicles(@Req() request: RequestWithUser) {
+    return this.customersService.findAllVehiclesForUser(request.user.id);
   }
 
-  @Get(':id/vehicles')
-  @UseGuards(JwtGuard, CustomerOwnerGuard)
-  @HttpCode(HttpStatus.OK)
-  async getVehicles(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.customersService.findAllVehicles(id);
-  }
-
-  @Post(':id/vehicles')
-  @UseGuards(JwtGuard, CustomerOwnerGuard)
+  @Post('vehicles')
+  @UseGuards(JwtGuard)
   @UsePipes(new ValidationPipe({ whitelist: true }))
   @HttpCode(HttpStatus.CREATED)
-  async addVehicle(
-    @Param('id', new ParseUUIDPipe()) id: string,
-    @Body() createVehicleDto: CreateCustomerVehicleDto
+  async addMyVehicle(
+    @Body() createVehicleDto: CreateCustomerVehicleDto,
+    @Req() request: RequestWithUser
   ) {
-    return this.customersService.createVehicle(id, createVehicleDto);
+    return this.customersService.createVehicleForUser(request.user.id, createVehicleDto);
   }
 
-  @Get(':id/vehicles/:vehicleId')
-  @UseGuards(JwtGuard, CustomerOwnerGuard)
+  @Get('vehicles/:vehicleId')
+  @UseGuards(JwtGuard)
   @HttpCode(HttpStatus.OK)
-  async getVehicle(
-    @Param('id', new ParseUUIDPipe()) id: string,
-    @Param('vehicleId', new ParseUUIDPipe()) vehicleId: string
-  ) {
-    return this.customersService.findOneVehicle(vehicleId);
-  }
-
-  @Put(':id/vehicles/:vehicleId')
-  @UseGuards(JwtGuard, CustomerOwnerGuard)
-  @UsePipes(new ValidationPipe({ whitelist: true }))
-  @HttpCode(HttpStatus.OK)
-  async updateVehicle(
-    @Param('id', new ParseUUIDPipe()) id: string,
+  async getMyVehicle(
     @Param('vehicleId', new ParseUUIDPipe()) vehicleId: string,
-    @Body() updateVehicleDto: UpdateCustomerVehicleDto
+    @Req() request: RequestWithUser
   ) {
-    return this.customersService.updateVehicle(vehicleId, updateVehicleDto);
+    return this.customersService.findVehicleForUser(request.user.id, vehicleId);
   }
 
-  @Delete(':id/vehicles/:vehicleId')
-  @UseGuards(JwtGuard, CustomerOwnerGuard)
+  @Delete('vehicles/:vehicleId')
+  @UseGuards(JwtGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteVehicle(
-    @Param('id', new ParseUUIDPipe()) id: string,
-    @Param('vehicleId', new ParseUUIDPipe()) vehicleId: string
+  async deleteMyVehicle(
+    @Param('vehicleId', new ParseUUIDPipe()) vehicleId: string,
+    @Req() request: RequestWithUser
   ) {
-    return this.customersService.removeVehicle(vehicleId);
+    return this.customersService.removeVehicleForUser(request.user.id, vehicleId);
+  }
+
+  @Get('vehicles/:vehicleId/maintenance-records')
+  @UseGuards(JwtGuard)
+  @HttpCode(HttpStatus.OK)
+  async getVehicleMaintenanceRecords(
+    @Param('vehicleId', new ParseUUIDPipe()) vehicleId: string,
+    @Req() request: RequestWithUser
+  ) {
+    return this.customersService.findVehicleMaintenanceRecords(request.user.id, vehicleId);
   }
 }

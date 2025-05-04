@@ -139,41 +139,20 @@ export class EmailService {
         },
       },
     });
-
+  
     if (!verification) {
-      const verifiedUser = await this.prisma.user_auth.findFirst({
-        where: {
-          auth_provider: 'local',
-          e_mail_verified: true,
-          users: {
-            e_mail: verification?.users?.e_mail,
-          },
-        },
-        include: {
-          users: true,
-        },
-      });
-
-      if (verifiedUser) {
-        return {
-          redirectUrl: this.buildEmailVerificationUrl(
-            verifiedUser.users.e_mail,
-            'already-verified',
-          ),
-        };
-      }
-
+      // Geçersiz token durumunda doğrudan hata fırlat
       throw new NotFoundException(ERROR_MESSAGES.INVALID_VERIFICATION_LINK);
     }
-
+  
     if (verification.expires_at < new Date()) {
       throw new BadRequestException(ERROR_MESSAGES.VERIFICATION_LINK_EXPIRED);
     }
-
+  
     const existingVerification = verification.users.user_auth.some(
       (auth) => auth.auth_provider === 'local' && auth.e_mail_verified,
     );
-
+  
     if (existingVerification) {
       return {
         redirectUrl: this.buildEmailVerificationUrl(
@@ -182,9 +161,9 @@ export class EmailService {
         ),
       };
     }
-
+  
     await this.processVerifiedUser(verification);
-
+  
     return {
       redirectUrl: this.buildEmailVerificationUrl(
         verification.users.e_mail,

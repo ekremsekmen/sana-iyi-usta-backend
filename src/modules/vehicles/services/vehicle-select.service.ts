@@ -69,9 +69,13 @@ export class VehicleSelectService {
 
     return {
       brand: variant.model_years.models.brands.name,
+      brandId: variant.model_years.models.brands.id,
       model: variant.model_years.models.name,
+      modelId: variant.model_years.models.id,
       year: variant.model_years.year,
+      yearId: variant.model_years.id,
       variant: variant.name,
+      variantId: variant.id,
     };
   }
 }

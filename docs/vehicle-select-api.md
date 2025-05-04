@@ -163,9 +163,13 @@ Varyant ID'sini kullanarak araç hakkında tam bilgiyi getirir.
 ```json
 {
   "brand": "Audi",
+  "brandId": "1",
   "model": "A3",
+  "modelId": "1",
   "year": 2023,
-  "variant": "1.4 TSI"
+  "yearId": "1",
+  "variant": "1.4 TSI",
+  "variantId": "1"
 }
 ```
 
@@ -214,9 +218,13 @@ Varyant ID'sini kullanarak araç hakkında tam bilgiyi getirir.
 ### VehicleInfoDto
 ```
 {
-  brand: string;   // Marka adı
-  model: string;   // Model adı
-  year: number;    // Üretim yılı
-  variant: string; // Varyant adı
+  brand: string;     // Marka adı
+  brandId: string;   // Marka ID'si
+  model: string;     // Model adı
+  modelId: string;   // Model ID'si
+  year: number;      // Üretim yılı
+  yearId: string;    // Üretim yılı ID'si
+  variant: string;   // Varyant adı
+  variantId: string; // Varyant ID'si
 }
 ```

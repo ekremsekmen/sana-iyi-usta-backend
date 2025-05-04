@@ -22,27 +22,7 @@ export class CreateCustomerVehicleDto {
   plate_number?: string;
 }
 
-export class UpdateCustomerVehicleDto {
-  @IsOptional()
-  @IsUUID()
-  brand_id?: string;
 
-  @IsOptional()
-  @IsUUID()
-  model_id?: string;
-
-  @IsOptional()
-  @IsUUID()
-  model_year_id?: string;
-
-  @IsOptional()
-  @IsUUID()
-  variant_id?: string;
-
-  @IsOptional()
-  @IsString()
-  plate_number?: string;
-}
 
 export class CustomerVehicleResponseDto {
   id: string;

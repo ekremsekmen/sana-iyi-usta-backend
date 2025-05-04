@@ -59,7 +59,15 @@ export class VehicleInfoDto {
 
   @IsString()
   @IsNotEmpty()
+  brandId: string;
+
+  @IsString()
+  @IsNotEmpty()
   model: string;
+
+  @IsString()
+  @IsNotEmpty()
+  modelId: string;
 
   @IsNumber()
   @IsNotEmpty()
@@ -67,5 +75,13 @@ export class VehicleInfoDto {
 
   @IsString()
   @IsNotEmpty()
+  yearId: string;
+
+  @IsString()
+  @IsNotEmpty()
   variant: string;
+
+  @IsString()
+  @IsNotEmpty()
+  variantId: string;
 }
