@@ -1,7 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { UpdateUserDto, UserProfileResponseDto } from './dto/user-profile.dto';
-import { DefaultLocationResponseDto } from './dto/default-location.dto';
+import { 
+  DefaultLocationResponseDto, 
+  UpdateUserDto, 
+  UserProfileResponseDto, 
+  BasicUserInfo, 
+  BasicMechanicInfo, 
+  BasicCustomerInfo 
+} from './dto/user-profile.dto';
 
 @Injectable()
 export class UsersService {
@@ -16,20 +22,7 @@ export class UsersService {
         phone_number: true,
         role: true,
         profile_image: true,
-        created_at: true,
         e_mail: true,
-        default_location_id: true,
-        locations_users_default_location_idTolocations: {
-          select: {
-            id: true,
-            address: true,
-            city: true,
-            district: true,
-            label: true,
-            latitude: true,
-            longitude: true,
-          },
-        },
       },
     });
 
@@ -37,52 +30,55 @@ export class UsersService {
       throw new NotFoundException(`Kullanıcı #${id} bulunamadı`);
     }
 
-    // Varsayılan konumu hazırla
-    const defaultLocation = user.default_location_id 
-      ? user.locations_users_default_location_idTolocations 
-      : null;
-
-    // Kullanıcı nesnesini oluştur
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { default_location_id, locations_users_default_location_idTolocations, ...userWithoutLocation } = user;
-    const userDto = {
-      ...userWithoutLocation,
-      default_location: defaultLocation,
-      user_role: user.role, // Rol bilgisini açık şekilde belirtelim
+    // Basitleştirilmiş kullanıcı nesnesi
+    const userInfo: BasicUserInfo = {
+      id: user.id,
+      full_name: user.full_name,
+      phone_number: user.phone_number,
+      role: user.role,
+      profile_image: user.profile_image,
+      email: user.e_mail
     };
 
     const response: UserProfileResponseDto = {
-      user: userDto
+      user: userInfo
     };
 
     if (user.role === 'mechanic') {
       const mechanic = await this.prisma.mechanics.findFirst({
         where: { user_id: id },
-        include: {
-          mechanic_categories: {
-            include: {
-              categories: true
-            }
-          },
-          mechanic_working_hours: true,
-          mechanic_supported_vehicles: {
-            include: {
-              brands: true
-            }
-          }
+        select: {
+          id: true,
+          business_name: true,
+          on_site_service: true,
+          average_rating: true,
         }
       });
 
       if (mechanic) {
-        response.mechanic = mechanic;
+        const mechanicInfo: BasicMechanicInfo = {
+          id: mechanic.id,
+          business_name: mechanic.business_name,
+          on_site_service: mechanic.on_site_service,
+          average_rating: mechanic.average_rating ? Number(mechanic.average_rating) : undefined,
+        };
+        
+        response.mechanic = mechanicInfo;
       }
     } else if (user.role === 'customer') {
       const customer = await this.prisma.customers.findFirst({
         where: { user_id: id },
+        select: {
+          id: true,
+        }
       });
 
       if (customer) {
-        response.customer = customer;
+        const customerInfo: BasicCustomerInfo = {
+          id: customer.id,
+        };
+        
+        response.customer = customerInfo;
       }
     }
     
@@ -96,15 +92,14 @@ export class UsersService {
         phone_number: updateUserDto.phone_number,
         profile_image: updateUserDto.profile_image,
         full_name: updateUserDto.full_name,
+        role: updateUserDto.role,
       },
       select: {
         id: true,
         full_name: true,
         phone_number: true,
         profile_image: true,
-        e_mail: true,
         role: true,
-        created_at: true,
       },
     });
 

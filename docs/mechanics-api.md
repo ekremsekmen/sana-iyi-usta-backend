@@ -766,6 +766,169 @@ Sonuçlar `page` ve `limit` parametreleri ile sayfalanabilir. `page` sıfırdan 
 
 **Not:** Kullanıcının varsayılan konum bilgisi mevcut ise, sonuçlarda tamircilerin uzaklığı (`distance`) kilometre cinsinden hesaplanır ve bu değere göre sıralama yapılabilir.
 
+## Tamirci Detay Endpointleri
+
+### Kullanıcı ID'si İle Tamirci Detaylarını Getirme
+
+Belirli bir kullanıcıya ait tamirci profilinin tüm detaylı bilgilerini getirir. Bu, tamirci profili, temel kullanıcı bilgileri, çalışma saatleri, desteklenen araçlar, hizmet kategorileri ve müşteri değerlendirmelerini içeren kapsamlı bir veri kümesidir.
+
+**URL:** `GET /mechanics/detail-by-userid/:userId`
+
+**Parametreler:**
+- `userId` (path): Tamirci detayları getirilecek kullanıcının ID değeri
+
+**Yetkilendirme:** JWT Token gerekli
+
+**Başarılı Yanıt (200 OK):**
+```json
+{
+  "user": {
+    "id": "u1s2e3r4-5678-90ab-cdef-ghijklmnopqr",
+    "full_name": "Ahmet Yılmaz",
+    "phone_number": "+905551234567",
+    "profile_image": "https://example.com/images/profile.jpg",
+    "email": "ahmet@ornek.com",
+    "default_location": {
+      "id": "loc1-uuid-1234",
+      "city": "İstanbul",
+      "district": "Kadıköy",
+      "address": "Örnek Mahallesi, Örnek Sokak No:1",
+      "latitude": 40.9876,
+      "longitude": 29.0123
+    },
+    "locations": [
+      // Tüm kayıtlı konumlar
+    ]
+  },
+  "mechanic": {
+    "id": "mech-uuid-1234",
+    "business_name": "Ahmet Usta Oto Servis",
+    "on_site_service": true,
+    "average_rating": 4.8,
+    "created_at": "2023-01-15T08:30:00Z"
+  },
+  "working_hours": [
+    {
+      "id": "wh1-uuid-1234",
+      "mechanic_id": "mech-uuid-1234",
+      "day_of_week": 1,
+      "start_time": "09:00",
+      "end_time": "18:00",
+      "slot_duration": 30,
+      "is_day_off": false
+    },
+    // Diğer çalışma saatleri
+  ],
+  "supported_vehicles": [
+    {
+      "id": "sv1-uuid-1234",
+      "brand": {
+        "id": "br1-uuid-5678",
+        "name": "Mercedes"
+      }
+    },
+    // Diğer desteklenen araçlar
+  ],
+  "categories": [
+    {
+      "id": "mc1-uuid-1234",
+      "category": {
+        "id": "cat1-uuid-5678",
+        "name": "Motor Tamiri"
+      }
+    },
+    // Diğer hizmet kategorileri
+  ],
+  "ratings": [
+    {
+      "id": "rat1-uuid-1234",
+      "rating": 5,
+      "review": "Harika servis, çok memnun kaldım. İşini titizlikle yapıyor.",
+      "mechanic_response": "Değerlendirmeniz için teşekkürler, tekrar görüşmek dileğiyle!",
+      "created_at": "2023-05-20T14:30:00Z",
+      "customer": {
+        "id": "cust1-uuid-5678",
+        "full_name": "Mehmet Demir",
+        "profile_image": "https://example.com/images/mehmet.jpg"
+      }
+    },
+    // Diğer değerlendirmeler (en yeniden en eskiye doğru sıralı)
+  ]
+}
+```
+
+**Hata Yanıtları:**
+- `401 Unauthorized`: Geçersiz veya eksik yetkilendirme
+- `404 Not Found`: Belirtilen ID'ye sahip kullanıcı veya kullanıcıya ait tamirci profili bulunamadı
+- `500 Internal Server Error`: Sunucu hatası
+
+### Tamirci ID'si İle Tamirci Detaylarını Getirme
+
+Belirli bir tamirci ID'sine ait tamirci profilinin tüm detaylı bilgilerini getirir. Kullanıcı ID'si yerine doğrudan tamirci ID'si ile sorgulama yapabilmek için kullanılır.
+
+**URL:** `GET /mechanics/detail-by-mechanicid/:mechanicId`
+
+**Parametreler:**
+- `mechanicId` (path): Detayları getirilecek tamircinin ID değeri
+
+**Yetkilendirme:** JWT Token gerekli
+
+**Başarılı Yanıt (200 OK):**
+```json
+{
+  "user": {
+    "id": "u1s2e3r4-5678-90ab-cdef-ghijklmnopqr",
+    "full_name": "Ahmet Yılmaz",
+    "phone_number": "+905551234567",
+    "profile_image": "https://example.com/images/profile.jpg",
+    "email": "ahmet@ornek.com",
+    "default_location": {
+      "id": "loc1-uuid-1234",
+      "city": "İstanbul",
+      "district": "Kadıköy",
+      "address": "Örnek Mahallesi, Örnek Sokak No:1",
+      "latitude": 40.9876,
+      "longitude": 29.0123
+    },
+    "locations": [
+      // Tüm kayıtlı konumlar
+    ]
+  },
+  "mechanic": {
+    "id": "mech-uuid-1234",
+    "business_name": "Ahmet Usta Oto Servis",
+    "on_site_service": true,
+    "average_rating": 4.8,
+    "created_at": "2023-01-15T08:30:00Z"
+  },
+  "working_hours": [
+    // Çalışma saatleri bilgileri
+  ],
+  "supported_vehicles": [
+    // Desteklenen araçlar bilgileri
+  ],
+  "categories": [
+    // Hizmet kategorileri bilgileri
+  ],
+  "ratings": [
+    // Değerlendirmeler
+  ]
+}
+```
+
+**Hata Yanıtları:**
+- `401 Unauthorized`: Geçersiz veya eksik yetkilendirme
+- `404 Not Found`: Belirtilen ID'ye sahip tamirci profili bulunamadı
+- `500 Internal Server Error`: Sunucu hatası
+
+**Kullanım Notları:**
+- Bu endpoint'ler tamirci profiline ait tüm ilişkili verileri tek bir istekte getirir, böylece ön yüz uygulamalarında tamirci profil sayfalarını oluşturmak için gereken tüm bilgiler tek seferde sağlanır.
+- Kullanıcı bilgileri bölümü, iletişim ve konum bilgilerini içerir.
+- Çalışma saatleri, hafta içindeki her gün için sıralı olarak sunulur.
+- Desteklenen araçlar, tamircinin servis verebileceği tüm araç markalarını listeler.
+- Kategoriler, tamircinin uzmanlaştığı hizmet türlerini gösterir.
+- Değerlendirmeler bölümü, müşterilerin yaptığı yorumları ve puanlamaları içerir. Tamircinin cevapları da (varsa) burada görüntülenir.
+
 ## Data Modelleri
 
 ### MechanicProfileDto

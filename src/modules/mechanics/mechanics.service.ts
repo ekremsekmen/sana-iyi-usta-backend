@@ -5,6 +5,7 @@ import { MechanicSupportedVehiclesService } from './services/mechanic-supported-
 import { MechanicCategoriesService } from './services/mechanic-categories.service';
 import { MechanicSearchService } from './services/mechanic-search.service';
 import { MechanicVehicleMaintenanceService } from './services/mechanic-vehicle-maintenance.service';
+import { MechanicDetailService } from './services/mechanic-detail.service';
 import { MechanicProfileDto } from './dto/mechanic-profile.dto';
 import { MechanicWorkingHoursDto } from './dto/mechanic-working-hours.dto';
 import { MechanicSupportedVehicleDto } from './dto/mechanic-supported-vehicle.dto';
@@ -20,7 +21,8 @@ export class MechanicsService {
     private readonly mechanicSupportedVehiclesService: MechanicSupportedVehiclesService,
     private readonly mechanicCategoriesService: MechanicCategoriesService,
     private readonly mechanicSearchService: MechanicSearchService,
-    private readonly mechanicVehicleMaintenanceService: MechanicVehicleMaintenanceService
+    private readonly mechanicVehicleMaintenanceService: MechanicVehicleMaintenanceService,
+    private readonly mechanicDetailService: MechanicDetailService
   ) {}
 
   create(userId: string, createMechanicDto: MechanicProfileDto) {
@@ -150,5 +152,13 @@ export class MechanicsService {
       throw new NotFoundException('Belirtilen çalışma saati kaydı bulunamadı veya bu tamirciye ait değil.');
     }
     return existingHours;
+  }
+
+  async getMechanicDetailByUserId(userId: string) {
+    return this.mechanicDetailService.getMechanicDetailByUserId(userId);
+  }
+  
+  async getMechanicDetailById(mechanicId: string) {
+    return this.mechanicDetailService.getMechanicDetailById(mechanicId);
   }
 }

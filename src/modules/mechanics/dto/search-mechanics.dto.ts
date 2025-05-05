@@ -66,4 +66,5 @@ export class MechanicSearchResponseDto {
     id: string;
     name: string;
   }[];
+  total_reviews?: number;
 }

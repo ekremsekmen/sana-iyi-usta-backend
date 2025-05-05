@@ -233,4 +233,19 @@ export class MechanicsController {
     const mechanicProfile = await this.mechanicsService.validateAndGetMechanicProfile(request.user.id);
     return this.mechanicsService.getMaintenanceRecordsByVehicle(mechanicProfile.id, vehicleId);
   }
+
+ 
+  @UseGuards(JwtGuard)
+  @Get('detail-by-userid/:userId')
+  @HttpCode(HttpStatus.OK)
+  async getMechanicDetailByUserId(@Param('userId', new ParseUUIDPipe()) userId: string) {
+    return this.mechanicsService.getMechanicDetailByUserId(userId);
+  }
+ 
+  @UseGuards(JwtGuard)
+  @Get('detail-by-mechanicid/:mechanicId')
+  @HttpCode(HttpStatus.OK)
+  async getMechanicById(@Param('mechanicId', new ParseUUIDPipe()) mechanicId: string) {
+    return this.mechanicsService.getMechanicDetailById(mechanicId);
+  }
 }
