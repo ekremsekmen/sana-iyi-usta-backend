@@ -1,7 +1,9 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, HttpCode, HttpStatus, ForbiddenException, UsePipes, ValidationPipe, ParseUUIDPipe, NotFoundException, Query } from '@nestjs/common';
 import { MechanicsService } from './mechanics.service';
 import { MechanicProfileDto } from './dto/mechanic-profile.dto';
-import { JwtGuard } from '../../common/guards';
+import { JwtGuard, RolesGuard } from '../../common/guards';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { Role } from '../../common/enums/roles.enum';
 import { RequestWithUser } from '../../common/interfaces/request-with-user.interface';
 import { MechanicSupportedVehicleDto } from './dto/mechanic-supported-vehicle.dto';
 import { MechanicWorkingHoursDto } from './dto/mechanic-working-hours.dto';
@@ -10,13 +12,14 @@ import { SearchMechanicsDto } from './dto/search-mechanics.dto';
 import { CreateVehicleMaintenanceRecordDto } from './dto/create-vehicle-maintenance-record.dto';
 
 @Controller('mechanics')
+@UseGuards(JwtGuard, RolesGuard)
 export class MechanicsController {
   constructor(
     private readonly mechanicsService: MechanicsService,
   ) {}
 
-  @UseGuards(JwtGuard)
   @Post()
+  @Roles(Role.MECHANIC)
   @UsePipes(new ValidationPipe({ whitelist: true }))
   @HttpCode(HttpStatus.CREATED)
   create(@Body() mechanicProfileDto: MechanicProfileDto, @Req() request: RequestWithUser) {
@@ -27,11 +30,8 @@ export class MechanicsController {
   @Get()
   @HttpCode(HttpStatus.OK)
   async findOne(@Req() request: RequestWithUser) {
-    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
-    if (!mechanic.hasMechanicProfile) {
-      throw new NotFoundException('Tamirci profili bulunamadı.');
-    }
-    return mechanic.profile;
+    const mechanicProfile = await this.mechanicsService.validateAndGetMechanicProfile(request.user.id);
+    return mechanicProfile;
   }
 
   @UseGuards(JwtGuard)
@@ -42,33 +42,24 @@ export class MechanicsController {
     @Body() mechanicProfileDto: MechanicProfileDto,
     @Req() request: RequestWithUser
   ) {
-    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
-    if (!mechanic.hasMechanicProfile) {
-      throw new NotFoundException('Tamirci profili bulunamadı.');
-    }
-    return this.mechanicsService.update(mechanic.profile.id, request.user.id, mechanicProfileDto);
+    const mechanicProfile = await this.mechanicsService.validateAndGetMechanicProfile(request.user.id);
+    return this.mechanicsService.update(mechanicProfile.id, request.user.id, mechanicProfileDto);
   }
 
   @UseGuards(JwtGuard)
   @Delete()
   @HttpCode(HttpStatus.OK)
   async remove(@Req() request: RequestWithUser) {
-    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
-    if (!mechanic.hasMechanicProfile) {
-      throw new NotFoundException('Tamirci profili bulunamadı.');
-    }
-    return this.mechanicsService.remove(mechanic.profile.id);
+    const mechanicProfile = await this.mechanicsService.validateAndGetMechanicProfile(request.user.id);
+    return this.mechanicsService.remove(mechanicProfile.id);
   }
 
   @UseGuards(JwtGuard)
   @Get('supported-vehicles')
   @HttpCode(HttpStatus.OK)
   async getSupportedVehicles(@Req() request: RequestWithUser) {
-    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
-    if (!mechanic.hasMechanicProfile) {
-      throw new NotFoundException('Tamirci profili bulunamadı.');
-    }
-    return this.mechanicsService.getSupportedVehicles(mechanic.profile.id);
+    const mechanicProfile = await this.mechanicsService.validateAndGetMechanicProfile(request.user.id);
+    return this.mechanicsService.getSupportedVehicles(mechanicProfile.id);
   }
 
   @UseGuards(JwtGuard)
@@ -79,11 +70,8 @@ export class MechanicsController {
     @Body() body: MechanicSupportedVehicleDto | MechanicSupportedVehicleDto[],
     @Req() request: RequestWithUser
   ) {
-    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
-    if (!mechanic.hasMechanicProfile) {
-      throw new NotFoundException('Tamirci profili bulunamadı.');
-    }
-    return this.mechanicsService.addSupportedVehicleForMechanic(mechanic.profile.id, body);
+    const mechanicProfile = await this.mechanicsService.validateAndGetMechanicProfile(request.user.id);
+    return this.mechanicsService.addSupportedVehicleForMechanic(mechanicProfile.id, body);
   }
 
   @UseGuards(JwtGuard)
@@ -93,11 +81,8 @@ export class MechanicsController {
     @Param('brandId', new ParseUUIDPipe()) brandId: string,
     @Req() request: RequestWithUser
   ) {
-    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
-    if (!mechanic.hasMechanicProfile) {
-      throw new NotFoundException('Tamirci profili bulunamadı.');
-    }
-    return this.mechanicsService.removeSupportedVehicleByBrand(mechanic.profile.id, brandId);
+    const mechanicProfile = await this.mechanicsService.validateAndGetMechanicProfile(request.user.id);
+    return this.mechanicsService.removeSupportedVehicleByBrand(mechanicProfile.id, brandId);
   }
 
   @UseGuards(JwtGuard)
@@ -108,22 +93,16 @@ export class MechanicsController {
     @Body() dto: MechanicSupportedVehicleDto[],
     @Req() request: RequestWithUser
   ) {
-    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
-    if (!mechanic.hasMechanicProfile) {
-      throw new NotFoundException('Tamirci profili bulunamadı.');
-    }
-    return this.mechanicsService.updateSupportedVehiclesForMechanic(mechanic.profile.id, dto);
+    const mechanicProfile = await this.mechanicsService.validateAndGetMechanicProfile(request.user.id);
+    return this.mechanicsService.updateSupportedVehiclesForMechanic(mechanicProfile.id, dto);
   }
 
   @UseGuards(JwtGuard)
   @Get('working-hours')
   @HttpCode(HttpStatus.OK)
   async getWorkingHours(@Req() request: RequestWithUser) {
-    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
-    if (!mechanic.hasMechanicProfile) {
-      throw new NotFoundException('Tamirci profili bulunamadı.');
-    }
-    return this.mechanicsService.getWorkingHours(mechanic.profile.id);
+    const mechanicProfile = await this.mechanicsService.validateAndGetMechanicProfile(request.user.id);
+    return this.mechanicsService.getWorkingHours(mechanicProfile.id);
   }
 
   @UseGuards(JwtGuard)
@@ -134,11 +113,8 @@ export class MechanicsController {
     @Body() mechanicWorkingHoursDto: MechanicWorkingHoursDto | MechanicWorkingHoursDto[],
     @Req() request: RequestWithUser
   ) {
-    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
-    if (!mechanic.hasMechanicProfile) {
-      throw new NotFoundException('Tamirci profili bulunamadı.');
-    }
-    return this.mechanicsService.createWorkingHours(mechanic.profile.id, mechanicWorkingHoursDto);
+    const mechanicProfile = await this.mechanicsService.validateAndGetMechanicProfile(request.user.id);
+    return this.mechanicsService.createWorkingHours(mechanicProfile.id, mechanicWorkingHoursDto);
   }
 
   @UseGuards(JwtGuard)
@@ -150,16 +126,10 @@ export class MechanicsController {
     mechanicWorkingHoursDto: Partial<MechanicWorkingHoursDto>,
     @Req() request: RequestWithUser
   ) {
-    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
-    if (!mechanic.hasMechanicProfile) {
-      throw new NotFoundException('Tamirci profili bulunamadı.');
-    }
+    const mechanicProfile = await this.mechanicsService.validateAndGetMechanicProfile(request.user.id);
     
-    // Find existing working hours to ensure it belongs to this mechanic
-    const existingHours = await this.mechanicsService.getWorkingHourById(hourId);
-    if (!existingHours || existingHours.mechanic_id !== mechanic.profile.id) {
-      throw new NotFoundException('Belirtilen çalışma saati kaydı bulunamadı veya bu tamirciye ait değil.');
-    }
+    // Çalışma saati doğrulaması
+    await this.mechanicsService.validateWorkingHourBelongsToMechanic(hourId, mechanicProfile.id);
     
     return this.mechanicsService.updateWorkingHours(hourId, mechanicWorkingHoursDto);
   }
@@ -171,15 +141,10 @@ export class MechanicsController {
     @Param('hourId', new ParseUUIDPipe()) hourId: string,
     @Req() request: RequestWithUser
   ) {
-    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
-    if (!mechanic.hasMechanicProfile) {
-      throw new NotFoundException('Tamirci profili bulunamadı.');
-    }
+    const mechanicProfile = await this.mechanicsService.validateAndGetMechanicProfile(request.user.id);
     
-    const existingHours = await this.mechanicsService.getWorkingHourById(hourId);
-    if (!existingHours || existingHours.mechanic_id !== mechanic.profile.id) {
-      throw new NotFoundException('Belirtilen çalışma saati kaydı bulunamadı veya bu tamirciye ait değil.');
-    }
+    // Çalışma saati doğrulaması
+    await this.mechanicsService.validateWorkingHourBelongsToMechanic(hourId, mechanicProfile.id);
     
     return this.mechanicsService.deleteWorkingHours(hourId);
   }
@@ -188,11 +153,8 @@ export class MechanicsController {
   @Get('categories')
   @HttpCode(HttpStatus.OK)
   async getCategories(@Req() request: RequestWithUser) {
-    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
-    if (!mechanic.hasMechanicProfile) {
-      throw new NotFoundException('Tamirci profili bulunamadı.');
-    }
-    return this.mechanicsService.getCategories(mechanic.profile.id);
+    const mechanicProfile = await this.mechanicsService.validateAndGetMechanicProfile(request.user.id);
+    return this.mechanicsService.getCategories(mechanicProfile.id);
   }
 
   @UseGuards(JwtGuard)
@@ -203,11 +165,8 @@ export class MechanicsController {
     @Body() body: MechanicCategoryDto | MechanicCategoryDto[],
     @Req() request: RequestWithUser
   ) {
-    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
-    if (!mechanic.hasMechanicProfile) {
-      throw new NotFoundException('Tamirci profili bulunamadı.');
-    }
-    return this.mechanicsService.addCategoryForMechanic(mechanic.profile.id, body);
+    const mechanicProfile = await this.mechanicsService.validateAndGetMechanicProfile(request.user.id);
+    return this.mechanicsService.addCategoryForMechanic(mechanicProfile.id, body);
   }
 
   @UseGuards(JwtGuard)
@@ -217,11 +176,8 @@ export class MechanicsController {
     @Param('categoryId', new ParseUUIDPipe()) categoryId: string,
     @Req() request: RequestWithUser
   ) {
-    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
-    if (!mechanic.hasMechanicProfile) {
-      throw new NotFoundException('Tamirci profili bulunamadı.');
-    }
-    return this.mechanicsService.removeCategoryByMechanicAndCategory(mechanic.profile.id, categoryId);
+    const mechanicProfile = await this.mechanicsService.validateAndGetMechanicProfile(request.user.id);
+    return this.mechanicsService.removeCategoryByMechanicAndCategory(mechanicProfile.id, categoryId);
   }
 
   @UseGuards(JwtGuard)
@@ -232,11 +188,8 @@ export class MechanicsController {
     @Body() dto: MechanicCategoryDto[],
     @Req() request: RequestWithUser
   ) {
-    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
-    if (!mechanic.hasMechanicProfile) {
-      throw new NotFoundException('Tamirci profili bulunamadı.');
-    }
-    return this.mechanicsService.updateCategoriesForMechanic(mechanic.profile.id, dto);
+    const mechanicProfile = await this.mechanicsService.validateAndGetMechanicProfile(request.user.id);
+    return this.mechanicsService.updateCategoriesForMechanic(mechanicProfile.id, dto);
   }
 
   @UseGuards(JwtGuard)
@@ -254,23 +207,20 @@ export class MechanicsController {
     @Body() searchDto: SearchMechanicsDto,
     @Req() request: RequestWithUser
   ) {
-    // SearchDto'da ratingSort belirtilmişse, o değeri kullanarak arama yapacak
     return this.mechanicsService.searchMechanics(request.user.id, searchDto);
   }
 
   @UseGuards(JwtGuard)
   @Post('maintenance-records')
+  @Roles(Role.MECHANIC)
   @UsePipes(new ValidationPipe({ whitelist: true }))
   @HttpCode(HttpStatus.CREATED)
   async createMaintenanceRecord(
     @Body() dto: CreateVehicleMaintenanceRecordDto,
     @Req() request: RequestWithUser
   ) {
-    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
-    if (!mechanic.hasMechanicProfile) {
-      throw new NotFoundException('Tamirci profili bulunamadı.');
-    }
-    return this.mechanicsService.createMaintenanceRecord(mechanic.profile.id, dto);
+    const mechanicProfile = await this.mechanicsService.validateAndGetMechanicProfile(request.user.id);
+    return this.mechanicsService.createMaintenanceRecord(mechanicProfile.id, dto);
   }
 
   @UseGuards(JwtGuard)
@@ -280,10 +230,7 @@ export class MechanicsController {
     @Param('vehicleId', new ParseUUIDPipe()) vehicleId: string,
     @Req() request: RequestWithUser
   ) {
-    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
-    if (!mechanic.hasMechanicProfile) {
-      throw new NotFoundException('Tamirci profili bulunamadı.');
-    }
-    return this.mechanicsService.getMaintenanceRecordsByVehicle(mechanic.profile.id, vehicleId);
+    const mechanicProfile = await this.mechanicsService.validateAndGetMechanicProfile(request.user.id);
+    return this.mechanicsService.getMaintenanceRecordsByVehicle(mechanicProfile.id, vehicleId);
   }
 }

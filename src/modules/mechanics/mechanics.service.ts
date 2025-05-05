@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { MechanicProfileService } from './services/mechanic-profile.service';
 import { MechanicWorkingHoursService } from './services/mechanic-working-hours.service';
 import { MechanicSupportedVehiclesService } from './services/mechanic-supported-vehicles.service';
@@ -134,5 +134,21 @@ export class MechanicsService {
 
   async getMaintenanceRecordsByVehicle(mechanicId: string, vehicleId: string) {
     return this.mechanicVehicleMaintenanceService.getMaintenanceRecordsByVehicle(mechanicId, vehicleId);
+  }
+
+  async validateAndGetMechanicProfile(userId: string) {
+    const mechanic = await this.findByUserId(userId);
+    if (!mechanic.hasMechanicProfile) {
+      throw new NotFoundException('Tamirci profili bulunamadı.');
+    }
+    return mechanic.profile;
+  }
+
+  async validateWorkingHourBelongsToMechanic(hourId: string, mechanicId: string) {
+    const existingHours = await this.getWorkingHourById(hourId);
+    if (!existingHours || existingHours.mechanic_id !== mechanicId) {
+      throw new NotFoundException('Belirtilen çalışma saati kaydı bulunamadı veya bu tamirciye ait değil.');
+    }
+    return existingHours;
   }
 }

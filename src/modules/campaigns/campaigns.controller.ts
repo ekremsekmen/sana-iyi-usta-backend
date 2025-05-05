@@ -13,45 +13,40 @@ import {
   HttpStatus, 
   ParseUUIDPipe,
   Req,
-  NotFoundException
+  
 } from '@nestjs/common';
 import { CampaignsService } from './campaigns.service';
 import { CampaignDto } from './dto/campaign.dto';
-import { JwtGuard } from '../../common/guards/jwt/jwt.guard';
+import { JwtGuard, RolesGuard } from '../../common/guards';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { Role } from '../../common/enums/roles.enum';
 import { RequestWithUser } from '../../common/interfaces/request-with-user.interface';
-import { MechanicsService } from '../mechanics/mechanics.service';
 
 @Controller('campaigns')
+@UseGuards(JwtGuard, RolesGuard)
 export class CampaignsController {
   constructor(
-    private readonly campaignsService: CampaignsService,
-    private readonly mechanicsService: MechanicsService
+    private readonly campaignsService: CampaignsService
   ) {}
 
   @Get()
-  @UseGuards(JwtGuard)
+  @Roles(Role.MECHANIC)
   @HttpCode(HttpStatus.OK)
   async findByMechanic(@Req() request: RequestWithUser) {
-    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
-    if (!mechanic.hasMechanicProfile) {
-      throw new NotFoundException('Tamirci profili bulunamadı.');
-    }
-    return this.campaignsService.findByMechanic(mechanic.profile.id, request.user.id);
+    const mechanic = await this.campaignsService.validateAndGetMechanicProfile(request.user.id);
+    return this.campaignsService.findByMechanic(mechanic.id, request.user.id);
   }
 
   @Post()
-  @UseGuards(JwtGuard)
+  @Roles(Role.MECHANIC)
   @UsePipes(new ValidationPipe({ whitelist: true }))
   @HttpCode(HttpStatus.CREATED)
   async create(
     @Body() createCampaignDto: CampaignDto,
     @Req() request: RequestWithUser
   ) {
-    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
-    if (!mechanic.hasMechanicProfile) {
-      throw new NotFoundException('Tamirci profili bulunamadı.');
-    }
-    return this.campaignsService.create(mechanic.profile.id, createCampaignDto, request.user.id);
+    const mechanic = await this.campaignsService.validateAndGetMechanicProfile(request.user.id);
+    return this.campaignsService.create(mechanic.id, createCampaignDto, request.user.id);
   }
 
   @Patch(':id')
@@ -63,11 +58,8 @@ export class CampaignsController {
     @Body() updateCampaignDto: CampaignDto,
     @Req() request: RequestWithUser
   ) {
-    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
-    if (!mechanic.hasMechanicProfile) {
-      throw new NotFoundException('Tamirci profili bulunamadı.');
-    }
-    return this.campaignsService.update(id, mechanic.profile.id, updateCampaignDto, request.user.id);
+    const mechanic = await this.campaignsService.validateAndGetMechanicProfile(request.user.id);
+    return this.campaignsService.update(id, mechanic.id, updateCampaignDto, request.user.id);
   }
 
   @Delete(':id')
@@ -77,11 +69,8 @@ export class CampaignsController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Req() request: RequestWithUser
   ) {
-    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
-    if (!mechanic.hasMechanicProfile) {
-      throw new NotFoundException('Tamirci profili bulunamadı.');
-    }
-    return this.campaignsService.remove(id, mechanic.profile.id, request.user.id);
+    const mechanic = await this.campaignsService.validateAndGetMechanicProfile(request.user.id);
+    return this.campaignsService.remove(id, mechanic.id, request.user.id);
   }
   
   @Get('campaign-for-customer')

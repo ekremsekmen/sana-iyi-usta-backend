@@ -8,25 +8,24 @@ import {
   UseGuards, 
   Request, 
   Patch, 
-  Delete,
-  ForbiddenException
+  Delete
 } from '@nestjs/common';
 import { AppointmentsService } from './appointments.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { GetAvailableSlotsDto } from './dto/get-available-slots.dto';
-import { JwtGuard } from '../../common/guards/jwt/jwt.guard';
+import { JwtGuard, RolesGuard } from '../../common/guards';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { Role } from '../../common/enums/roles.enum';
 import { RequestWithUser } from '../../common/interfaces/request-with-user.interface';
 
 @Controller('appointments')
-@UseGuards(JwtGuard)
+@UseGuards(JwtGuard, RolesGuard)
 export class AppointmentsController {
   constructor(private readonly appointmentsService: AppointmentsService) {}
 
   @Post()
+  @Roles(Role.CUSTOMER)
   async createAppointment(@Request() req: RequestWithUser, @Body() dto: CreateAppointmentDto) {
-    if (req.user.role !== 'customer') {
-      throw new ForbiddenException('Sadece müşteriler randevu oluşturabilir');
-    }
     return this.appointmentsService.createAppointmentByUser(req.user.id, dto);
   }
 
@@ -51,18 +50,14 @@ export class AppointmentsController {
   }
 
   @Patch(':id/approve')
+  @Roles(Role.MECHANIC)
   async approveAppointment(@Request() req: RequestWithUser, @Param('id') id: string) {
-    if (req.user.role !== 'mechanic') {
-      throw new Error('Sadece mekanikler randevuları onaylayabilir');
-    }
     return this.appointmentsService.approveAppointment(req.user.id, id);
   }
   
   @Patch(':id/complete')
+  @Roles(Role.MECHANIC)
   async completeAppointment(@Request() req: RequestWithUser, @Param('id') id: string) {
-    if (req.user.role !== 'mechanic') {
-      throw new ForbiddenException('Sadece mekanikler randevuları tamamlayabilir');
-    }
     return this.appointmentsService.completeAppointment(req.user.id, id);
   }
 }

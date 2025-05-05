@@ -1,13 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { UpdateUserDto } from './dto/user-profile.dto';
+import { UpdateUserDto, UserProfileResponseDto } from './dto/user-profile.dto';
 import { DefaultLocationResponseDto } from './dto/default-location.dto';
 
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
-  async findOne(id: string) {
+  async findOne(id: string): Promise<UserProfileResponseDto> {
     const user = await this.prisma.users.findUnique({
       where: { id },
       select: {
@@ -18,6 +18,18 @@ export class UsersService {
         profile_image: true,
         created_at: true,
         e_mail: true,
+        default_location_id: true,
+        locations_users_default_location_idTolocations: {
+          select: {
+            id: true,
+            address: true,
+            city: true,
+            district: true,
+            label: true,
+            latitude: true,
+            longitude: true,
+          },
+        },
       },
     });
 
@@ -25,7 +37,56 @@ export class UsersService {
       throw new NotFoundException(`Kullanıcı #${id} bulunamadı`);
     }
 
-    return user;
+    // Varsayılan konumu hazırla
+    const defaultLocation = user.default_location_id 
+      ? user.locations_users_default_location_idTolocations 
+      : null;
+
+    // Kullanıcı nesnesini oluştur
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { default_location_id, locations_users_default_location_idTolocations, ...userWithoutLocation } = user;
+    const userDto = {
+      ...userWithoutLocation,
+      default_location: defaultLocation,
+      user_role: user.role, // Rol bilgisini açık şekilde belirtelim
+    };
+
+    const response: UserProfileResponseDto = {
+      user: userDto
+    };
+
+    if (user.role === 'mechanic') {
+      const mechanic = await this.prisma.mechanics.findFirst({
+        where: { user_id: id },
+        include: {
+          mechanic_categories: {
+            include: {
+              categories: true
+            }
+          },
+          mechanic_working_hours: true,
+          mechanic_supported_vehicles: {
+            include: {
+              brands: true
+            }
+          }
+        }
+      });
+
+      if (mechanic) {
+        response.mechanic = mechanic;
+      }
+    } else if (user.role === 'customer') {
+      const customer = await this.prisma.customers.findFirst({
+        where: { user_id: id },
+      });
+
+      if (customer) {
+        response.customer = customer;
+      }
+    }
+    
+    return response;
   }
 
   async update(id: string, updateUserDto: UpdateUserDto) {

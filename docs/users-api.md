@@ -115,9 +115,9 @@ Oturum açmış olan kullanıcının kendi hesabını siler.
 - `404 Not Found`: Kullanıcı bulunamadı
 - `500 Internal Server Error`: Sunucu hatası
 
-### 4. Belirli Bir Kullanıcının Bilgilerini Getirme
+### 4. Belirli Bir Kullanıcının TÜMM Bilgilerini Getirme
 
-ID ile belirtilen kullanıcının profil bilgilerini getirir.
+ID ile belirtilen kullanıcının profil bilgilerini ve rolüne bağlı (mekanik veya müşteri) detaylı bilgilerini getirir.
 
 **URL:** `GET /users/:id`
 
@@ -126,16 +126,100 @@ ID ile belirtilen kullanıcının profil bilgilerini getirir.
 
 **Yetkilendirme:** JWT Token gerekli
 
-**Başarılı Yanıt:**
+**Başarılı Yanıt (Müşteri Örneği):**
 ```json
 {
-  "id": "a1d2m3i4n-5678-90ab-cdef-user12345678",
-  "full_name": "Ayşe Kara",
-  "phone_number": "5551112233",
-  "role": "mechanic",
-  "profile_image": null,
-  "created_at": "2023-10-26T14:00:00.000Z",
-  "e_mail": "ayse@example.com"
+  "user": {
+    "id": "a1d2m3i4n-5678-90ab-cdef-user12345678",
+    "full_name": "Ayşe Kara",
+    "phone_number": "5551112233",
+    "role": "customer",
+    "user_role": "customer",
+    "profile_image": null,
+    "created_at": "2023-10-26T14:00:00.000Z",
+    "e_mail": "ayse@example.com",
+    "default_location": {
+      "id": "l1o2c3-4567-89ab-cdef-location123456",
+      "address": "Atatürk Mahallesi, Vatan Caddesi No:15",
+      "city": "İstanbul",
+      "district": "Kadıköy",
+      "label": "Ev",
+      "latitude": "40.9876543",
+      "longitude": "29.1234567"
+    }
+  },
+  "customer": {
+    "id": "c1u2s3t4-5678-90ab-cdef-customer12345",
+    "user_id": "a1d2m3i4n-5678-90ab-cdef-user12345678",
+    "created_at": "2023-10-26T14:00:00.000Z"
+  }
+}
+```
+
+**Başarılı Yanıt (Mekanik Örneği):**
+```json
+{
+  "user": {
+    "id": "a1d2m3i4n-5678-90ab-cdef-user12345678",
+    "full_name": "Mehmet Usta",
+    "phone_number": "5551112233",
+    "role": "mechanic",
+    "user_role": "mechanic",
+    "profile_image": "https://example.com/path/to/profile.jpg",
+    "created_at": "2023-10-26T14:00:00.000Z",
+    "e_mail": "mehmet@example.com",
+    "default_location": {
+      "id": "l1o2c3-4567-89ab-cdef-location123456",
+      "address": "Usta Mahallesi, Tamir Sokak No:5",
+      "city": "İstanbul",
+      "district": "Ümraniye",
+      "label": "İşyeri",
+      "latitude": "41.0123456",
+      "longitude": "29.0987654"
+    }
+  },
+  "mechanic": {
+    "id": "m1e2c3h4-5678-90ab-cdef-mechanic12345",
+    "user_id": "a1d2m3i4n-5678-90ab-cdef-user12345678",
+    "business_name": "Mehmet Oto Tamir",
+    "on_site_service": true,
+    "average_rating": "4.8",
+    "created_at": "2023-10-26T14:00:00.000Z",
+    "mechanic_categories": [
+      {
+        "id": "c1a2t3-4567-89ab-cdef-category12345",
+        "mechanic_id": "m1e2c3h4-5678-90ab-cdef-mechanic12345",
+        "category_id": "c1a2t3-4567-89ab-cdef-catitem12345",
+        "created_at": "2023-10-26T14:00:00.000Z",
+        "categories": {
+          "id": "c1a2t3-4567-89ab-cdef-catitem12345",
+          "name": "Motor Tamiri"
+        }
+      }
+    ],
+    "mechanic_working_hours": [
+      {
+        "id": "w1o2r3k-4567-89ab-cdef-work12345678",
+        "mechanic_id": "m1e2c3h4-5678-90ab-cdef-mechanic12345",
+        "day_of_week": 1,
+        "start_time": "09:00",
+        "end_time": "18:00",
+        "slot_duration": 60,
+        "is_day_off": false
+      }
+    ],
+    "mechanic_supported_vehicles": [
+      {
+        "id": "v1e2h3-4567-89ab-cdef-vehicle12345",
+        "mechanic_id": "m1e2c3h4-5678-90ab-cdef-mechanic12345",
+        "brand_id": "b1r2a3-4567-89ab-cdef-brand12345678",
+        "brands": {
+          "id": "b1r2a3-4567-89ab-cdef-brand12345678",
+          "name": "Toyota"
+        }
+      }
+    ]
+  }
 }
 ```
 
