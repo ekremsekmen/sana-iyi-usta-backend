@@ -7,6 +7,7 @@ import { MechanicSupportedVehicleDto } from './dto/mechanic-supported-vehicle.dt
 import { MechanicWorkingHoursDto } from './dto/mechanic-working-hours.dto';
 import { MechanicCategoryDto } from './dto/mechanic-category.dto';
 import { SearchMechanicsDto } from './dto/search-mechanics.dto';
+import { CreateVehicleMaintenanceRecordDto } from './dto/create-vehicle-maintenance-record.dto';
 
 @Controller('mechanics')
 export class MechanicsController {
@@ -255,5 +256,34 @@ export class MechanicsController {
   ) {
     // SearchDto'da ratingSort belirtilmişse, o değeri kullanarak arama yapacak
     return this.mechanicsService.searchMechanics(request.user.id, searchDto);
+  }
+
+  @UseGuards(JwtGuard)
+  @Post('maintenance-records')
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  @HttpCode(HttpStatus.CREATED)
+  async createMaintenanceRecord(
+    @Body() dto: CreateVehicleMaintenanceRecordDto,
+    @Req() request: RequestWithUser
+  ) {
+    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
+    if (!mechanic.hasMechanicProfile) {
+      throw new NotFoundException('Tamirci profili bulunamadı.');
+    }
+    return this.mechanicsService.createMaintenanceRecord(mechanic.profile.id, dto);
+  }
+
+  @UseGuards(JwtGuard)
+  @Get('vehicles/:vehicleId/maintenance-records')
+  @HttpCode(HttpStatus.OK)
+  async getMaintenanceRecordsByVehicle(
+    @Param('vehicleId', new ParseUUIDPipe()) vehicleId: string,
+    @Req() request: RequestWithUser
+  ) {
+    const mechanic = await this.mechanicsService.findByUserId(request.user.id);
+    if (!mechanic.hasMechanicProfile) {
+      throw new NotFoundException('Tamirci profili bulunamadı.');
+    }
+    return this.mechanicsService.getMaintenanceRecordsByVehicle(mechanic.profile.id, vehicleId);
   }
 }

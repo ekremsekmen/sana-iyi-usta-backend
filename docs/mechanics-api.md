@@ -8,6 +8,82 @@ Bu dokümantasyon, tamirci (mekanik) yönetimi için API endpointlerini detaylan
 /mechanics
 ```
 
+## Araç Bakım Kayıtları Endpointleri
+
+### 1. Araç Bakım Kaydı Oluşturma
+
+Giriş yapmış tamircinin bir araç için bakım kaydı oluşturmasını sağlar. Kayıt yalnızca onaylanmış veya tamamlanmış randevular için oluşturulabilir.Bakım kaydı girilen araç randevudaki araç olmalıdır.
+
+**URL:** `POST /mechanics/maintenance-records`
+
+**Yetkilendirme:** JWT Token gerekli
+
+**İstek Gövdesi:**
+```json
+{
+  "appointment_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890", // Randevu ID (zorunlu)
+  "details": "Yağ değişimi, filtre değişimi ve genel bakım yapıldı", // Bakım detayları (zorunlu)
+  "cost": 1500.50, // Bakım maliyeti (zorunlu)
+  "odometer": 78500, // Kilometre bilgisi (zorunlu)
+  "next_due_date": "2023-12-15" // Sonraki bakım için önerilen tarih (isteğe bağlı)
+}
+```
+
+**Başarılı Yanıt (201 Created):**
+```json
+{
+  "id": "m1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "vehicle_id": "v1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "mechanic_id": "mech1-uuid-1234",
+  "customer_id": "cust1-uuid-5678",
+  "details": "Yağ değişimi, filtre değişimi ve genel bakım yapıldı",
+  "cost": 1500.50,
+  "odometer": 78500,
+  "service_date": "2023-09-15T14:30:00Z", // Otomatik oluşturulan servis tarihi
+  "next_due_date": "2023-12-15T00:00:00Z" // Sonraki bakım tarihi (belirtildiyse)
+}
+```
+
+**Hata Yanıtları:**
+- `401 Unauthorized`: Geçersiz veya eksik yetkilendirme
+- `404 Not Found`: Kullanıcının tamirci profili veya belirtilen randevu bulunamadı
+- `400 Bad Request`: Geçersiz istek gövdesi, randevu tamirciye ait değil veya randevu durumu uygun değil (onaylanmış veya tamamlanmış olmalı)
+- `500 Internal Server Error`: Sunucu hatası
+
+### 2. Araç İçin Bakım Kayıtlarını Getirme
+
+Tamircinin belirli bir araç için oluşturduğu bakım kayıtlarını tarih sırasına göre listeler.
+
+**URL:** `GET /mechanics/vehicles/:vehicleId/maintenance-records`
+
+**Parametreler:**
+- `vehicleId` (path): Bakım kayıtları getirilecek araç ID değeri
+
+**Yetkilendirme:** JWT Token gerekli
+
+**Başarılı Yanıt (200 OK):**
+```json
+[
+  {
+    "id": "m1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "vehicle_id": "v1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "mechanic_id": "mech1-uuid-1234",
+    "customer_id": "cust1-uuid-5678",
+    "details": "Yağ değişimi, filtre değişimi ve genel bakım yapıldı",
+    "cost": 1500.50,
+    "odometer": 78500,
+    "service_date": "2023-09-15T14:30:00Z",
+    "next_due_date": "2023-12-15T00:00:00Z"
+  },
+  // ... diğer bakım kayıtları (en yeniden en eskiye doğru sıralı)
+]
+```
+
+**Hata Yanıtları:**
+- `401 Unauthorized`: Geçersiz veya eksik yetkilendirme
+- `404 Not Found`: Kullanıcının tamirci profili bulunamadı
+- `500 Internal Server Error`: Sunucu hatası
+
 ## Kullanıcının Tamirci Profilini Kontrol Etme
 
 Giriş yapmış olan kullanıcının bir tamirci profili olup olmadığını kontrol eder.
@@ -381,7 +457,7 @@ Giriş yapmış kullanıcının tamirci profiline çalışma saati ekler veya me
 - `400 Bad Request`: Geçersiz istek gövdesi
 - `500 Internal Server Error`: Sunucu hatası
 
-### 3. Tamircinin Çalışma Saatini Güncelleme
+### 3. Tamirci Çalışma Saatini Güncelleme
 
 Giriş yapmış kullanıcının tamirci profilinin belirli bir çalışma saatini (ID ile belirtilen) günceller.
 
@@ -421,7 +497,7 @@ Giriş yapmış kullanıcının tamirci profilinin belirli bir çalışma saatin
 - `400 Bad Request`: Geçersiz istek gövdesi
 - `500 Internal Server Error`: Sunucu hatası
 
-### 4. Tamircinin Çalışma Saatini Silme
+### 4. Tamirci Çalışma Saatini Silme
 
 Giriş yapmış kullanıcının tamirci profilinin belirli bir çalışma saatini siler.
 

@@ -4,11 +4,13 @@ import { MechanicWorkingHoursService } from './services/mechanic-working-hours.s
 import { MechanicSupportedVehiclesService } from './services/mechanic-supported-vehicles.service';
 import { MechanicCategoriesService } from './services/mechanic-categories.service';
 import { MechanicSearchService } from './services/mechanic-search.service';
+import { MechanicVehicleMaintenanceService } from './services/mechanic-vehicle-maintenance.service';
 import { MechanicProfileDto } from './dto/mechanic-profile.dto';
 import { MechanicWorkingHoursDto } from './dto/mechanic-working-hours.dto';
 import { MechanicSupportedVehicleDto } from './dto/mechanic-supported-vehicle.dto';
 import { MechanicCategoryDto } from './dto/mechanic-category.dto';
 import { SearchMechanicsDto } from './dto/search-mechanics.dto';
+import { CreateVehicleMaintenanceRecordDto } from './dto/create-vehicle-maintenance-record.dto';
 
 @Injectable()
 export class MechanicsService {
@@ -17,7 +19,8 @@ export class MechanicsService {
     private readonly mechanicWorkingHoursService: MechanicWorkingHoursService,
     private readonly mechanicSupportedVehiclesService: MechanicSupportedVehiclesService,
     private readonly mechanicCategoriesService: MechanicCategoriesService,
-    private readonly mechanicSearchService: MechanicSearchService
+    private readonly mechanicSearchService: MechanicSearchService,
+    private readonly mechanicVehicleMaintenanceService: MechanicVehicleMaintenanceService
   ) {}
 
   create(userId: string, createMechanicDto: MechanicProfileDto) {
@@ -123,5 +126,13 @@ export class MechanicsService {
 
   async searchMechanics(userId: string, searchDto: SearchMechanicsDto) {
     return this.mechanicSearchService.searchMechanics(userId, searchDto);
+  }
+
+  async createMaintenanceRecord(mechanicId: string, dto: CreateVehicleMaintenanceRecordDto) {
+    return this.mechanicVehicleMaintenanceService.createMaintenanceRecord(mechanicId, dto);
+  }
+
+  async getMaintenanceRecordsByVehicle(mechanicId: string, vehicleId: string) {
+    return this.mechanicVehicleMaintenanceService.getMaintenanceRecordsByVehicle(mechanicId, vehicleId);
   }
 }

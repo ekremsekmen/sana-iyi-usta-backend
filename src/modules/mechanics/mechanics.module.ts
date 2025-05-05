@@ -6,6 +6,7 @@ import { MechanicWorkingHoursService } from './services/mechanic-working-hours.s
 import { MechanicSupportedVehiclesService } from './services/mechanic-supported-vehicles.service';
 import { MechanicCategoriesService } from './services/mechanic-categories.service';
 import { MechanicSearchService } from './services/mechanic-search.service';
+import { MechanicVehicleMaintenanceService } from './services/mechanic-vehicle-maintenance.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { LocationsModule } from '../locations/locations.module';
@@ -23,6 +24,7 @@ import { LocationsModule } from '../locations/locations.module';
     MechanicSupportedVehiclesService,
     MechanicCategoriesService,
     MechanicSearchService,
+    MechanicVehicleMaintenanceService,
     PrismaService
   ],
   exports: [MechanicsService]
