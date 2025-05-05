@@ -6,10 +6,19 @@ import { MulticastMessage } from 'firebase-admin/messaging';
 @Injectable()
 export class FcmService implements OnModuleInit {
   private readonly logger = new Logger(FcmService.name);
+  private isFirebaseInitialized = false;
   
   onModuleInit() {
+    // Geliştirme aşamasında Firebase başlatma işlemini geçiyoruz
+    this.logger.log('Firebase geliştirme modunda devre dışı bırakıldı');
+    
+    /* Firebase başlatma işlemi geliştirme aşamasında devre dışı bırakıldı
     try {
-      if (!admin.apps.length) {
+      if (!admin.apps.length && 
+          process.env.FIREBASE_PROJECT_ID && 
+          process.env.FIREBASE_PRIVATE_KEY && 
+          process.env.FIREBASE_CLIENT_EMAIL) {
+        
         admin.initializeApp({
           credential: admin.credential.cert({
             projectId: process.env.FIREBASE_PROJECT_ID,
@@ -17,11 +26,16 @@ export class FcmService implements OnModuleInit {
             clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
           }),
         });
+        this.isFirebaseInitialized = true;
+        this.logger.log('Firebase başarıyla başlatıldı');
+      } else {
+        this.logger.warn('Firebase yapılandırması eksik, FCM bildirimleri devre dışı bırakıldı');
       }
-      this.logger.log('Firebase başarıyla başlatıldı');
     } catch (error) {
       this.logger.error(`Firebase başlatılamadı: ${error.message}`, error.stack);
+      this.isFirebaseInitialized = false;
     }
+    */
   }
 
   /**
@@ -38,57 +52,19 @@ export class FcmService implements OnModuleInit {
     body: string,
     data?: Record<string, string>
   ) {
-    if (!tokens || tokens.length === 0) {
-      this.logger.warn('Gönderilecek token bulunamadı');
-      return { success: 0, failure: 0 };
+    // Geliştirme aşamasında FCM devre dışı bırakıldı
+    this.logger.log(`FCM bildirimi simüle ediliyor - Başlık: "${title}", İçerik: "${body}"`);
+    
+    if (data) {
+      this.logger.log(`FCM ekstra data: ${JSON.stringify(data)}`);
     }
-
-    try {
-      const message: MulticastMessage = {
-        tokens,
-        notification: {
-          title,
-          body,
-        },
-        data,
-        android: {
-          priority: 'high',
-          notification: {
-            channelId: 'default-channel',
-          },
-        },
-        apns: {
-          payload: {
-            aps: {
-              contentAvailable: true,
-              badge: 1,
-              sound: 'default',
-            },
-          },
-        }
-      };
-
-      const response = await admin.messaging().sendEachForMulticast(message);
-      
-      this.logger.log(`${response.successCount} bildirim başarıyla gönderildi.`);
-      
-      if (response.failureCount > 0) {
-        const failedTokens = [];
-        response.responses.forEach((resp, idx) => {
-          if (!resp.success) {
-            failedTokens.push({ token: tokens[idx], error: resp.error });
-            this.logger.error(`Token ${tokens[idx]} için bildirim gönderilemedi: ${resp.error.message}`);
-          }
-        });
-      }
-
-      return {
-        success: response.successCount,
-        failure: response.failureCount
-      };
-    } catch (error) {
-      this.logger.error(`Bildirim gönderilirken hata oluştu: ${error.message}`, error.stack);
-      return { success: 0, failure: tokens.length, error: error.message };
-    }
+    
+    // Bildirimlerin başarıyla gönderildiğini simüle ediyoruz
+    return { 
+      success: tokens ? tokens.length : 0, 
+      failure: 0, 
+      disabled: true,
+      simulated: true
+    };
   }
 }
