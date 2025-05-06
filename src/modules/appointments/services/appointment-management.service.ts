@@ -78,94 +78,100 @@ export class AppointmentManagementService {
   }
 
   async cancelAppointment(userId: string, appointmentId: string, userRole: string) {
-    const appointment = await this.prisma.appointments.findUnique({
-      where: { id: appointmentId },
-      include: {
-        customers: {
-          include: { users: true },
+    return this.prisma.$transaction(async (tx) => {
+      const appointment = await tx.appointments.findUnique({
+        where: { id: appointmentId },
+        include: {
+          customers: {
+            include: { users: true },
+          },
+          mechanics: {
+            include: { users: true },
+          },
         },
-        mechanics: {
-          include: { users: true },
+      });
+      
+      if (!appointment) {
+        throw new NotFoundException('Randevu bulunamadı');
+      }
+      
+      if (
+        (userRole === 'customer' && appointment.customers.users.id !== userId) ||
+        (userRole === 'mechanic' && appointment.mechanics.users.id !== userId)
+      ) {
+        throw new BadRequestException('Bu randevuyu iptal etme yetkiniz yok');
+      }
+      
+      return tx.appointments.update({
+        where: { id: appointmentId },
+        data: {
+          status: 'canceled',
         },
-      },
-    });
-    
-    if (!appointment) {
-      throw new NotFoundException('Randevu bulunamadı');
-    }
-    
-    if (
-      (userRole === 'customer' && appointment.customers.users.id !== userId) ||
-      (userRole === 'mechanic' && appointment.mechanics.users.id !== userId)
-    ) {
-      throw new BadRequestException('Bu randevuyu iptal etme yetkiniz yok');
-    }
-    
-    return this.prisma.appointments.update({
-      where: { id: appointmentId },
-      data: {
-        status: 'canceled',
-      },
+      });
     });
   }
 
   async approveAppointment(mechanicUserId: string, appointmentId: string) {
-    const appointment = await this.prisma.appointments.findUnique({
-      where: { id: appointmentId },
-      include: {
-        mechanics: {
-          include: { users: true },
+    return this.prisma.$transaction(async (tx) => {
+      const appointment = await tx.appointments.findUnique({
+        where: { id: appointmentId },
+        include: {
+          mechanics: {
+            include: { users: true },
+          },
         },
-      },
-    });
-    
-    if (!appointment) {
-      throw new NotFoundException('Randevu bulunamadı');
-    }
-    
-    if (appointment.mechanics.users.id !== mechanicUserId) {
-      throw new BadRequestException('Bu randevuyu onaylama yetkiniz yok');
-    }
-    
-    if (appointment.status !== 'pending') {
-      throw new BadRequestException('Sadece bekleyen randevular onaylanabilir');
-    }
-    
-    return this.prisma.appointments.update({
-      where: { id: appointmentId },
-      data: {
-        status: 'confirmed',
-      },
+      });
+      
+      if (!appointment) {
+        throw new NotFoundException('Randevu bulunamadı');
+      }
+      
+      if (appointment.mechanics.users.id !== mechanicUserId) {
+        throw new BadRequestException('Bu randevuyu onaylama yetkiniz yok');
+      }
+      
+      if (appointment.status !== 'pending') {
+        throw new BadRequestException('Sadece bekleyen randevular onaylanabilir');
+      }
+      
+      return tx.appointments.update({
+        where: { id: appointmentId },
+        data: {
+          status: 'confirmed',
+        },
+      });
     });
   }
 
   async completeAppointment(mechanicUserId: string, appointmentId: string) {
-    const appointment = await this.prisma.appointments.findUnique({
-      where: { id: appointmentId },
-      include: {
-        mechanics: {
-          include: { users: true },
+    return this.prisma.$transaction(async (tx) => {
+      const appointment = await tx.appointments.findUnique({
+        where: { id: appointmentId },
+        include: {
+          mechanics: {
+            include: { users: true },
+          },
         },
-      },
-    });
-    
-    if (!appointment) {
-      throw new NotFoundException('Randevu bulunamadı');
-    }
-    
-    if (appointment.mechanics.users.id !== mechanicUserId) {
-      throw new BadRequestException('Bu randevuyu tamamlama yetkiniz yok');
-    }
-    
-    if (appointment.status !== 'confirmed') {
-      throw new BadRequestException('Sadece onaylanmış randevular tamamlanabilir');
-    }
-    
-    return this.prisma.appointments.update({
-      where: { id: appointmentId },
-      data: {
-        status: 'completed',
-      },
+      });
+      
+      if (!appointment) {
+        throw new NotFoundException('Randevu bulunamadı');
+      }
+      
+      if (appointment.mechanics.users.id !== mechanicUserId) {
+        throw new BadRequestException('Bu randevuyu tamamlama yetkiniz yok');
+      }
+      
+      if (appointment.status !== 'confirmed') {
+        throw new BadRequestException('Sadece onaylanmış randevular tamamlanabilir');
+      }
+      
+      return tx.appointments.update({
+        where: { id: appointmentId },
+        data: {
+          status: 'completed',
+        },
+      });
     });
   }
 }
