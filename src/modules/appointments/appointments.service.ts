@@ -85,4 +85,8 @@ export class AppointmentsService {
   async completeAppointment(mechanicUserId: string, appointmentId: string) {
     return this.appointmentManagementService.completeAppointment(mechanicUserId, appointmentId);
   }
+
+  async getAppointmentById(userId: string, appointmentId: string, userRole: string) {
+    return this.appointmentQueryService.getAppointmentById(appointmentId, userId, userRole);
+  }
 }

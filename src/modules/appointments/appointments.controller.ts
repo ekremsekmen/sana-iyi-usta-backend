@@ -60,4 +60,9 @@ export class AppointmentsController {
   async completeAppointment(@Request() req: RequestWithUser, @Param('id') id: string) {
     return this.appointmentsService.completeAppointment(req.user.id, id);
   }
+
+  @Get('details/:id')
+  async getAppointmentById(@Request() req: RequestWithUser, @Param('id') id: string) {
+    return this.appointmentsService.getAppointmentById(req.user.id, id, req.user.role);
+  }
 }

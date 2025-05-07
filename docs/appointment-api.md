@@ -9,6 +9,106 @@ Bu doküman, Sana İyi Usta uygulamasındaki randevu işlemlerine ait API endpoi
 
 ## Endpointler
 
+
+ !!!!! BURAYI YENİ EKLEDİM İŞİNE YARAYACAK RANDEVU DETAYLARINDA ARAÇ BAKIM KAYITLARINI 
+ !!!!!                      DA GETİRİYOR                 !!!!!!!!!
+ 
+
+### 8. Randevu Detaylarını Getirme
+
+Bir randevunun tüm detaylarını (araç bakım kayıtları dahil) gösterir.
+
+**URL:** `GET /appointments/details/:id`  
+**URL Parametreleri:** `id` - Randevu ID'si
+
+**Başarılı Yanıt:**
+```json
+{
+  "id": "UUID",
+  "mechanic_id": "UUID",
+  "customer_id": "UUID",
+  "vehicle_id": "UUID",
+  "appointment_date": "2023-10-20T14:00:00Z",
+  "start_time": "2023-10-20T14:00:00Z",
+  "end_time": "2023-10-20T15:00:00Z",
+  "status": "pending",
+  "description": "Araç bakımı yapılacak",
+  "appointment_type": "AT_SERVICE",
+  "location_id": "UUID",
+  "created_at": "2023-10-15T10:30:00Z",
+  "mechanics": {
+    "users": {
+      "id": "UUID",
+      "full_name": "Ahmet Usta",
+      "profile_image": "url_to_image",
+      "phone_number": "+905551234567"
+    }
+  },
+  "customers": {
+    "users": {
+      "id": "UUID",
+      "full_name": "Mehmet Müşteri",
+      "profile_image": "url_to_image",
+      "phone_number": "+905559876543"
+    }
+  },
+  "locations": {
+    "id": "UUID",
+    "address": "Örnek Mah. Test Sok. No:1",
+    "latitude": 41.0082,
+    "longitude": 28.9784,
+    "city": "İstanbul",
+    "district": "Kadıköy"
+  },
+  "customer_vehicles": {
+    "brands": {
+      "name": "Toyota"
+    },
+    "models": {
+      "name": "Corolla"
+    },
+    "variants": {
+      "name": "1.6 Vision"
+    },
+    "model_years": {
+      "year": 2020
+    }
+  },
+  "vehicle_maintenance_records": {
+    "id": "UUID",
+    "service_date": "2023-10-20T15:00:00Z",
+    "details": "Yağ değişimi, filtre değişimi ve genel kontroller yapıldı",
+    "cost": 1500.00,
+    "odometer": 45000,
+    "next_due_date": "2024-04-20T00:00:00Z"
+  },
+  "ratings_reviews": {
+    "id": "UUID",
+    "rating": 4.5,
+    "review": "Servis çok iyiydi, teşekkürler",
+    "created_at": "2023-10-21T10:00:00Z",
+    "mechanic_response": "Bizi tercih ettiğiniz için teşekkürler!"
+  }
+}
+```
+
+**Not:** Bu endpoint, kullanıcı rolüne bağlı olarak erişim kontrolü yapar. Sadece randevuya ait müşteri veya tamirci bu bilgileri görüntüleyebilir.
+
+**Yetki Kontrolü:**
+- Müşteri: Sadece kendi randevularını görüntüleyebilir
+- Tamirci: Sadece kendisine ait randevuları görüntüleyebilir
+
+**Hata Yanıtları:**
+- `404 Not Found`: Randevu bulunamadı
+- `403 Forbidden`: Bu randevuyu görüntüleme yetkiniz yok
+
+
+
+--------------------------------------------------------------------
+
+
+
+
 ### 1. Randevu Oluşturma
 
 Müşterilerin yeni bir randevu oluşturması için kullanılır.

@@ -248,15 +248,71 @@ export class ReviewsService {
 
   async getMechanicReviewsByUserId(userId: string) {
     const mechanic = await this.prisma.mechanics.findFirst({
-      where: { user_id: userId }
+      where: { user_id: userId },
+      select: { 
+        id: true,
+        average_rating: true
+      }
     });
 
     if (!mechanic) {
-      throw new ForbiddenException('Bu işlemi sadece ustalar yapabilir');
+      throw new NotFoundException('Tamirci profili bulunamadı');
     }
 
-    // Use the existing method to get reviews by mechanic ID
-    return this.getReviewsByMechanicId(mechanic.id);
+    const reviews = await this.prisma.ratings_reviews.findMany({
+      where: { mechanic_id: mechanic.id },
+      include: {
+        customers: {
+          include: {
+            users: {
+              select: {
+                full_name: true,
+                profile_image: true
+              }
+            }
+          }
+        },
+        appointments: {
+          select: {
+            appointment_date: true,
+            appointment_type: true,
+            customer_vehicles: {
+              select: {
+                brands: true,
+                models: true,
+                plate_number: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: { created_at: 'desc' }
+    });
+
+    // Puan dağılımını hesapla
+    const ratingDistribution = {
+      1: 0,
+      2: 0,
+      3: 0,
+      4: 0,
+      5: 0
+    };
+
+    // Her bir değerlendirme için puan değerine göre sayacı artır
+    reviews.forEach(review => {
+      // Decimal türünü Number türüne çeviriyoruz
+      const rating = Math.floor(Number(review.rating));
+      if (rating >= 1 && rating <= 5) {
+        ratingDistribution[rating]++;
+      }
+    });
+
+    return {
+      reviews,
+      average_rating: mechanic.average_rating ? Number(mechanic.average_rating) : null,
+      total_reviews: reviews.length,
+      rating_distribution: ratingDistribution
+    };
   }
 
   private async updateMechanicAverageRating(mechanicId: string, tx?: Prisma.TransactionClient) {

@@ -19,23 +19,24 @@ model advertisements {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model appointments {
-  id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  mechanic_id       String            @db.Uuid
-  customer_id       String            @db.Uuid
-  appointment_date  DateTime          @db.Timestamptz(6)
-  created_at        DateTime          @default(now()) @db.Timestamptz(6)
-  status            String
-  vehicle_id        String            @db.Uuid
-  start_time        DateTime          @db.Timestamptz(6)
-  end_time          DateTime          @db.Timestamptz(6)
-  description       String?
-  appointment_type  AppointmentType
-  location_id       String?           @db.Uuid
-  customers         customers         @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  locations         locations?        @relation(fields: [location_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  mechanics         mechanics         @relation(fields: [mechanic_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  customer_vehicles customer_vehicles @relation(fields: [vehicle_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_appointments_vehicle_id")
-  ratings_reviews   ratings_reviews?
+  id                          String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mechanic_id                 String                       @db.Uuid
+  customer_id                 String                       @db.Uuid
+  appointment_date            DateTime                     @db.Timestamptz(6)
+  created_at                  DateTime                     @default(now()) @db.Timestamptz(6)
+  status                      String
+  vehicle_id                  String                       @db.Uuid
+  start_time                  DateTime                     @db.Timestamptz(6)
+  end_time                    DateTime                     @db.Timestamptz(6)
+  description                 String?
+  appointment_type            AppointmentType
+  location_id                 String?                      @db.Uuid
+  customers                   customers                    @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  locations                   locations?                   @relation(fields: [location_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  mechanics                   mechanics                    @relation(fields: [mechanic_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  customer_vehicles           customer_vehicles            @relation(fields: [vehicle_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_appointments_vehicle_id")
+  ratings_reviews             ratings_reviews?
+  vehicle_maintenance_records vehicle_maintenance_records?
 }
 
 model brands {
@@ -113,7 +114,7 @@ model mechanics {
   user_id                     String                        @db.Uuid
   business_name               String
   on_site_service             Boolean?                      @default(false)
-  average_rating              Decimal?                      @db.Decimal(3, 2)
+  average_rating              Int?                          @db.SmallInt
   created_at                  DateTime                      @default(now()) @db.Timestamptz(6)
   advertisements              advertisements[]
   appointments                appointments[]
@@ -181,7 +182,7 @@ model ratings_reviews {
   appointment_id    String?       @unique @db.Uuid
   mechanic_id       String        @db.Uuid
   customer_id       String        @db.Uuid
-  rating            Decimal       @db.Decimal
+  rating            Int           @db.SmallInt
   review            String?
   created_at        DateTime      @default(now()) @db.Timestamptz(6)
   mechanic_response String?
@@ -269,6 +270,8 @@ model vehicle_maintenance_records {
   created_at        DateTime?         @default(now()) @db.Timestamp(6)
   next_due_date     DateTime?         @db.Timestamp(6)
   customer_id       String?           @db.Uuid
+  appointment_id    String?           @unique(map: "unique_appointment_maintenance_record") @db.Uuid
+  appointments      appointments?     @relation(fields: [appointment_id], references: [id], onUpdate: NoAction, map: "fk_vehicle_maintenance_records_appointment_id")
   customers         customers?        @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   mechanics         mechanics         @relation(fields: [mechanic_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   customer_vehicles customer_vehicles @relation(fields: [vehicle_id], references: [id], onDelete: Cascade, onUpdate: NoAction)

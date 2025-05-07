@@ -1,4 +1,4 @@
-import { IsDecimal, IsNotEmpty, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class CreateReviewDto {
@@ -7,7 +7,8 @@ export class CreateReviewDto {
   appointment_id: string;
 
   @IsNotEmpty()
-  @Transform(({ value }) => parseFloat(value))
+  @Transform(({ value }) => parseInt(value, 10))
+  @IsInt()
   @Min(1)
   @Max(5)
   rating: number;

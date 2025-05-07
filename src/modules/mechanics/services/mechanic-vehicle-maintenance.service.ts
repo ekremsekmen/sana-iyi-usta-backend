@@ -8,35 +8,41 @@ export class MechanicVehicleMaintenanceService {
   constructor(private readonly prisma: PrismaService) {}
 
   async createMaintenanceRecord(mechanicId: string, dto: CreateVehicleMaintenanceRecordDto) {
-    // Randevuyu bul
     const appointment = await this.prisma.appointments.findUnique({
       where: { id: dto.appointment_id },
       include: {
-        customer_vehicles: true
+        customer_vehicles: true,
+        vehicle_maintenance_records: true
       }
     });
-
+  
     if (!appointment) {
       throw new NotFoundException('Randevu bulunamadı');
     }
-
-    // Randevunun bu tamirciye ait olup olmadığını kontrol et
+  
     if (appointment.mechanic_id !== mechanicId) {
       throw new BadRequestException('Bu randevu sizin değil');
     }
-
-    // Randevunun durumunu kontrol et - sadece onaylanmış veya tamamlanmış randevular için bakım kaydı girilebilir
+  
     if (appointment.status !== 'confirmed' && appointment.status !== 'completed') {
       throw new BadRequestException('Yalnızca onaylanmış veya tamamlanmış randevular için bakım kaydı girebilirsiniz');
     }
-
-    // Bakım kaydı oluştur
+    
+    const existingRecord = await this.prisma.vehicle_maintenance_records.findUnique({
+      where: { appointment_id: dto.appointment_id }
+    });
+    
+    if (existingRecord) {
+      throw new BadRequestException('Bu randevu için zaten bir bakım kaydı oluşturulmuş');
+    }
+  
     return this.prisma.vehicle_maintenance_records.create({
       data: {
         id: randomUUID(),
         vehicle_id: appointment.vehicle_id,
         mechanic_id: mechanicId,
         customer_id: appointment.customer_id,
+        appointment_id: dto.appointment_id, 
         details: dto.details,
         cost: dto.cost,
         odometer: dto.odometer,
@@ -46,11 +52,19 @@ export class MechanicVehicleMaintenanceService {
   }
 
   async getMaintenanceRecordsByVehicle(mechanicId: string, vehicleId: string) {
-    // Bu tamircinin bakım kayıtlarını getir
     return this.prisma.vehicle_maintenance_records.findMany({
       where: {
         vehicle_id: vehicleId,
         mechanic_id: mechanicId
+      },
+      include: {
+        appointments: {
+          select: {
+            appointment_date: true,
+            status: true,
+            appointment_type: true
+          }
+        }
       },
       orderBy: {
         service_date: 'desc'

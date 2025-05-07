@@ -214,9 +214,18 @@ Belirli bir aracın bakım kayıtlarını getirir. Kayıtlar en yeni servis tari
     "odometer": 25000,
     "created_at": "2023-05-10T10:15:30Z",
     "next_due_date": "2023-11-10T09:30:00Z",
+    "appointment_id": "a7b8c9d0-e1f2-3456-7890-abcdef123456",
     "mechanics": {
       "id": "67890123-efgh-6789-ijkl-678901234abc",
       "business_name": "ABC Servis"
+    },
+    "appointments": {
+      "appointment_date": "2023-05-10T09:00:00Z",
+      "status": "completed",
+      "appointment_type": "AT_SERVICE",
+      "mechanics": {
+        "business_name": "ABC Servis"
+      }
     }
   },
   {
@@ -229,10 +238,12 @@ Belirli bir aracın bakım kayıtlarını getirir. Kayıtlar en yeni servis tari
     "odometer": 20000,
     "created_at": "2022-11-15T15:30:45Z",
     "next_due_date": null,
+    "appointment_id": null,
     "mechanics": {
       "id": "67890123-efgh-6789-ijkl-678901234abc",
       "business_name": "ABC Servis"
-    }
+    },
+    "appointments": null
   }
 ]
 ```

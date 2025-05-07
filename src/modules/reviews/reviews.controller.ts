@@ -11,18 +11,17 @@ import { RequestWithUser } from '../../common/interfaces/request-with-user.inter
 export class ReviewsController {
   constructor(private readonly reviewsService: ReviewsService) {}
 
-  @UseGuards(JwtGuard)
   @Post()
   create(@Request() req: RequestWithUser, @Body() createReviewDto: CreateReviewDto) {
     return this.reviewsService.createReview(req.user.id, createReviewDto);
   }
 
-  @Get('mechanic')
+  @Get('mechanics/me')
   getMechanicReviews(@Request() req: RequestWithUser) {
     return this.reviewsService.getMechanicReviewsByUserId(req.user.id);
   }
 
-  @Get('mechanic/:mechanicId')
+  @Get('mechanics/:mechanicId')
   getMechanicReviewsById(@Param('mechanicId') mechanicId: string) {
     return this.reviewsService.getReviewsByMechanicId(mechanicId);
   }
@@ -31,26 +30,23 @@ export class ReviewsController {
   getReview(@Param('id') id: string) {
     return this.reviewsService.getReviewById(id);
   }
-
   
   @Put(':id')
   update(@Request() req: RequestWithUser, @Param('id') id: string, @Body() updateReviewDto: UpdateReviewDto) {
     return this.reviewsService.updateReview(req.user.id, id, updateReviewDto);
   }
-
  
-  @Post(':id/respond')
+  @Post(':id/responses')
   respond(@Request() req: RequestWithUser, @Param('id') id: string, @Body() responseDto: MechanicResponseDto) {
     return this.reviewsService.respondToReview(req.user.id, id, responseDto);
   }
-
  
   @Delete(':id')
   delete(@Request() req: RequestWithUser, @Param('id') id: string) {
     return this.reviewsService.deleteReview(req.user.id, id);
   }
 
-  @Get('user/my-reviews')
+  @Get('me')
   getUserReviews(@Request() req: RequestWithUser) {
     return this.reviewsService.getUserReviews(req.user.id);
   }
