@@ -1,0 +1,43 @@
+### Değişkenleri ayarlayalım
+@baseUrl = http://localhost:3000
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxNGE2NmMxYS05MzQwLTQ2YjAtOTA4My0wNTljOTBkZDY1ZmEiLCJyb2xlIjoibWVjaGFuaWMiLCJub25jZSI6IjE1ZmQ1ZTk4YzJjYWQ5MzEiLCJpYXQiOjE3NDY2MTkyNDgsImV4cCI6MTc0NjYyMDE0OH0.UPsZK2enJ60ErXeqvbv-7nLnegP0qqxn9fywZ3yEQWA
+
+### Giriş yap ve token al
+# Bu isteği çalıştırdıktan sonra dönen tokeni yukarıdaki @token değişkenine manuel olarak kopyalayın
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "e_mail": "ekremsekmen0500@gmail.com",
+  "password": "123456789"
+}
+
+### Tüm konuşmaları listele
+GET {{baseUrl}}/messages/conversations
+Authorization: Bearer {{token}}
+
+### Belirli bir kullanıcıyla olan konuşmayı görüntüle
+GET {{baseUrl}}/messages/conversation/ed53227f-a8c5-45b3-b9fb-f17f1c01c193
+Authorization: Bearer {{token}}
+
+### Yeni mesaj gönder
+POST {{baseUrl}}/messages
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "receiverId": "14a66c1a-9340-46b0-9083-059c90dd65fa",
+  "content": "aferin"
+}
+
+### Bir mesajı okundu olarak işaretle
+PUT {{baseUrl}}/messages/8a514211-a976-4d6b-a5a7-438f46e5cc83/read
+Authorization: Bearer {{token}}
+
+### Bir kullanıcıdan gelen tüm mesajları okundu olarak işaretle
+PUT {{baseUrl}}/messages/read-all/gonderen-kullanici-id
+Authorization: Bearer {{token}}
+
+### Bir konuşmayı sil
+DELETE {{baseUrl}}/messages/conversation/hedef-kullanici-id
+Authorization: Bearer {{token}}

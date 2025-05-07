@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Put, Request, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Request, UseGuards } from '@nestjs/common';
 import { MessagesService } from './messages.service';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { JwtGuard } from '../../common/guards';
@@ -37,5 +37,11 @@ export class MessagesController {
   async markAllAsRead(@Request() req: RequestWithUser, @Param('senderId') senderId: string) {
     const userId = req.user.id;
     return this.messagesService.markAllAsRead(senderId, userId);
+  }
+
+  @Delete('conversation/:userId')
+  async deleteConversation(@Request() req: RequestWithUser, @Param('userId') otherUserId: string) {
+    const userId = req.user.id;
+    return this.messagesService.deleteConversation(userId, otherUserId);
   }
 }
