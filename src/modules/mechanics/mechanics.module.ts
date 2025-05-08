@@ -11,11 +11,13 @@ import { MechanicDetailService } from './services/mechanic-detail.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { LocationsModule } from '../locations/locations.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
     PrismaModule,
-    LocationsModule
+    LocationsModule,
+    NotificationsModule
   ],
   controllers: [MechanicsController],
   providers: [

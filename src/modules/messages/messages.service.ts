@@ -3,13 +3,17 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { MessageDto } from './dto/message.dto';
 import { Prisma } from '@prisma/client';
+import { MessageNotificationService } from '../notifications/services/message-notification.service';
 
 @Injectable()
 export class MessagesService {
   // WebSocket gateway'e referans - bu dependency injection döngüsü sorununu çözmek için kullanılıyor
   private messagesGateway: any;
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private messageNotificationService: MessageNotificationService
+  ) {}
 
   // Gateway için setter metodu - döngüsel bağımlılıkları önlemek için
   setGateway(gateway: any) {
@@ -45,6 +49,9 @@ export class MessagesService {
         message: messageDto
       });
     }
+    
+    // Push bildirimi gönderme - sadece konuşma başına bir kez
+    await this.messageNotificationService.sendChatNotificationIfNeeded(senderId, receiverId);
 
     return messageDto;
   }
@@ -102,53 +109,49 @@ export class MessagesService {
     };
   }
 
-// ...existing code...
-// ...existing code...
-async getUserConversations(userId: string): Promise<any[]> {
-  const conversations = await this.prisma.$queryRaw`
-    WITH user_conversations AS (
-      SELECT DISTINCT
-        CASE 
-          WHEN m.sender_id = ${userId}::uuid THEN m.receiver_id
-          ELSE m.sender_id
-        END as other_user_id
-      FROM messages m
-      WHERE m.sender_id = ${userId}::uuid OR m.receiver_id = ${userId}::uuid
-    )
-    
-    SELECT
-      uc.other_user_id as user_id,
-      u.full_name,
-      u.profile_image,
-      (
-        SELECT content FROM messages 
-        WHERE (sender_id = ${userId}::uuid AND receiver_id = uc.other_user_id) 
-           OR (sender_id = uc.other_user_id AND receiver_id = ${userId}::uuid)
-        ORDER BY sent_at DESC 
-        LIMIT 1
-      ) as last_message,
-      (
-        SELECT sent_at FROM messages 
-        WHERE (sender_id = ${userId}::uuid AND receiver_id = uc.other_user_id) 
-           OR (sender_id = uc.other_user_id AND receiver_id = ${userId}::uuid)
-        ORDER BY sent_at DESC 
-        LIMIT 1
-      ) as last_message_time,
-      (
-        SELECT CAST(COUNT(*) AS INTEGER) FROM messages 
-        WHERE receiver_id = ${userId}::uuid 
-        AND sender_id = uc.other_user_id 
-        AND is_read = false
-      ) as unread_count
-    FROM user_conversations uc
-    JOIN users u ON u.id = uc.other_user_id
-    ORDER BY last_message_time DESC
-  `;
+  async getUserConversations(userId: string): Promise<any[]> {
+    const conversations = await this.prisma.$queryRaw`
+      WITH user_conversations AS (
+        SELECT DISTINCT
+          CASE 
+            WHEN m.sender_id = ${userId}::uuid THEN m.receiver_id
+            ELSE m.sender_id
+          END as other_user_id
+        FROM messages m
+        WHERE m.sender_id = ${userId}::uuid OR m.receiver_id = ${userId}::uuid
+      )
+      
+      SELECT
+        uc.other_user_id as user_id,
+        u.full_name,
+        u.profile_image,
+        (
+          SELECT content FROM messages 
+          WHERE (sender_id = ${userId}::uuid AND receiver_id = uc.other_user_id) 
+             OR (sender_id = uc.other_user_id AND receiver_id = ${userId}::uuid)
+          ORDER BY sent_at DESC 
+          LIMIT 1
+        ) as last_message,
+        (
+          SELECT sent_at FROM messages 
+          WHERE (sender_id = ${userId}::uuid AND receiver_id = uc.other_user_id) 
+             OR (sender_id = uc.other_user_id AND receiver_id = ${userId}::uuid)
+          ORDER BY sent_at DESC 
+          LIMIT 1
+        ) as last_message_time,
+        (
+          SELECT CAST(COUNT(*) AS INTEGER) FROM messages 
+          WHERE receiver_id = ${userId}::uuid 
+          AND sender_id = uc.other_user_id 
+          AND is_read = false
+        ) as unread_count
+      FROM user_conversations uc
+      JOIN users u ON u.id = uc.other_user_id
+      ORDER BY last_message_time DESC
+    `;
 
-  return Array.isArray(conversations) ? conversations : [];
-}
-// ...existing code...
-// ...existing code...
+    return Array.isArray(conversations) ? conversations : [];
+  }
 
   async markAsRead(messageId: string, userId: string): Promise<MessageDto> {
     const message = await this.prisma.messages.findUnique({

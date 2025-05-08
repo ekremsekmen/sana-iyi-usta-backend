@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { FcmService } from './fcm.service';
+import { FcmService, FcmResponse } from './fcm.service';
 import { CreateNotificationDto } from '../dto/create-notification.dto';
 
 @Injectable()
@@ -102,7 +102,13 @@ export class CampaignNotificationService {
         pushTokens.push(...fcmTokens);
       }
 
-      let fcmResult = { success: 0, failure: 0, simulated: false };
+      // Değişkeni doğru türle başlatıyoruz
+      let fcmResult: FcmResponse = { 
+        success: 0, 
+        failure: 0, 
+        disabled: false,
+        simulated: false 
+      };
       
       if (pushTokens.length > 0) {
         try {
@@ -131,7 +137,7 @@ export class CampaignNotificationService {
         fcmTokens: pushTokens.length,
         fcmSuccess: fcmResult.success,
         fcmFailure: fcmResult.failure,
-        simulated: fcmResult.simulated || false,
+        simulated: fcmResult.simulated,
         message: `${notifications.length} müşteriye bildirim oluşturuldu, ${fcmResult.simulated ? '(simüle edildi)' : fcmResult.success + ' başarıyla gönderildi'}`,
       };
     } catch (error) {

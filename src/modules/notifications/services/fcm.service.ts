@@ -1,7 +1,15 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import * as admin from 'firebase-admin';
-import { messaging } from 'firebase-admin';
 import { MulticastMessage } from 'firebase-admin/messaging';
+
+// Tüm dönüş türlerini kapsayan standart bir arayüz tanımlıyoruz
+export interface FcmResponse {
+  success: number;
+  failure: number;
+  disabled: boolean;
+  simulated: boolean;
+  error?: string;
+}
 
 @Injectable()
 export class FcmService implements OnModuleInit {
@@ -9,10 +17,6 @@ export class FcmService implements OnModuleInit {
   private isFirebaseInitialized = false;
   
   onModuleInit() {
-    // Geliştirme aşamasında Firebase başlatma işlemini geçiyoruz
-    this.logger.log('Firebase geliştirme modunda devre dışı bırakıldı');
-    
-    /* Firebase başlatma işlemi geliştirme aşamasında devre dışı bırakıldı
     try {
       if (!admin.apps.length && 
           process.env.FIREBASE_PROJECT_ID && 
@@ -35,7 +39,6 @@ export class FcmService implements OnModuleInit {
       this.logger.error(`Firebase başlatılamadı: ${error.message}`, error.stack);
       this.isFirebaseInitialized = false;
     }
-    */
   }
 
   /**
@@ -51,20 +54,78 @@ export class FcmService implements OnModuleInit {
     title: string,
     body: string,
     data?: Record<string, string>
-  ) {
-    // Geliştirme aşamasında FCM devre dışı bırakıldı
-    this.logger.log(`FCM bildirimi simüle ediliyor - Başlık: "${title}", İçerik: "${body}"`);
-    
-    if (data) {
-      this.logger.log(`FCM ekstra data: ${JSON.stringify(data)}`);
+  ): Promise<FcmResponse> {
+    if (!tokens || tokens.length === 0) {
+      return { 
+        success: 0, 
+        failure: 0, 
+        disabled: true,
+        simulated: false
+      };
     }
-    
-    // Bildirimlerin başarıyla gönderildiğini simüle ediyoruz
-    return { 
-      success: tokens ? tokens.length : 0, 
-      failure: 0, 
-      disabled: true,
-      simulated: true
-    };
+
+    if (!this.isFirebaseInitialized) {
+      this.logger.log(`FCM bildirimi simüle ediliyor - Başlık: "${title}", İçerik: "${body}"`);
+      
+      if (data) {
+        this.logger.log(`FCM ekstra data: ${JSON.stringify(data)}`);
+      }
+      
+      // Bildirimlerin başarıyla gönderildiğini simüle ediyoruz
+      return { 
+        success: tokens.length, 
+        failure: 0, 
+        disabled: true,
+        simulated: true
+      };
+    }
+
+    try {
+      const message: MulticastMessage = {
+        tokens: tokens,
+        notification: {
+          title: title,
+          body: body,
+        },
+        data: data,
+        android: {
+          priority: 'high',
+          notification: {
+            sound: 'default',
+            channelId: 'default'
+          }
+        },
+        apns: {
+          payload: {
+            aps: {
+              sound: 'default',
+              badge: 1,
+              contentAvailable: true
+            }
+          }
+        }
+      };
+
+      // Firebase Admin SDK'da doğru metot çağrısını yapalım
+      const response = await admin.messaging().sendEachForMulticast(message);
+      
+      this.logger.log(`FCM bildirimi gönderildi: ${response.successCount} başarılı, ${response.failureCount} başarısız`);
+      
+      return {
+        success: response.successCount,
+        failure: response.failureCount,
+        disabled: false,
+        simulated: false
+      };
+    } catch (error) {
+      this.logger.error(`FCM bildirimi gönderilirken hata: ${error.message}`, error.stack);
+      return {
+        success: 0, 
+        failure: tokens.length, 
+        error: error.message,
+        disabled: false,
+        simulated: false
+      };
+    }
   }
 }

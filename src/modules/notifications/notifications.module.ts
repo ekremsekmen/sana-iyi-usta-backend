@@ -4,6 +4,10 @@ import { NotificationsService } from './notifications.service';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { FcmService } from './services/fcm.service';
 import { CampaignNotificationService } from './services/campaign-notification.service';
+import { AppointmentNotificationService } from './services/appointment-notification.service';
+import { MessageNotificationService } from './services/message-notification.service';
+import { MaintenanceReminderNotificationService } from './services/maintenance-reminder-notification.service';
+import { ReviewNotificationService } from './services/review-notification.service';
 
 @Module({
   imports: [PrismaModule],
@@ -11,8 +15,19 @@ import { CampaignNotificationService } from './services/campaign-notification.se
   providers: [
     NotificationsService, 
     FcmService, 
-    CampaignNotificationService
+    CampaignNotificationService,
+    AppointmentNotificationService,
+    MessageNotificationService,
+    MaintenanceReminderNotificationService,
+    ReviewNotificationService
   ],
-  exports: [NotificationsService]
+  exports: [
+    NotificationsService, 
+    AppointmentNotificationService, 
+    FcmService,
+    MessageNotificationService,
+    MaintenanceReminderNotificationService,
+    ReviewNotificationService
+  ]
 })
 export class NotificationsModule {}

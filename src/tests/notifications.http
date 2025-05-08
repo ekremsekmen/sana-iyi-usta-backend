@@ -1,0 +1,88 @@
+```http
+// filepath: /Users/ekremsekmen/mycodes/sana-iyi-usta-backend/notifications.http
+@baseUrl = http://localhost:3000
+
+### Kullanıcı Girişi
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "e_mail": "ekremsekmenq@gmail.com",
+  "password": "12345678"
+}
+
+### Auth token'ı otomatik olarak değişkene atama
+@token = {{login.response.body.access_token}}
+
+### Kullanıcının Tüm Bildirimlerini Görüntüle
+GET {{baseUrl}}/notifications
+Authorization: Bearer {{token}}
+
+### Manuel Bildirim Oluşturma
+POST {{baseUrl}}/notifications
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "userId": "14a66c1a-9340-46b0-9083-059c90dd65fa", 
+  "message": "Test bildirimi mesajı",
+  "type": "test"
+}
+
+### Bakım Hatırlatma Bildirimleri Testi
+POST {{baseUrl}}/notifications/maintenance/vehicles/3c016747-fe02-4688-8193-8ea937730cac
+Authorization: Bearer {{token}}
+
+### Tüm Yaklaşan Bakım Hatırlatmalarını Kontrol Et ve Bildirim Gönder
+POST {{baseUrl}}/notifications/maintenance/check
+Authorization: Bearer {{token}}
+
+### FCM Token Güncelleme (Mobil Cihazlar İçin)
+POST {{baseUrl}}/auth/update-fcm-token
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "fcmToken": "firebase-fcm-token-here"
+}
+
+### Randevu Hatırlatma Bildirimlerini Manuel Tetikleme (Cron işlemi simülasyonu - Artık sadece test amaçlı)
+POST {{baseUrl}}/notifications/maintenance/check
+Authorization: Bearer {{token}}
+
+### Değerlendirme (Review) Oluştur - Bu da bir bildirim tetikleyecek
+POST {{baseUrl}}/reviews
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "appointment_id": "2a1b3c4d-5e6f-7g8h-9i0j-1k2l3m4n5o6p",
+  "rating": 5,
+  "review": "Çok iyi hizmet aldım, teşekkürler."
+}
+
+### Kampanya Oluştur - Bu da bildirim tetikleyecek
+POST {{baseUrl}}/campaigns
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Test Kampanya",
+  "description": "Kampanya açıklaması",
+  "discount_rate": 15,
+  "valid_until": "2023-12-31T00:00:00Z",
+  "brand_ids": ["7a8b9c0d-1e2f-3g4h-5i6j-7k8l9m0n1o2p"],
+  "category_ids": ["3p4o5n6m-7l8k-9j0i-1h2g-3f4e5d6c7b8a"]
+}
+
+### Mesaj Gönder - Bu da bildirim tetikleyecek
+POST {{baseUrl}}/messages
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "receiverId": "9a8b7c6d-5e4f-3g2h-1i0j-9k8l7m6n5o4p",
+  "content": "Merhaba, bu bir test mesajıdır."
+}
+```

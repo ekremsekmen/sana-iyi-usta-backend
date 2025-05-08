@@ -4,10 +4,14 @@ import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
 import { MechanicResponseDto } from './dto/mechanic-response.dto';
 import { Prisma } from '@prisma/client';
+import { ReviewNotificationService } from '../notifications/services/review-notification.service';
 
 @Injectable()
 export class ReviewsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private reviewNotificationService: ReviewNotificationService
+  ) {}
 
   async createReview(userId: string, createReviewDto: CreateReviewDto) {
     const customer = await this.prisma.customers.findFirst({
@@ -42,9 +46,15 @@ export class ReviewsService {
       throw new BadRequestException('Bu randevu zaten değerlendirilmiş');
     }
 
+    // Kullanıcı tam adını al
+    const user = await this.prisma.users.findUnique({
+      where: { id: userId },
+      select: { full_name: true }
+    });
+
     // Transaction kullanımı
-    return this.prisma.$transaction(async (tx) => {
-      const review = await tx.ratings_reviews.create({
+    const review = await this.prisma.$transaction(async (tx) => {
+      const newReview = await tx.ratings_reviews.create({
         data: {
           appointment_id: appointment.id,
           mechanic_id: appointment.mechanic_id,
@@ -56,8 +66,17 @@ export class ReviewsService {
 
       await this.updateMechanicAverageRating(appointment.mechanic_id, tx);
 
-      return review;
+      return newReview;
     });
+
+    // Transaction dışında bildirimi gönder
+    await this.reviewNotificationService.notifyMechanicAboutNewReview(
+      review,
+      appointment,
+      user.full_name
+    );
+
+    return review;
   }
 
   async getReviewsByMechanicId(mechanicId: string) {

@@ -16,10 +16,12 @@ import { PrismaModule } from './prisma/prisma.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ConfigModule } from '@nestjs/config';
 import { ServicesModule } from './modules/services/services.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(), // Zamanlayıcı için bu eklenmeli
     ThrottlerModule.forRoot([{
       ttl: 60000,
       limit: 1000, 

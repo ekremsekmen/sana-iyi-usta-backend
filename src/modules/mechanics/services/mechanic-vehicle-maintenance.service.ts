@@ -2,17 +2,23 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateVehicleMaintenanceRecordDto } from '../dto/create-vehicle-maintenance-record.dto';
 import { randomUUID } from 'crypto';
+import { NotificationsService } from '../../notifications/notifications.service';
 
 @Injectable()
 export class MechanicVehicleMaintenanceService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService
+  ) {}
 
   async createMaintenanceRecord(mechanicId: string, dto: CreateVehicleMaintenanceRecordDto) {
     const appointment = await this.prisma.appointments.findUnique({
       where: { id: dto.appointment_id },
       include: {
         customer_vehicles: true,
-        vehicle_maintenance_records: true
+        vehicle_maintenance_records: true,
+        mechanics: true,
+        customers: true
       }
     });
   
@@ -36,7 +42,8 @@ export class MechanicVehicleMaintenanceService {
       throw new BadRequestException('Bu randevu için zaten bir bakım kaydı oluşturulmuş');
     }
   
-    return this.prisma.vehicle_maintenance_records.create({
+    // Bakım kaydı oluştur
+    const maintenanceRecord = await this.prisma.vehicle_maintenance_records.create({
       data: {
         id: randomUUID(),
         vehicle_id: appointment.vehicle_id,
@@ -49,6 +56,23 @@ export class MechanicVehicleMaintenanceService {
         next_due_date: dto.next_due_date ? new Date(dto.next_due_date) : null
       }
     });
+    
+    // Bakım kaydı bildirimini gönder
+    if (maintenanceRecord) {
+      try {
+        await this.notificationsService.notifyMaintenanceRecordCreated(
+          appointment.customers.user_id,
+          appointment.vehicle_id,
+          appointment.mechanics.business_name,
+          dto.details
+        );
+      } catch (error) {
+        // Bildirim gönderimindeki hata bakım kaydı oluşturmayı engellemeyecek
+        console.error('Bakım kaydı bildirimi gönderilirken hata:', error);
+      }
+    }
+    
+    return maintenanceRecord;
   }
 
   async getMaintenanceRecordsByVehicle(mechanicId: string, vehicleId: string) {

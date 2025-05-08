@@ -4,6 +4,7 @@ import { GetAvailableSlotsDto } from './dto/get-available-slots.dto';
 import { SlotService } from './services/slot.service';
 import { AppointmentManagementService } from './services/appointment-management.service';
 import { AppointmentQueryService } from './services/appointment-query.service';
+import { AppointmentReminderService } from './services/appointment-reminder.service';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -12,7 +13,8 @@ export class AppointmentsService {
     private prisma: PrismaService,
     private slotService: SlotService,
     private appointmentManagementService: AppointmentManagementService,
-    private appointmentQueryService: AppointmentQueryService
+    private appointmentQueryService: AppointmentQueryService,
+    private appointmentReminderService: AppointmentReminderService
   ) {}
 
   private async findCustomerIdByUserId(userId: string): Promise<string> {

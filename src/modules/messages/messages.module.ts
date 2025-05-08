@@ -6,6 +6,7 @@ import { MessagesGateway } from './messages.gateway';
 import { JwtModule } from '@nestjs/jwt';
 import { AuthModule } from '../auth/auth.module';
 import { MessagesGatewayProvider } from './messages-gateway.provider';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { MessagesGatewayProvider } from './messages-gateway.provider';
       signOptions: { expiresIn: '1d' },
     }),
     AuthModule,
+    NotificationsModule, // FCM servisini içeren modülü ekledik
   ],
   controllers: [MessagesController],
   providers: [MessagesService, MessagesGateway, MessagesGatewayProvider],

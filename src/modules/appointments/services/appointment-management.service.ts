@@ -1,14 +1,18 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateAppointmentDto } from '../dto/create-appointment.dto';
 import { AppointmentType } from '@prisma/client';
 import { SlotService } from './slot.service';
+import { AppointmentNotificationService } from '../../notifications/services/appointment-notification.service';
 
 @Injectable()
 export class AppointmentManagementService {
+  private readonly logger = new Logger(AppointmentManagementService.name);
+  
   constructor(
     private prisma: PrismaService,
-    private slotService: SlotService
+    private slotService: SlotService,
+    private appointmentNotificationService: AppointmentNotificationService
   ) {}
 
   async createAppointment(customerId: string, dto: CreateAppointmentDto) {
@@ -61,7 +65,8 @@ export class AppointmentManagementService {
       }
     }
 
-    return this.prisma.appointments.create({
+    // Randevuyu oluştur
+    const newAppointment = await this.prisma.appointments.create({
       data: {
         mechanic_id: dto.mechanic_id,
         customer_id: customerId,
@@ -75,6 +80,15 @@ export class AppointmentManagementService {
         location_id: locationId,
       },
     });
+
+    // Tamirciye yeni bir randevu bildirimi gönder
+    try {
+      await this.appointmentNotificationService.notifyMechanicAboutNewAppointment(newAppointment);
+    } catch (error) {
+      this.logger.error(`Randevu bildirimi gönderilirken hata: ${error.message}`, error.stack);
+    }
+
+    return newAppointment;
   }
 
   async cancelAppointment(userId: string, appointmentId: string, userRole: string) {
@@ -102,12 +116,27 @@ export class AppointmentManagementService {
         throw new BadRequestException('Bu randevuyu iptal etme yetkiniz yok');
       }
       
-      return tx.appointments.update({
+      const updatedAppointment = await tx.appointments.update({
         where: { id: appointmentId },
         data: {
           status: 'canceled',
         },
       });
+
+      // Bildirim gönderme
+      try {
+        if (userRole === 'customer') {
+          // Müşteri iptal ettiyse mekanikere bildir
+          await this.appointmentNotificationService.notifyMechanicAboutCancelledAppointment(appointment);
+        } else {
+          // Mekanik iptal ettiyse müşteriye bildir
+          await this.appointmentNotificationService.notifyCustomerAboutAppointmentStatusChange(appointment, 'canceled');
+        }
+      } catch (error) {
+        this.logger.error(`İptal bildirimi gönderilirken hata: ${error.message}`, error.stack);
+      }
+
+      return updatedAppointment;
     });
   }
 
@@ -134,12 +163,24 @@ export class AppointmentManagementService {
         throw new BadRequestException('Sadece bekleyen randevular onaylanabilir');
       }
       
-      return tx.appointments.update({
+      const updatedAppointment = await tx.appointments.update({
         where: { id: appointmentId },
         data: {
           status: 'confirmed',
         },
       });
+
+      // Müşteriye onay bildirimi gönder
+      try {
+        await this.appointmentNotificationService.notifyCustomerAboutAppointmentStatusChange(
+          appointment,
+          'confirmed'
+        );
+      } catch (error) {
+        this.logger.error(`Onay bildirimi gönderilirken hata: ${error.message}`, error.stack);
+      }
+
+      return updatedAppointment;
     });
   }
 
@@ -166,12 +207,24 @@ export class AppointmentManagementService {
         throw new BadRequestException('Sadece onaylanmış randevular tamamlanabilir');
       }
       
-      return tx.appointments.update({
+      const updatedAppointment = await tx.appointments.update({
         where: { id: appointmentId },
         data: {
           status: 'completed',
         },
       });
+
+      // Müşteriye tamamlama bildirimi gönder
+      try {
+        await this.appointmentNotificationService.notifyCustomerAboutAppointmentStatusChange(
+          appointment,
+          'completed'
+        );
+      } catch (error) {
+        this.logger.error(`Tamamlama bildirimi gönderilirken hata: ${error.message}`, error.stack);
+      }
+
+      return updatedAppointment;
     });
   }
 }
