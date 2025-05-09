@@ -13,11 +13,14 @@ import {
   ValidationPipe,
   ParseUUIDPipe,
   Patch,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { CustomersService } from './customers.service';
 import { CreateCustomerVehicleDto} from './dto/customer-vehicle.dto';
 import { JwtGuard } from 'src/common/guards';
 import { RequestWithUser } from 'src/common/interfaces/request-with-user.interface';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('customers')
 export class CustomersController {
@@ -69,5 +72,17 @@ export class CustomersController {
     @Req() request: RequestWithUser
   ) {
     return this.customersService.findVehicleMaintenanceRecords(request.user.id, vehicleId);
+  }
+
+  @Patch('vehicles/:vehicleId/photo')
+  @UseGuards(JwtGuard)
+  @UseInterceptors(FileInterceptor('photo'))
+  @HttpCode(HttpStatus.OK)
+  async uploadVehiclePhoto(
+    @Param('vehicleId', new ParseUUIDPipe()) vehicleId: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Req() request: RequestWithUser
+  ) {
+    return this.customersService.uploadVehiclePhoto(request.user.id, vehicleId, file);
   }
 }

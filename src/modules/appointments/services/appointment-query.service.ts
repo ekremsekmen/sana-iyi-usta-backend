@@ -93,6 +93,7 @@ export class AppointmentQueryService {
             models: true,
             variants: true,
             model_years: true,
+            
           },
         },
         // Sadece randevuya ait bakım kaydını getir

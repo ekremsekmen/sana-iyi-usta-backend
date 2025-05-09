@@ -52,6 +52,7 @@ export class CampaignQueryService {
         discount_rate: campaign.discount_rate,
         valid_until: campaign.valid_until,
         created_at: campaign.created_at,
+        image_url: campaign.image_url,
         categories: campaign.campaign_categories.map(cc => ({
           id: cc.categories.id,
           name: cc.categories.name
@@ -222,6 +223,7 @@ export class CampaignQueryService {
           title: campaign.title,
           discount_rate: campaign.discount_rate,
           valid_until: campaign.valid_until,
+          image_url: campaign.image_url,
           categories: campaign.campaign_categories.map(cc => ({
             id: cc.categories.id,
             name: cc.categories.name
@@ -300,6 +302,7 @@ export class CampaignQueryService {
         discount_rate: campaign.discount_rate,
         valid_until: campaign.valid_until,
         created_at: campaign.created_at,
+        image_url: campaign.image_url,
         
         categories: campaign.campaign_categories.map(cc => ({
           id: cc.categories.id,

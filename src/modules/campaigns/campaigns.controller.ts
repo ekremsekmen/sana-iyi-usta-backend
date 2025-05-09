@@ -13,7 +13,8 @@ import {
   HttpStatus, 
   ParseUUIDPipe,
   Req,
-  
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { CampaignsService } from './campaigns.service';
 import { CampaignDto } from './dto/campaign.dto';
@@ -21,6 +22,7 @@ import { JwtGuard, RolesGuard } from '../../common/guards';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Role } from '../../common/enums/roles.enum';
 import { RequestWithUser } from '../../common/interfaces/request-with-user.interface';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('campaigns')
 @UseGuards(JwtGuard, RolesGuard)
@@ -87,5 +89,18 @@ export class CampaignsController {
     @Param('id', new ParseUUIDPipe()) id: string
   ) {
     return this.campaignsService.findCampaignDetails(id);
+  }
+
+  @Patch(':id/campaign-image')
+  @Roles(Role.MECHANIC)
+  @UseInterceptors(FileInterceptor('image'))
+  @HttpCode(HttpStatus.OK)
+  async uploadImage(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Req() request: RequestWithUser
+  ) {
+    const mechanic = await this.campaignsService.validateAndGetMechanicProfile(request.user.id);
+    return this.campaignsService.updateImage(id, mechanic.id, file, request.user.id);
   }
 }

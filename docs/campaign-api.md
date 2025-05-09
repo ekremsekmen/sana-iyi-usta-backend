@@ -11,6 +11,59 @@ Authorization: Bearer <token>
 ```
 
 ## Endpointler
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+### Kampanya Fotoğrafı Ekleme
+
+```
+PATCH /campaigns/:id/campaign-image
+```
+
+**Açıklama:** Var olan bir kampanyaya fotoğraf ekler veya günceller.
+
+**URL Parametreleri:**
+- `id` (UUID): Kampanyanın benzersiz ID'si
+
+**İstek Formatı:** multipart/form-data
+
+**İstek Alanları:**
+- `image`: Kampanya görseli (dosya)
+
+**Başarılı Yanıt (200 OK):**
+```json
+{
+  "id": "uuid",
+  "mechanic_id": "uuid",
+  "title": "Kampanya Başlığı",
+  "description": "Kampanya açıklaması",
+  "discount_rate": 15,
+  "valid_until": "2023-12-31T00:00:00.000Z",
+  "created_at": "2023-09-15T10:30:00.000Z",
+  "image_url": "https://storage-url.com/campaigns/image.jpg",
+  "categories": [
+    {
+      "id": "uuid",
+      "name": "Motor Bakımı"
+    }
+  ],
+  "brands": [
+    {
+      "id": "uuid",
+      "name": "Toyota"
+    }
+  ]
+}
+```
+
+**Hata Yanıtları:**
+- `400 Bad Request`: 
+  - Bu tamirci için kampanya işlemi yapma yetkiniz yok
+  - Bu kampanya üzerinde işlem yapma yetkiniz yok
+  - Dosya yükleme hatası
+- `403 Forbidden`: Bu işlemi gerçekleştirme yetkiniz yok
+- `404 Not Found`: 
+  - ID'si olan kampanya bulunamadı
+  - Tamirci profili bulunamadı
+- `500 Internal Server Error`: Kampanya resmi güncelleme sırasında bir sunucu hatası oluştu
 
 ### Tamircinin Kendi Kampanyalarını Listeleme
 

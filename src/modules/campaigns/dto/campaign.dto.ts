@@ -6,6 +6,10 @@ export class CampaignDto {
   @IsNotEmpty()
   title: string;
 
+  @IsOptional()
+  @IsString()
+  image_url?: string;
+
   @IsString()
   @IsOptional()
   description?: string;

@@ -3,12 +3,14 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CampaignDto } from '../dto/campaign.dto';
 import { CampaignValidationService } from './campaign-validation.service';
 import { Prisma } from '@prisma/client';
+import { FilesService } from '../../files/files.service';
 
 @Injectable()
 export class CampaignUpdateService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly validationService: CampaignValidationService
+    private readonly validationService: CampaignValidationService,
+    private readonly filesService: FilesService
   ) {}
 
   async update(id: string, mechanicId: string, updateCampaignDto: CampaignDto, userId: string) {
@@ -122,6 +124,72 @@ export class CampaignUpdateService {
       });
     } catch (error) {
       this.handleErrors(error, 'Kampanya güncelleme');
+    }
+  }
+
+  async updateImage(id: string, mechanicId: string, file: Express.Multer.File, userId: string) {
+    try {
+      // Validasyon işlemleri
+      await this.validationService.validateMechanicOwnership(mechanicId, userId);
+      await this.validationService.validateCampaignOwnership(id, mechanicId);
+      
+      // Dosya yükleme
+      const imageUrl = await this.filesService.uploadFile(file, 'campaigns');
+      
+      // Kampanya güncelleme
+      await this.prisma.campaigns.update({
+        where: { id },
+        data: { image_url: imageUrl },
+      });
+      
+      // Güncellenmiş kampanyayı getir
+      const updatedCampaign = await this.prisma.campaigns.findUnique({
+        where: { id },
+        include: {
+          campaign_categories: {
+            include: {
+              categories: {
+                select: {
+                  id: true,
+                  name: true
+                }
+              },
+            },
+          },
+          campaign_brands: {
+            include: {
+              brands: {
+                select: {
+                  id: true,
+                  name: true
+                }
+              },
+            },
+          }
+        },
+      });
+      
+      // Yanıt oluştur
+      return {
+        id: updatedCampaign.id,
+        mechanic_id: updatedCampaign.mechanic_id,
+        title: updatedCampaign.title,
+        description: updatedCampaign.description,
+        discount_rate: updatedCampaign.discount_rate,
+        valid_until: updatedCampaign.valid_until,
+        created_at: updatedCampaign.created_at,
+        image_url: updatedCampaign.image_url,
+        categories: updatedCampaign.campaign_categories.map(cc => ({
+          id: cc.categories.id,
+          name: cc.categories.name
+        })),
+        brands: updatedCampaign.campaign_brands.map(cb => ({
+          id: cb.brands.id,
+          name: cb.brands.name
+        }))
+      };
+    } catch (error) {
+      this.handleErrors(error, 'Kampanya resmi güncelleme');
     }
   }
 

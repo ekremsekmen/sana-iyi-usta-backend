@@ -10,6 +10,65 @@ Bu dokümantasyon, müşteri hesapları ve araçları için mevcut API endpoint'
 
 ## Araç Yönetimi
 
+### Araç Fotoğrafı Ekleme/Güncelleme
+
+Kullanıcının aracına fotoğraf ekler veya mevcut fotoğrafı günceller.
+
+**URL:** `PATCH /customers/vehicles/:vehicleId/photo`
+
+**URL Parametreleri:**
+- `vehicleId` - Fotoğraf eklenecek/güncellenecek aracın UUID'si
+
+**İstek Formatı:** multipart/form-data
+
+**İstek Alanları:**
+- `photo`: Araç görseli (dosya)
+
+**Yetkilendirme:** JWT Token gerekli
+
+**Başarılı Yanıt:**
+- **Kod:** 200 OK
+- **İçerik Örneği:**
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "customer_id": "a7ef5d32-f92c-4bd4-8339-d3577bf65658",
+  "brand_id": "12345678-abcd-1234-efgh-123456789abc",
+  "model_id": "23456789-bcde-2345-fghi-234567890abc",
+  "model_year_id": "34567890-cdef-3456-ghij-345678901abc",
+  "variant_id": "45678901-defg-4567-hijk-456789012abc",
+  "plate_number": "34ABC123",
+  "photo_url": "https://storage-url.com/vehicle-photos/image.jpg",
+  "created_at": "2023-06-15T10:23:42Z",
+  "brands": {
+    "id": "12345678-abcd-1234-efgh-123456789abc",
+    "name": "BMW"
+  },
+  "models": {
+    "id": "23456789-bcde-2345-fghi-234567890abc",
+    "name": "3 Serisi"
+  },
+  "model_years": {
+    "id": "34567890-cdef-3456-ghij-345678901abc",
+    "year": 2020
+  },
+  "variants": {
+    "id": "45678901-defg-4567-hijk-456789012abc",
+    "name": "320i"
+  }
+}
+```
+
+**Hata Yanıtları:**
+- **Kod:** 400 Bad Request - Dosya yükleme hatası
+  - **Mesaj:** "Dosya yüklenirken bir hata oluştu"
+- **Kod:** 401 Unauthorized - Yetkilendirme başarısız
+  - **Mesaj:** "Unauthorized" - Geçersiz veya eksik JWT token
+- **Kod:** 404 Not Found - Araç veya müşteri profili bulunamadı
+  - **Mesaj:** "Bu kullanıcı için müşteri profili bulunamadı" veya "Araç bulunamadı veya bu müşteriye ait değil"
+- **Kod:** 500 Internal Server Error - Sunucu hatası
+  - **Mesaj:** "Dosya yükleme sırasında sunucu hatası oluştu"
+
 ### Kullanıcının Araçlarını Listeleme
 
 Bir kullanıcının kayıtlı tüm araçlarını getirir.

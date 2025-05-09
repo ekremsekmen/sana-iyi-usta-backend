@@ -138,4 +138,27 @@ export class CustomerVehicleService {
       });
     });
   }
+
+  async updateVehiclePhoto(userId: string, vehicleId: string, photoUrl: string): Promise<CustomerVehicleResponseDto> {
+    const customer = await this.customerValidateService.findCustomerByUserId(userId);
+    await this.customerValidateService.verifyVehicleOwnership(customer.id, vehicleId);
+
+    // Aracın fotoğraf URL'sini güncelle
+    const updatedVehicle = await this.prisma.customer_vehicles.update({
+      where: {
+        id: vehicleId,
+      },
+      data: {
+        photo_url: photoUrl,
+      },
+      include: {
+        brands: true,
+        models: true,
+        model_years: true,
+        variants: true,
+      },
+    });
+
+    return updatedVehicle;
+  }
 }

@@ -44,4 +44,8 @@ export class CampaignsService {
   async findCampaignDetails(campaignId: string) {
     return this.queryService.findCampaignDetails(campaignId);
   }
+
+  async updateImage(id: string, mechanicId: string, file: Express.Multer.File, userId: string) {
+    return this.updateService.updateImage(id, mechanicId, file, userId);
+  }
 }

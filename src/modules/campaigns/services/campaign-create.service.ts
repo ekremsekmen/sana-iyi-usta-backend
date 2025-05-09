@@ -35,6 +35,7 @@ export class CampaignCreateService {
             valid_until: validUntilDate,
             created_at: new Date(),
             mechanic_id: mechanicId,
+            image_url: campaignData.image_url
           }
         });
 
@@ -87,6 +88,7 @@ export class CampaignCreateService {
           discount_rate: campaignWithRelations.discount_rate,
           valid_until: campaignWithRelations.valid_until,
           created_at: campaignWithRelations.created_at,
+          image_url: campaignWithRelations.image_url,
           categories: campaignWithRelations.campaign_categories.map(cc => ({
             id: cc.categories.id,
             name: cc.categories.name
