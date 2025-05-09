@@ -2,6 +2,37 @@
 
 Bu dokümantasyon, kullanıcı yönetimi için API endpointlerini detaylandırır. Tüm isteklerde JWT yetkilendirmesi gereklidir.
 
+!!!!!!!!!!!!!
+
+### 7. Profil Resmi Yükleme
+
+Oturum açmış olan kullanıcının profil resmini yükler ve günceller.
+
+**URL:** `PATCH /users/me/profile-image`
+
+**Yetkilendirme:** JWT Token gerekli
+
+**Content-Type:** `multipart/form-data`
+
+**Form Parametreleri:**
+- `file`: Yüklenecek resim dosyası (JPEG, PNG vb.)
+
+**Başarılı Yanıt:**
+```json
+{
+  "id": "u1s2e3r4-5678-90ab-cdef-ghijklmnopqr",
+  "profile_image": "https://example.com/storage/profile-images/12345.jpg"
+}
+
+
+
+---
+---
+---
+
+
+
+
 ## Temel URL
 
 ```
