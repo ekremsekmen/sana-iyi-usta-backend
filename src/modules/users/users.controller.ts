@@ -1,8 +1,9 @@
-import { Controller, Get, Body, Patch, Delete, UseGuards, Request, Param, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Body, Patch, Delete, UseGuards, Request, Param, HttpCode, HttpStatus, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/user-profile.dto';
 import { JwtGuard } from '../../common/guards/jwt/jwt.guard';
 import { RequestWithUser } from '../../common/interfaces/request-with-user.interface';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('users')
 export class UsersController {
@@ -51,5 +52,16 @@ export class UsersController {
   @HttpCode(HttpStatus.OK)
   getUserProfile(@Param('id') id: string) {
     return this.usersService.findOne(id);
+  }
+
+  @UseGuards(JwtGuard)
+  @Patch('me/profile-image')
+  @UseInterceptors(FileInterceptor('file'))
+  @HttpCode(HttpStatus.OK)
+  uploadProfileImage(
+    @Request() req: RequestWithUser, 
+    @UploadedFile() file: Express.Multer.File
+  ) {
+    return this.usersService.uploadProfileImage(req.user.id, file);
   }
 }

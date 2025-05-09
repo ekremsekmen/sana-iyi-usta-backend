@@ -8,10 +8,14 @@ import {
   BasicMechanicInfo, 
   BasicCustomerInfo 
 } from './dto/user-profile.dto';
+import { FilesService } from '../files/files.service';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private filesService: FilesService
+  ) {}
 
   async findOne(id: string): Promise<UserProfileResponseDto> {
     const user = await this.prisma.users.findUnique({
@@ -100,6 +104,23 @@ export class UsersService {
         phone_number: true,
         profile_image: true,
         role: true,
+      },
+    });
+
+    return user;
+  }
+
+  async uploadProfileImage(userId: string, file: Express.Multer.File) {
+    const imageUrl = await this.filesService.uploadFile(file, 'profile-images');
+    
+    const user = await this.prisma.users.update({
+      where: { id: userId },
+      data: {
+        profile_image: imageUrl,
+      },
+      select: {
+        id: true,
+        profile_image: true,
       },
     });
 
