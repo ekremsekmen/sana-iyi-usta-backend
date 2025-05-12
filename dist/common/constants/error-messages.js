@@ -1,0 +1,38 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ERROR_MESSAGES = void 0;
+exports.ERROR_MESSAGES = {
+    EMAIL_NOT_FOUND: 'Bu e-posta adresi ile kayıtlı bir hesap bulunamadı',
+    EMAIL_NOT_VERIFIED: 'E-posta adresiniz doğrulanmamış',
+    INVALID_CREDENTIALS: 'Geçersiz kullanıcı adı veya şifre',
+    PASSWORD_REQUIRED: 'Şifre zorunludur',
+    PASSWORD_TOO_SHORT: 'Şifre en az 8 karakter olmalıdır',
+    ACCOUNT_ALREADY_EXISTS: 'Bu hesap zaten mevcut',
+    AUTH_METHOD_ALREADY_LINKED: 'Bu kimlik doğrulama yöntemi zaten hesabınıza bağlı',
+    INVALID_REFRESH_TOKEN: 'Geçersiz veya süresi dolmuş refresh token',
+    INVALID_VERIFICATION_LINK: 'Geçersiz doğrulama bağlantısı',
+    VERIFICATION_LINK_EXPIRED: 'Doğrulama bağlantısının süresi dolmuş',
+    INVALID_RESET_CODE: 'Geçersiz doğrulama kodu',
+    RESET_CODE_EXPIRED: 'Doğrulama kodunun süresi dolmuş',
+    SOCIAL_AUTH_ONLY: 'Bu hesap sadece sosyal medya ile giriş yapmaktadır. Lütfen sosyal giriş yöntemini kullanın.',
+    LOCAL_AUTH_NOT_FOUND: 'Bu e-posta adresi ile kayıtlı bir yerel hesap bulunamadı',
+    ROLE_CONFLICT: 'Aynı e-posta ile farklı rol ile kayıt olunamaz',
+    INVALID_TOKEN_FORMAT: 'Token formatı geçersiz',
+    LOGOUT_ERROR: 'Çıkış işlemi sırasında hata oluştu',
+    SESSION_CREATION_ERROR: 'Oturum oluşturulamadı',
+    SESSION_MANAGEMENT_ERROR: 'Kullanıcı oturumları yönetilemedi',
+    APPLE_AUTH_FAILED: 'Apple ile kimlik doğrulama başarısız',
+    PASSWORD_RESET_CODE_SENT: 'Şifre sıfırlama kodu e-posta adresinize gönderildi',
+    PASSWORD_RESET_CODE_SEND_FAILED: 'Şifre sıfırlama kodu gönderilemedi',
+    PASSWORD_RESET_CODE_VALID: 'Doğrulama kodu geçerli. Yeni şifrenizi belirleyebilirsiniz.',
+    PASSWORD_RESET_SUCCESS: 'Şifreniz başarıyla sıfırlandı',
+    PASSWORD_RESET_FAILED: 'Şifre sıfırlama başarısız oldu',
+    NEW_AUTH_METHOD_ADDED: 'Yeni kimlik doğrulama yöntemi başarıyla eklendi',
+    KVKK_APPROVAL_REQUIRED: 'KVKK onayı zorunludur',
+    TERMS_APPROVAL_REQUIRED: 'Kullanım şartlarının onaylanması zorunludur',
+    PASSWORD_CHANGE_SUCCESS: 'Şifreniz başarıyla değiştirildi',
+    PASSWORDS_DO_NOT_MATCH: 'Yeni şifreler eşleşmiyor',
+    SESSION_NOT_FOUND: 'User session not found',
+    FCM_TOKEN_UPDATE_ERROR: 'Failed to update FCM token',
+};
+//# sourceMappingURL=error-messages.js.map
