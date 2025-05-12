@@ -141,7 +141,6 @@ export class EmailService {
     });
   
     if (!verification) {
-      // Geçersiz token durumunda doğrudan hata fırlat
       throw new NotFoundException(ERROR_MESSAGES.INVALID_VERIFICATION_LINK);
     }
   
