@@ -45,8 +45,16 @@ let UserRegistrationService = class UserRegistrationService {
             }
         });
         if (registerDto.auth_provider === register_dto_1.AuthProvider.LOCAL && verificationToken) {
-            const verificationEmailSent = await this.emailService.sendVerificationEmailByToken(registerDto.e_mail, verificationToken);
-            result.verificationEmailSent = verificationEmailSent;
+            setImmediate(async () => {
+                try {
+                    const verificationEmailSent = await this.emailService.sendVerificationEmailByToken(registerDto.e_mail, verificationToken);
+                    console.log(`Verification email sent: ${verificationEmailSent}`);
+                }
+                catch (error) {
+                    console.error('Email sending error:', error);
+                }
+            });
+            result.verificationEmailSent = true;
         }
         return result;
     }

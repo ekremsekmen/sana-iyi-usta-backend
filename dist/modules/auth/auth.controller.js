@@ -25,6 +25,7 @@ const throttler_1 = require("@nestjs/throttler");
 const social_auth_dto_1 = require("./dto/social-auth.dto");
 const password_dto_1 = require("./dto/password.dto");
 const fcm_token_dto_1 = require("./dto/fcm-token.dto");
+const email_verification_success_template_1 = require("../../templates/email-verification-success.template");
 let AuthController = class AuthController {
     constructor(authService) {
         this.authService = authService;
@@ -32,8 +33,14 @@ let AuthController = class AuthController {
     async register(registerDto) {
         return await this.authService.register(registerDto);
     }
-    async verifyEmail(verifyEmailDto) {
-        return await this.authService.verifyEmail(verifyEmailDto);
+    async verifyEmail(verifyEmailDto, req, res) {
+        const result = await this.authService.verifyEmail(verifyEmailDto);
+        const userAgent = req.headers['user-agent'] || '';
+        const isBrowser = /Mozilla|Chrome|Safari|Firefox|Edge/i.test(userAgent);
+        if (isBrowser) {
+            return res.send((0, email_verification_success_template_1.getEmailVerificationSuccessTemplate)());
+        }
+        return res.json(result);
     }
     async login(loginDto, request) {
         return this.authService.login(loginDto, request);
@@ -83,8 +90,10 @@ __decorate([
     (0, common_1.Get)('verify-email'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     __param(0, (0, common_1.Query)()),
+    __param(1, (0, common_1.Req)()),
+    __param(2, (0, common_1.Res)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [email_dto_1.VerifyEmailDto]),
+    __metadata("design:paramtypes", [email_dto_1.VerifyEmailDto, Object, Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "verifyEmail", null);
 __decorate([

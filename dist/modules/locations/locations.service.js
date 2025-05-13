@@ -45,6 +45,23 @@ let LocationsService = class LocationsService {
         if (existingLocation) {
             throw new common_1.ConflictException('Bu konuma ait kayıt zaten mevcut');
         }
+        if (userLocationsCount === 0) {
+            return this.prisma.$transaction(async (tx) => {
+                const newLocation = await tx.locations.create({
+                    data: {
+                        user_id: userId,
+                        address: createLocationDto.address,
+                        latitude: createLocationDto.latitude,
+                        longitude: createLocationDto.longitude,
+                        label: createLocationDto.label,
+                        city: createLocationDto.city,
+                        district: createLocationDto.district,
+                    },
+                });
+                await this.usersService.setDefaultLocation(userId, newLocation.id, tx);
+                return newLocation;
+            });
+        }
         return this.prisma.locations.create({
             data: {
                 user_id: userId,

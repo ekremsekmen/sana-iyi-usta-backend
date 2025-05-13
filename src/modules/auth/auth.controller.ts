@@ -1,4 +1,5 @@
-import { Controller, Post, Body, Get, Query, UseGuards, HttpCode, HttpStatus, Req } from '@nestjs/common';
+import { Controller, Post, Body, Get, Query, UseGuards, HttpCode, HttpStatus, Req, Res } from '@nestjs/common';
+import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { EmailVerificationResponseDto, VerifyEmailDto } from './dto/email.dto';
@@ -18,6 +19,7 @@ import { RequestWithUser } from '../../common/interfaces/request-with-user.inter
 import { Request } from 'express';
 import { RegistrationResult } from './services/user-registration.service';
 import { UpdateFcmTokenDto } from './dto/fcm-token.dto';
+import { getEmailVerificationSuccessTemplate } from '../../templates/email-verification-success.template';
 
 @Controller('auth')
 export class AuthController {
@@ -36,8 +38,21 @@ export class AuthController {
   @HttpCode(HttpStatus.OK) 
   async verifyEmail(
     @Query() verifyEmailDto: VerifyEmailDto,
-  ): Promise<EmailVerificationResponseDto> {
-    return await this.authService.verifyEmail(verifyEmailDto);
+    @Req() req: Request,
+    @Res() res: Response
+  ) {
+    const result = await this.authService.verifyEmail(verifyEmailDto);
+    
+   
+    const userAgent = req.headers['user-agent'] || '';
+    const isBrowser = /Mozilla|Chrome|Safari|Firefox|Edge/i.test(userAgent);
+    
+    if (isBrowser) {
+      return res.send(getEmailVerificationSuccessTemplate());
+    }
+    
+    // Return JSON for API requests
+    return res.json(result);
   }
 
   @UseGuards(LocalAuthGuard)

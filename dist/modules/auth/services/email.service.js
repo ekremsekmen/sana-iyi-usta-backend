@@ -27,6 +27,10 @@ let EmailService = class EmailService {
                 user: process.env.SMTP_USER,
                 pass: process.env.SMTP_PASSWORD,
             },
+            pool: true,
+            maxConnections: 5,
+            rateDelta: 1000,
+            rateLimit: 5,
         });
     }
     createVerificationToken() {
@@ -66,10 +70,20 @@ let EmailService = class EmailService {
     async sendVerificationEmail({ email, verificationToken, }) {
         const verificationUrl = `${process.env.API_URL}/auth/verify-email?token=${verificationToken}`;
         const mailOptions = {
-            from: process.env.SMTP_FROM,
+            from: {
+                name: 'Sana İyi Usta',
+                address: process.env.SMTP_FROM,
+            },
             to: email,
             subject: 'E-posta Doğrulama - Sana İyi Usta',
             html: (0, email_verification_template_1.getEmailVerificationTemplate)(verificationUrl),
+            headers: {
+                'X-Priority': '1',
+                'X-MSMail-Priority': 'High',
+                Importance: 'High',
+                'X-Mailer': 'Sana İyi Usta Notification System',
+            },
+            priority: 'high',
         };
         return this.transporter.sendMail(mailOptions);
     }
@@ -124,10 +138,20 @@ let EmailService = class EmailService {
     }
     async sendPasswordResetCode({ email, resetCode, }) {
         const mailOptions = {
-            from: process.env.SMTP_FROM,
+            from: {
+                name: 'Sana İyi Usta',
+                address: process.env.SMTP_FROM,
+            },
             to: email,
             subject: 'Şifre Sıfırlama Kodu - Sana İyi Usta',
             html: this.getPasswordResetCodeTemplate(resetCode),
+            headers: {
+                'X-Priority': '1',
+                'X-MSMail-Priority': 'High',
+                Importance: 'High',
+                'X-Mailer': 'Sana İyi Usta Notification System',
+            },
+            priority: 'high',
         };
         return this.transporter.sendMail(mailOptions);
     }

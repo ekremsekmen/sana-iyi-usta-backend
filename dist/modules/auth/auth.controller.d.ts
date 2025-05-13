@@ -1,6 +1,7 @@
+import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
-import { EmailVerificationResponseDto, VerifyEmailDto } from './dto/email.dto';
+import { VerifyEmailDto } from './dto/email.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { GoogleAuthDto, AppleAuthDto, FacebookAuthDto } from './dto/social-auth.dto';
@@ -13,7 +14,7 @@ export declare class AuthController {
     private readonly authService;
     constructor(authService: AuthService);
     register(registerDto: RegisterDto): Promise<RegistrationResult>;
-    verifyEmail(verifyEmailDto: VerifyEmailDto): Promise<EmailVerificationResponseDto>;
+    verifyEmail(verifyEmailDto: VerifyEmailDto, req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
     login(loginDto: LoginDto, request: Request): Promise<{
         user: {
             id: any;

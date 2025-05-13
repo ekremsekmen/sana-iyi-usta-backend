@@ -64,13 +64,23 @@ export class UserRegistrationService {
       }
     });
     
-    // Transaction dışında e-posta gönderimi
+    // Doğrulama e-postasını hemen gönder - priority: high ile daha hızlı 
     if (registerDto.auth_provider === AuthProvider.LOCAL && verificationToken) {
-      const verificationEmailSent = await this.emailService.sendVerificationEmailByToken(
-        registerDto.e_mail,
-        verificationToken
-      );
-      result.verificationEmailSent = verificationEmailSent;
+      setImmediate(async () => {
+        try {
+          const verificationEmailSent = await this.emailService.sendVerificationEmailByToken(
+            registerDto.e_mail,
+            verificationToken
+          );
+          // Sonuç loglanabilir, ama kullanıcıya dönüş için beklenmez
+          console.log(`Verification email sent: ${verificationEmailSent}`);
+        } catch (error) {
+          console.error('Email sending error:', error);
+        }
+      });
+      
+      // E-posta gönderim sonucunu beklemeden önce result'a true ata
+      result.verificationEmailSent = true;
     }
 
     return result;

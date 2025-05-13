@@ -30,9 +30,9 @@ export declare class SocialAuthenticationService {
         e_mail: string;
         role: string;
         id: string;
+        created_at: Date;
         phone_number: string | null;
         profile_image: string | null;
-        created_at: Date;
         default_location_id: string | null;
     }>;
     authenticateWithApple(appleAuthDto: AppleAuthDto): Promise<{
@@ -54,9 +54,9 @@ export declare class SocialAuthenticationService {
         e_mail: string;
         role: string;
         id: string;
+        created_at: Date;
         phone_number: string | null;
         profile_image: string | null;
-        created_at: Date;
         default_location_id: string | null;
     }>;
     authenticateWithFacebook(facebookAuthDto: FacebookAuthDto): Promise<{
@@ -78,9 +78,9 @@ export declare class SocialAuthenticationService {
         e_mail: string;
         role: string;
         id: string;
+        created_at: Date;
         phone_number: string | null;
         profile_image: string | null;
-        created_at: Date;
         default_location_id: string | null;
     }>;
     handleSocialUser(userInfo: any, provider: string): Promise<{
@@ -102,9 +102,9 @@ export declare class SocialAuthenticationService {
         e_mail: string;
         role: string;
         id: string;
+        created_at: Date;
         phone_number: string | null;
         profile_image: string | null;
-        created_at: Date;
         default_location_id: string | null;
     }>;
     findOrCreateSocialUser(userInfo: SocialUserInfo, provider: string): Promise<{
@@ -126,9 +126,9 @@ export declare class SocialAuthenticationService {
         e_mail: string;
         role: string;
         id: string;
+        created_at: Date;
         phone_number: string | null;
         profile_image: string | null;
-        created_at: Date;
         default_location_id: string | null;
     }>;
     private mapToSocialUserInfo;

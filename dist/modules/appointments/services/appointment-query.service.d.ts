@@ -30,9 +30,9 @@ export declare class AppointmentQueryService {
                 e_mail: string;
                 role: string;
                 id: string;
+                created_at: Date;
                 phone_number: string | null;
                 profile_image: string | null;
-                created_at: Date;
                 default_location_id: string | null;
             };
         } & {
@@ -96,9 +96,9 @@ export declare class AppointmentQueryService {
                 e_mail: string;
                 role: string;
                 id: string;
+                created_at: Date;
                 phone_number: string | null;
                 profile_image: string | null;
-                created_at: Date;
                 default_location_id: string | null;
             };
         } & {

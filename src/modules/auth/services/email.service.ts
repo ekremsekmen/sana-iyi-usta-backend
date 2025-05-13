@@ -27,6 +27,7 @@ export class EmailService {
   private transporter: Transporter;
 
   constructor(private prisma: PrismaService) {
+    // Optimize edilmiş transporter yapılandırması
     this.transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: parseInt(process.env.SMTP_PORT),
@@ -35,6 +36,10 @@ export class EmailService {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASSWORD,
       },
+      pool: true, // Bağlantı havuzu kullanarak performansı artır
+      maxConnections: 5,
+      rateDelta: 1000,
+      rateLimit: 5,
     });
   }
 
@@ -94,10 +99,20 @@ export class EmailService {
     const verificationUrl = `${process.env.API_URL}/auth/verify-email?token=${verificationToken}`;
 
     const mailOptions = {
-      from: process.env.SMTP_FROM,
+      from: {
+        name: 'Sana İyi Usta',
+        address: process.env.SMTP_FROM,
+      },
       to: email,
       subject: 'E-posta Doğrulama - Sana İyi Usta',
       html: getEmailVerificationTemplate(verificationUrl),
+      headers: {
+        'X-Priority': '1',
+        'X-MSMail-Priority': 'High',
+        Importance: 'High',
+        'X-Mailer': 'Sana İyi Usta Notification System',
+      },
+      priority: 'high' as const, // 'string' -> 'high' olarak sabitleme
     };
 
     return this.transporter.sendMail(mailOptions);
@@ -139,19 +154,19 @@ export class EmailService {
         },
       },
     });
-  
+
     if (!verification) {
       throw new NotFoundException(ERROR_MESSAGES.INVALID_VERIFICATION_LINK);
     }
-  
+
     if (verification.expires_at < new Date()) {
       throw new BadRequestException(ERROR_MESSAGES.VERIFICATION_LINK_EXPIRED);
     }
-  
+
     const existingVerification = verification.users.user_auth.some(
       (auth) => auth.auth_provider === 'local' && auth.e_mail_verified,
     );
-  
+
     if (existingVerification) {
       return {
         redirectUrl: this.buildEmailVerificationUrl(
@@ -160,9 +175,9 @@ export class EmailService {
         ),
       };
     }
-  
+
     await this.processVerifiedUser(verification);
-  
+
     return {
       redirectUrl: this.buildEmailVerificationUrl(
         verification.users.e_mail,
@@ -177,10 +192,20 @@ export class EmailService {
     resetCode,
   }: SendPasswordResetCodeDto) {
     const mailOptions = {
-      from: process.env.SMTP_FROM,
+      from: {
+        name: 'Sana İyi Usta',
+        address: process.env.SMTP_FROM,
+      },
       to: email,
       subject: 'Şifre Sıfırlama Kodu - Sana İyi Usta',
       html: this.getPasswordResetCodeTemplate(resetCode),
+      headers: {
+        'X-Priority': '1',
+        'X-MSMail-Priority': 'High',
+        Importance: 'High',
+        'X-Mailer': 'Sana İyi Usta Notification System',
+      },
+      priority: 'high' as const, 
     };
 
     return this.transporter.sendMail(mailOptions);
