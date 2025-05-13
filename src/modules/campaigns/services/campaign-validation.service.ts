@@ -102,15 +102,19 @@ export class CampaignValidationService {
   }
 
   validateDate(dateString: string) {
-    const validUntilDate = new Date(dateString);
-    if (isNaN(validUntilDate.getTime())) {
-      throw new BadRequestException('Geçersiz tarih formatı');
-    }
-
-    if (validUntilDate < new Date()) {
-      throw new BadRequestException('Kampanya bitiş tarihi bugün veya gelecek bir tarih olmalıdır');
-    }
-
-    return validUntilDate;
+  const validUntilDate = new Date(dateString);
+  if (isNaN(validUntilDate.getTime())) {
+    throw new BadRequestException('Geçersiz tarih formatı');
   }
+
+  // Bugünün başlangıcını al (saat, dakika, saniye sıfır)
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (validUntilDate < today) {
+    throw new BadRequestException('Kampanya bitiş tarihi bugün veya gelecek bir tarih olmalıdır');
+  }
+
+  return validUntilDate;
+}
 }
