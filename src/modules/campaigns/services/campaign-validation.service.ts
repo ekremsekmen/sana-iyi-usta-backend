@@ -107,8 +107,8 @@ export class CampaignValidationService {
       throw new BadRequestException('Geçersiz tarih formatı');
     }
 
-    if (validUntilDate <= new Date()) {
-      throw new BadRequestException('Kampanya bitiş tarihi gelecek bir tarih olmalıdır');
+    if (validUntilDate < new Date()) {
+      throw new BadRequestException('Kampanya bitiş tarihi bugün veya gelecek bir tarih olmalıdır');
     }
 
     return validUntilDate;
