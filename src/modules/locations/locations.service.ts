@@ -44,7 +44,30 @@ export class LocationsService {
     if (existingLocation) {
        throw new ConflictException('Bu konuma ait kayıt zaten mevcut');
     }
+    
+    // Müşterinin ilk konumu ise, bu konum default location olarak ayarlanmalı
+    if (userLocationsCount === 0) {
+      return this.prisma.$transaction(async (tx) => {
+        const newLocation = await tx.locations.create({
+          data: {
+            user_id: userId,
+            address: createLocationDto.address,
+            latitude: createLocationDto.latitude,
+            longitude: createLocationDto.longitude,
+            label: createLocationDto.label,
+            city: createLocationDto.city,
+            district: createLocationDto.district,
+          },
+        });
+        
+        // Konumu default location olarak ayarla
+        await this.usersService.setDefaultLocation(userId, newLocation.id, tx);
+        
+        return newLocation;
+      });
+    }
   
+    // Müşterinin başka konumları varsa normal işleme devam et
     return this.prisma.locations.create({
       data: {
         user_id: userId,
